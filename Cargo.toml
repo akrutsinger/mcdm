@@ -3,7 +3,7 @@ name = "mcdm"
 description = "A Rust library to assist with solving Multiple-Criteria Decision Making (MCDM) problems."
 categories = ["science", "mathematics"]
 keywords = ["mcdm", "multiple-criteria", "decision-making", "optimization", "ranking"]
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 license = "MIT"
 documentation = "https://docs.rs/mcdm"
@@ -15,4 +15,4 @@ ndarray = "0.15.6"
 
 [package.metadata.docs.rs]
 all-features = true
-rustdoc-args = ["--cfg", "docsrs", "--html-in-header", "./src/docs_header.html"]
+rustdoc-args = ["--cfg", "docsrs"]
