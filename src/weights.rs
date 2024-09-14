@@ -21,7 +21,7 @@ use ndarray::{Array1, Array2};
 /// Here's an example of how to use the [Weight] trait with an [Equal] weighting scheme:
 ///
 /// ```rust
-/// use mcdm::{weights::Equal, Weight};
+/// use mcdm::{weights::{Equal, Weight}};
 /// use ndarray::array;
 ///
 /// let decision_matrix = array![[3.0, 4.0, 2.0], [1.0, 5.0, 3.0]];

@@ -24,7 +24,7 @@ use ndarray::{Array1, Array2, Axis};
 /// Here's an example of normalizing a decision matrix:
 ///
 /// ```rust
-/// use mcdm::{normalization::MinMax, Normalize};
+/// use mcdm::normalization::{MinMax, Normalize};
 /// use ndarray::{array, Array1};
 ///
 /// let decision_matrix = array![[4.0, 7.0, 8.0], [2.0, 9.0, 6.0], [3.0, 6.0, 9.0]];
