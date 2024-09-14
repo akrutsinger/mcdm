@@ -76,36 +76,31 @@ pub trait Rank {
 /// # Example
 ///
 /// ```rust
-/// use mcdm::{
-///    errors,
-///    methods::{Rank, TOPSIS},
-///};
+/// use approx::assert_abs_diff_eq;
+/// use mcdm::methods::{Rank, TOPSIS};
 /// use ndarray::{array, Array2};
 ///
-/// fn main() -> Result<(), errors::MethodError> {
-///     // Define the decision matrix (alternatives x criteria)
-///     let matrix = array![
-///         [0.1, 0.1, 0.1, 0.1],
-///         [0.2, 0.2, 0.2, 0.2],
-///         [0.3, 0.3, 0.3, 0.3]
-///     ];
-///
-///     // Define the weights
-///     let weights = array![0.25, 0.25, 0.25, 0.25];
-///
-///     // Rank the alternatives
-///     let ranking = TOPSIS::rank(&matrix, &weights)?;
-///
-///     // Output the ranking
-///     println!("Ranking: {:?}", ranking);
-///		// Output: Ranking: [0.5, 0.5, 0.5]
-///     Ok(())
-/// }
+/// let matrix = array![
+/// 	[0.1, 0.1, 0.1, 0.1],
+/// 	[0.2, 0.2, 0.2, 0.2],
+/// 	[0.3, 0.3, 0.3, 0.3]
+/// ];
+/// let weights = array![0.25, 0.25, 0.25, 0.25];
+/// let ranking = TOPSIS::rank(&matrix, &weights).unwrap();
+/// assert_abs_diff_eq!(ranking, array![0.0, 0.5, 1.0], epsilon = 1e-5);
 /// ```
 pub struct TOPSIS;
 
 impl Rank for TOPSIS {
     fn rank(matrix: &Array2<f64>, weights: &Array1<f64>) -> Result<Array1<f64>, MethodError> {
+        if weights.len() != matrix.ncols() {
+            return Err(MethodError::DimensionMismatch);
+        }
+
+        if weights.iter().any(|x| *x == 0.0) {
+            return Err(MethodError::InvalidValue);
+        }
+
         let num_rows = matrix.nrows();
 
         let weighted_matrix = matrix * weights;
@@ -152,7 +147,7 @@ impl Rank for TOPSIS {
 ///
 /// # Example
 ///
-/// ```
+/// ```rust
 /// use approx::assert_abs_diff_eq;
 /// use mcdm::methods::{WeightedSum, Rank};
 /// use ndarray::{array, Array1, Array2};
