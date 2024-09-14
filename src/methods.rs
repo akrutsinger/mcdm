@@ -1,5 +1,5 @@
 use crate::errors::MethodError;
-use ndarray::{Array1, Array2};
+use ndarray::{Array1, Array2, Axis};
 
 /// A trait for ranking alternatives in Multiple-Criteria Decision Making (MCDM).
 ///
@@ -16,7 +16,7 @@ use ndarray::{Array1, Array2};
 /// Here’s an example of ranking alternatives using the [Rank] trait:
 ///
 /// ```rust
-/// use mcdm::{methods::TOPSIS, Rank};
+/// use mcdm::methods::{TOPSIS, Rank};
 /// use ndarray::{array, Array1, Array2};
 ///
 /// let normalized_matrix: Array2<f64> = array![[0.8, 0.6], [0.5, 0.9], [0.3, 0.7]];
@@ -76,7 +76,10 @@ pub trait Rank {
 /// # Example
 ///
 /// ```rust
-/// use mcdm::{errors, methods::topsis::TOPSIS};
+/// use mcdm::{
+///    errors,
+///    methods::{Rank, TOPSIS},
+///};
 /// use ndarray::{array, Array2};
 ///
 /// fn main() -> Result<(), errors::MethodError> {
@@ -127,5 +130,47 @@ impl Rank for TOPSIS {
 
         // Calculate the relative closeness to the ideal solution
         Ok(&distance_to_nis / (&distance_to_nis + &distance_to_pis))
+    }
+}
+
+/// Rank the alternatives using the WeightedSum method.
+///
+/// The `WeightedSum` method ranks alternatives based on the weighted sum of their criteria values.
+/// Each alternative's score is calculated by multiplying its criteria values by the corresponding
+/// weights and summing the results.
+///
+/// # Arguments
+///
+/// * `matrix` - A normalized decision matrix where each row represents an alternative and each
+/// column represents a criterion.
+/// * `weights` - A 1D array of weights corresponding to the relative importance of each criterion.
+///
+/// # Returns
+///
+/// * `Result<Array1<f64>, MethodError>` - A 1D array containing the preference values for each
+/// alternative, or an error if the ranking process fails.
+///
+/// # Example
+///
+/// ```
+/// use approx::assert_abs_diff_eq;
+/// use mcdm::methods::{WeightedSum, Rank};
+/// use ndarray::{array, Array1, Array2};
+///
+/// let matrix = array![[0.2, 0.8], [0.5, 0.5], [0.9, 0.1]];
+/// let weights = array![0.6, 0.4];
+/// let ranking = WeightedSum::rank(&matrix, &weights).unwrap();
+/// assert_abs_diff_eq!(ranking, array![0.44, 0.5, 0.58], epsilon = 1e-5);
+/// ```
+pub struct WeightedSum;
+
+impl Rank for WeightedSum {
+    fn rank(matrix: &Array2<f64>, weights: &Array1<f64>) -> Result<Array1<f64>, MethodError> {
+        if weights.len() != matrix.ncols() {
+            return Err(MethodError::DimensionMismatch);
+        }
+
+        let weighted_matrix = matrix * weights;
+        Ok(weighted_matrix.sum_axis(Axis(1)))
     }
 }
