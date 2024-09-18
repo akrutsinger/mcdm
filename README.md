@@ -35,6 +35,7 @@ Ranking algorithms combine normalized data and weights to determine the best alt
 | Name               | Description |
 | :----------------: | :---------: |
 | Technique for Order of Preference by Similarity to Ideal Solution (TOPSIS)          |   Conceptually says the best alternative should have the shortest geometric distance from the postivei ideal solution and the longest distance form the negative ideal solution.  |
+| Weighted Sum | Ranks alternatives based on the weighted sum of the alternatives criteria values. |
 |  |  |
 
 ## Usage
