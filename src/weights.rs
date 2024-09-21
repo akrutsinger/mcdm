@@ -1,5 +1,6 @@
-use crate::errors::WeightingError;
-use ndarray::{Array1, Array2};
+use crate::normalization::Sum;
+use crate::{errors::ValidationError, normalization::Normalize};
+use ndarray::{Array1, Array2, Axis};
 
 /// A trait for calculating weights in Multiple-Criteria Decision Making (MCDM) problems.
 ///
@@ -36,10 +37,10 @@ use ndarray::{Array1, Array2};
 ///
 /// # Returns
 ///
-/// This method returns a `Result<Array1<f64>, WeightingError>`, where:
+/// This method returns a `Result<Array1<f64>, ValidationError>`, where:
 ///
 /// * `Array1<f64>` is a 1D array of weights corresponding to each criterion.
-/// * `WeightingError` is returned if an error occurs while calculating the weights (e.g., an
+/// * `ValidationError` is returned if an error occurs while calculating the weights (e.g., an
 /// invalid matrix shape or calculation failure).
 pub trait Weight {
     /// Calculate a weight vector for the criteria in the decision matrix.
@@ -55,9 +56,9 @@ pub trait Weight {
     ///
     /// # Returns
     ///
-    /// * `Result<Array1<f64>, WeightingError>` - A vector of weights for each criterion, or error
+    /// * `Result<Array1<f64>, ValidationError>` - A vector of weights for each criterion, or error
     /// if the weighting calculation fails.
-    fn weight(matrix: &Array2<f64>) -> Result<Array1<f64>, WeightingError>;
+    fn weight(matrix: &Array2<f64>) -> Result<Array1<f64>, ValidationError>;
 }
 
 /// A weighting method that assigns equal weights to all criteria in the decision matrix.
@@ -79,20 +80,68 @@ pub trait Weight {
 /// # Returns
 ///
 /// This method returns an array of equal weights for each criterion. If the matrix has no criteria
-/// (i.e., zero columns), it returns a [WeightingError::ZeroRange] error.
+/// (i.e., zero columns), it returns a [ValidationError::ZeroRange] error.
 pub struct Equal;
 
 impl Weight for Equal {
-    fn weight(matrix: &Array2<f64>) -> Result<Array1<f64>, WeightingError> {
+    fn weight(matrix: &Array2<f64>) -> Result<Array1<f64>, ValidationError> {
         let num_criteria = matrix.ncols();
 
         if num_criteria == 0 {
-            return Err(WeightingError::ZeroRange);
+            return Err(ValidationError::ZeroRange);
         }
 
         let weight = 1.0 / num_criteria as f64;
         let weights = Array1::from_elem(num_criteria, weight);
 
         Ok(weights)
+    }
+}
+
+/// Calculates the entropy-based weights for the given decision matrix.
+///
+/// Before the weight can be calculated, the decision matrix is normalized using the [Sum]
+/// normalization method.
+///
+/// Each criterion (column) in the normalized matrix is evaluated for its entropy. If any value in a
+/// column is zero, the entropy for that column is set to zero. Otherwise, the entropy is calculated
+/// by:
+///
+/// $$E_j -\frac{\sum_{i=1}^m p_{ij}\ln(p_{ij})}{\ln(m)}$$
+///
+/// where $E_j$ is the entropy of column $j$, $m$ is the number of alternatives, $n$ is the number
+/// of criteria, and $p_{ij}$ is the value of normalized decision matrix for criterion $j$ and
+/// alternative $i$
+///
+/// # Arguments
+///
+/// * `matrix` - A 2D array where rows represent alternatives and columns represent criteria.
+///
+/// # Returns
+///
+/// This method returns a `Result` containing an array of entropy-based weights for each
+/// criterion. On an error, this method returns [ValidationError].
+pub struct Entropy;
+
+impl Weight for Entropy {
+    fn weight(matrix: &Array2<f64>) -> Result<Array1<f64>, ValidationError> {
+        let (num_alternatives, num_criteria) = matrix.dim();
+
+        let types = Array1::ones(num_criteria);
+        let normalized_matrix = Sum::normalize(matrix, &types)?;
+        let mut entropies = Array1::zeros(num_criteria);
+
+        // Iterate over all criteria in the normalized matrix
+        for (i, col) in normalized_matrix.axis_iter(Axis(1)).enumerate() {
+            if col.iter().all(|&x| x != 0.0) {
+                let col_entropy = col.iter().map(|&x| x * x.ln()).sum();
+
+                entropies[i] = col_entropy;
+            }
+        }
+
+        entropies /= (num_alternatives as f64).ln();
+
+        Ok(entropies)
     }
 }
