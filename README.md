@@ -1,16 +1,16 @@
-# mcdm
+# 🤔 mcdm
 
 `mcdm` is a Rust library to assist with solving Multiple-Criteria Decision Making (MCDM) problems. It provides a comprehensive set of tools for decision analysis, including normalization techniques, weighting methods, and ranking algorithms.
 
-## Features
+## ✨ Features
 
 MCDM involves evaluating multiple conflicting criteria when making decisions. This library aims to provide various techniques to normalize data, assign weights to criteria, and rank alternatives. Below is a list of the components that have been implemented.
 
-### Normalization
+### 🔄 Normalization
 
 Normalization ensures that criteria with different units of measurement can be compared on a common scale. Each method has a specific use case depending on the decision problem.
 
-| Name               | Description |
+| 🌟 Name               | 📝 Description |
 | :----------------: | :---------: |
 | Enhanced Accuracy  | Technique proposed by Zeng and Yang in 2013 incorporating criterion's minimums and maximums into the computation. |
 | Linear 			 | Similiar to Max normalization, where profit criteria depend on the critions maximum value and cost criteria depend on criterion minimum value. |
@@ -23,27 +23,27 @@ Normalization ensures that criteria with different units of measurement can be c
 | Zavadskas-Turskis  | Convert different criteria into comparable units. |
 |  |  |
 
-### Weighting
+### ⚖️ Weighting
 
 Weights reflect the relative importance of each criterion. Different weighting techniques help balance criteria appropriately in the decision-making process.
 
-| Name               | Description |
+| 📊 Name               | 📝 Description |
 | :----------------: | :---------: |
 | Entropy			 | Weights each criterion based on the entropy of all alternatives for the given criterion. |
 | Equal              | Assumes all criteria are of equal importance. Each criterion is assigned the same weight. |
 |  |  |
 
-### Ranking Methods
+### 📈 Ranking Methods
 
 Ranking algorithms combine normalized data and weights to determine the best alternative. These methods aim to provide a clear ranking of alternatives based on the decision-maker's preferences.
 
-| Name               | Description |
+| 🥇 Name               | 📝 Description |
 | :----------------: | :---------: |
 | Technique for Order of Preference by Similarity to Ideal Solution (TOPSIS)          |   Conceptually says the best alternative should have the shortest geometric distance from the postivei ideal solution and the longest distance form the negative ideal solution.  |
 | Weighted Sum | Ranks alternatives based on the weighted sum of the alternatives criteria values. |
 |  |  |
 
-## Usage
+## 🚀 Usage
 
 To start using `mcdm`, add this to your `Cargo.toml`:
 
@@ -52,7 +52,7 @@ To start using `mcdm`, add this to your `Cargo.toml`:
 mcdm = "0.1"
 ```
 
-### Example
+### 🧪 Example
 
 Here’s an example demonstrating how to use the mcdm library for decision-making with the TOPSIS method:
 
@@ -79,7 +79,7 @@ fn main() -> Result<(), McdmError> {
 }
 ```
 
-## Contributing
+## 🤝 Contributing
 
 Contributing is what makes the open source community thrive. Any contributions to enhance `mcdm` are welcome and greatly apprecaited!
 
@@ -91,6 +91,6 @@ If you have any suggestions that could make this project better, please feel fre
 4. Push to the remote branch (`git push origin feature/new-decision-method`)
 5. Open a pull request
 
-## License
+## 📄 License
 
 Distributed under the MIT license. See [LICENSE-MIT.txt](LICENSE-MIT.txt) for more information.
