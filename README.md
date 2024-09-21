@@ -12,11 +12,15 @@ Normalization ensures that criteria with different units of measurement can be c
 
 | Name               | Description |
 | :----------------: | :---------: |
+| Enhanced Accuracy  | Technique proposed by Zeng and Yang in 2013 incorporating criterion's minimums and maximums into the computation. |
+| Linear 			 | Similiar to Max normalization, where profit criteria depend on the critions maximum value and cost criteria depend on criterion minimum value. |
+| Logarithmic        | Uses natural logarithm in the normalization. |
 | Min-Max | Scales the values of each criterion between 0 and 1 (or another range) by using the minimum and maximum values of that criterion. |
-| Max                |   Similiar to MinMax, but here each element is divided by the maximum value in the column |
-| Zavadskas-Turskis | Convert different criteria into comparable units. |
-| Linear | Similiar to Max normalization, where profit criteria depend on the critions maximum value and cost criteria depend on criterion minimum value. |
+| Max                | Similiar to MinMax, but here each element is divided by the maximum value in the column |
 | Nonlinear | Similiar to linear normalization, but relies on exponentiation of the criteria to help capture more complexitities in the criteria or when data distributions are skewed. |
+| Sum				 | Uses the sum of each alternatives criterion. |
+| Vector             | Considers the root of the sum of squares for each criterion. |
+| Zavadskas-Turskis  | Convert different criteria into comparable units. |
 |  |  |
 
 ### Weighting
@@ -25,7 +29,8 @@ Weights reflect the relative importance of each criterion. Different weighting t
 
 | Name               | Description |
 | :----------------: | :---------: |
-| Equal                |   Assumes all criteria are of equal importance. Each criterion is assigned the same weight. |
+| Entropy			 | Weights each criterion based on the entropy of all alternatives for the given criterion. |
+| Equal              | Assumes all criteria are of equal importance. Each criterion is assigned the same weight. |
 |  |  |
 
 ### Ranking Methods
