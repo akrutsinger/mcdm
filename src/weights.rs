@@ -145,3 +145,50 @@ impl Weight for Entropy {
         Ok(entropies)
     }
 }
+
+/// Calculates the weights for the given decision matrix using standard deviation.
+///
+/// First calculate the standard deviation measure for all of the critera using:
+///
+/// $$ \sigma_j = \sqrt{\frac{\sum_{i=1}^m (x_{ij} - x_j)^2}{m}} \quad \text{for} \quad j=1, \ldots, n $$
+///
+/// where $x_{ij}$ is the $i$th element of the alternative (row) and $j$th elements of the criterion
+/// (column) with $m$ total criteria and $n$ total alternatives.
+///
+/// Next, derive the weights based on the standard deviation of the criteria:
+///
+/// $$ w_j = \frac{\sigma_j}{\sum_{j=1}^n \sigma_j} \quad \text{for} \quad j=1, \ldots, n $$
+///
+/// # Arguments
+///
+/// * `matrix` - A 2D array where rows represent alternatives and columns represent criteria.
+///
+/// # Returns
+///
+/// This method returns a `Result` containing an array of entropy-based weights for each
+/// criterion. On an error, this method returns [ValidationError].
+pub struct StandardDeviation;
+
+impl Weight for StandardDeviation {
+    fn weight(matrix: &Array2<f64>) -> Result<Array1<f64>, ValidationError> {
+        // Compute the standard deviation across columns (criteria).
+        // NOTE: The Axis(0) here confused me for a long time, so I'm adding this note in hopes that
+        // future me doesn't have to re-research what's going on here. Unlike `ndarray`'s
+        // `axis_iter()`, where the axis refers to the dimension being iterated over, (e.g.,
+        // `axis_iter(Axis(0))` means you're iterating over the rows of the matrix),
+        // `std_axis(Axis(0))` means you're building an output array with the same number of columns
+        // as the input because you're computing the standard deviation across the first element of
+        // every row, then the second elemtn of each row, and so on. So, the output array will have
+        // the same number of columns as the input. I don't know if this will really help future me;
+        // thanks a lot for not really understanding past me...
+        let std = matrix.std_axis(Axis(0), 1.0);
+
+        // Sum of the standard deviations
+        let std_sum = std.sum();
+
+        // Compute the normalized weights
+        let weights = std / std_sum;
+
+        Ok(weights)
+    }
+}

@@ -31,6 +31,7 @@ Weights reflect the relative importance of each criterion. Different weighting t
 | :----------------: | :---------: |
 | Entropy			 | Weights each criterion based on the entropy of all alternatives for the given criterion. |
 | Equal              | Assumes all criteria are of equal importance. Each criterion is assigned the same weight. |
+| Standard Deviation | Criteria weights are derived from standard deviation across the criteria. This method leads to smaller weights for criteria that have similiar values.
 |  |  |
 
 ### 📈 Ranking Methods
