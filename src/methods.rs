@@ -1,4 +1,4 @@
-use crate::errors::MethodError;
+use crate::errors::RankingError;
 use ndarray::{Array1, Array2, Axis};
 
 /// A trait for ranking alternatives in Multiple-Criteria Decision Making (MCDM).
@@ -35,11 +35,11 @@ use ndarray::{Array1, Array2, Axis};
 ///
 /// # Returns
 ///
-/// This method returns a `Result<Array1<f64>, MethodError>`, where:
+/// This method returns a `Result<Array1<f64>, RankingError>`, where:
 ///
 /// - `Array1<f64>` is a 1D array containing the preference values for each alternative. Higher
 /// values indicate better alternatives.
-/// - [MethodError] is returned if the ranking process fails (e.g., due to a mismatch between the
+/// - [RankingError] is returned if the ranking process fails (e.g., due to a mismatch between the
 /// dimensions of `matrix` and `weights`, or other calculation errors).
 pub trait Rank {
     /// Ranks the alternatives in a normalized decision matrix based on the provided criteria
@@ -57,9 +57,9 @@ pub trait Rank {
     ///
     /// # Returns
     ///
-    /// * `Result<Array1<f64>, MethodError>` - A 1D array of preference values, or an error if the
+    /// * `Result<Array1<f64>, RankingError>` - A 1D array of preference values, or an error if the
     /// ranking process fails.
-    fn rank(matrix: &Array2<f64>, weights: &Array1<f64>) -> Result<Array1<f64>, MethodError>;
+    fn rank(matrix: &Array2<f64>, weights: &Array1<f64>) -> Result<Array1<f64>, RankingError>;
 }
 
 /// Ranks the alternatives using the TOPSIS method.
@@ -71,7 +71,7 @@ pub trait Rank {
 ///
 /// # Returns
 ///
-/// * `Result<Array1<f64>, MethodError>` - A vector of scores for each alternative.
+/// * `Result<Array1<f64>, RankingError>` - A vector of scores for each alternative.
 ///
 /// # Example
 ///
@@ -92,13 +92,13 @@ pub trait Rank {
 pub struct TOPSIS;
 
 impl Rank for TOPSIS {
-    fn rank(matrix: &Array2<f64>, weights: &Array1<f64>) -> Result<Array1<f64>, MethodError> {
+    fn rank(matrix: &Array2<f64>, weights: &Array1<f64>) -> Result<Array1<f64>, RankingError> {
         if weights.len() != matrix.ncols() {
-            return Err(MethodError::DimensionMismatch);
+            return Err(RankingError::DimensionMismatch);
         }
 
         if weights.iter().any(|x| *x == 0.0) {
-            return Err(MethodError::InvalidValue);
+            return Err(RankingError::InvalidValue);
         }
 
         let num_rows = matrix.nrows();
@@ -142,7 +142,7 @@ impl Rank for TOPSIS {
 ///
 /// # Returns
 ///
-/// * `Result<Array1<f64>, MethodError>` - A 1D array containing the preference values for each
+/// * `Result<Array1<f64>, RankingError>` - A 1D array containing the preference values for each
 /// alternative, or an error if the ranking process fails.
 ///
 /// # Example
@@ -160,9 +160,9 @@ impl Rank for TOPSIS {
 pub struct WeightedSum;
 
 impl Rank for WeightedSum {
-    fn rank(matrix: &Array2<f64>, weights: &Array1<f64>) -> Result<Array1<f64>, MethodError> {
+    fn rank(matrix: &Array2<f64>, weights: &Array1<f64>) -> Result<Array1<f64>, RankingError> {
         if weights.len() != matrix.ncols() {
-            return Err(MethodError::DimensionMismatch);
+            return Err(RankingError::DimensionMismatch);
         }
 
         let weighted_matrix = matrix * weights;

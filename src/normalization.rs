@@ -1,4 +1,4 @@
-use crate::errors::ValidationError;
+use crate::errors::NormalizationError;
 use ndarray::{Array1, Array2, Axis};
 
 /// A trait for normalizing decision matrices in Multiple-Criteria Decision Making (MCDM) problems.
@@ -42,10 +42,10 @@ use ndarray::{Array1, Array2, Axis};
 ///
 /// # Returns
 ///
-/// This method returns a `Result<Array2<f64>, ValidationError>`, where:
+/// This method returns a `Result<Array2<f64>, NormalizationError>`, where:
 ///
 /// - `Array2<f64>` is the normalized matrix with the same dimensions as the input matrix.
-/// - [ValidationError] is returned if the normalization process fails (e.g., due to a mismatch
+/// - [NormalizationError] is returned if the normalization process fails (e.g., due to a mismatch
 /// in the dimensions of `matrix` and `types` or invalid input values).
 pub trait Normalize {
     /// Normalizes the decision matrix incorporating the specified criteria types.
@@ -62,9 +62,12 @@ pub trait Normalize {
     ///
     /// # Returns
     ///
-    /// * `Result<Array2<f64>, ValidationError>` - A normalized decision matrix, or an error
+    /// * `Result<Array2<f64>, NormalizationError>` - A normalized decision matrix, or an error
     /// if the normalization fails (e.g., due to mismatched dimensions or invalid types).
-    fn normalize(matrix: &Array2<f64>, types: &Array1<i8>) -> Result<Array2<f64>, ValidationError>;
+    fn normalize(
+        matrix: &Array2<f64>,
+        types: &Array1<i8>,
+    ) -> Result<Array2<f64>, NormalizationError>;
 }
 
 /// Considers the maximum and minimum values of the given criteria for normalization.
@@ -81,10 +84,13 @@ pub trait Normalize {
 pub struct EnhancedAccuracy;
 
 impl Normalize for EnhancedAccuracy {
-    fn normalize(matrix: &Array2<f64>, types: &Array1<i8>) -> Result<Array2<f64>, ValidationError> {
+    fn normalize(
+        matrix: &Array2<f64>,
+        types: &Array1<i8>,
+    ) -> Result<Array2<f64>, NormalizationError> {
         // Check if the matrix is not empty
         if matrix.is_empty() {
-            return Err(ValidationError::EmptyMatrix);
+            return Err(NormalizationError::EmptyMatrix);
         }
 
         // Check that the criteria is valid (i.e., only -1 for cost or 1 for profit)
@@ -92,7 +98,7 @@ impl Normalize for EnhancedAccuracy {
 
         // Ensure enough criteria types for all criteria
         if types.len() != matrix.ncols() {
-            return Err(ValidationError::NormalizationCriteraTypeMismatch);
+            return Err(NormalizationError::NormalizationCriteraTypeMismatch);
         }
 
         // Initialize a matrix to store the normalized values
@@ -104,12 +110,12 @@ impl Normalize for EnhancedAccuracy {
                 .into_iter()
                 .cloned()
                 .reduce(f64::min)
-                .ok_or_else(|| ValidationError::NoMinimum)?;
+                .ok_or_else(|| NormalizationError::NoMinimum)?;
             let max_value = col
                 .into_iter()
                 .cloned()
                 .reduce(f64::max)
-                .ok_or_else(|| ValidationError::NoMaximum)?;
+                .ok_or_else(|| NormalizationError::NoMaximum)?;
 
             let col_sum = if types[i] == -1 {
                 col.mapv(|x| x - min_value).sum()
@@ -119,7 +125,7 @@ impl Normalize for EnhancedAccuracy {
 
             for (j, value) in col.iter().enumerate() {
                 if (*value).abs() < f64::EPSILON {
-                    return Err(ValidationError::ZeroRange);
+                    return Err(NormalizationError::ZeroRange);
                 }
 
                 if types[i] == -1 {
@@ -149,10 +155,13 @@ impl Normalize for EnhancedAccuracy {
 pub struct Linear;
 
 impl Normalize for Linear {
-    fn normalize(matrix: &Array2<f64>, types: &Array1<i8>) -> Result<Array2<f64>, ValidationError> {
+    fn normalize(
+        matrix: &Array2<f64>,
+        types: &Array1<i8>,
+    ) -> Result<Array2<f64>, NormalizationError> {
         // Check if the matrix is not empty
         if matrix.is_empty() {
-            return Err(ValidationError::EmptyMatrix);
+            return Err(NormalizationError::EmptyMatrix);
         }
 
         // Check that the criteria is valid (i.e., only -1 for cost or 1 for profit)
@@ -160,7 +169,7 @@ impl Normalize for Linear {
 
         // Ensure enough criteria types for all criteria
         if types.len() != matrix.ncols() {
-            return Err(ValidationError::NormalizationCriteraTypeMismatch);
+            return Err(NormalizationError::NormalizationCriteraTypeMismatch);
         }
 
         // Initialize a matrix to store the normalized values
@@ -172,21 +181,21 @@ impl Normalize for Linear {
                 .into_iter()
                 .cloned()
                 .reduce(f64::min)
-                .ok_or_else(|| ValidationError::NoMinimum)?;
+                .ok_or_else(|| NormalizationError::NoMinimum)?;
             let max_value = col
                 .into_iter()
                 .cloned()
                 .reduce(f64::max)
-                .ok_or_else(|| ValidationError::NoMaximum)?;
+                .ok_or_else(|| NormalizationError::NoMaximum)?;
 
             // Avoid division by zero
             if (max_value).abs() < f64::EPSILON {
-                return Err(ValidationError::ZeroRange);
+                return Err(NormalizationError::ZeroRange);
             }
 
             for (j, value) in col.iter().enumerate() {
                 if (*value).abs() < f64::EPSILON {
-                    return Err(ValidationError::ZeroRange);
+                    return Err(NormalizationError::ZeroRange);
                 }
 
                 if types[i] == -1 {
@@ -214,10 +223,13 @@ impl Normalize for Linear {
 pub struct Logarithmic;
 
 impl Normalize for Logarithmic {
-    fn normalize(matrix: &Array2<f64>, types: &Array1<i8>) -> Result<Array2<f64>, ValidationError> {
+    fn normalize(
+        matrix: &Array2<f64>,
+        types: &Array1<i8>,
+    ) -> Result<Array2<f64>, NormalizationError> {
         // Check if the matrix is not empty
         if matrix.is_empty() {
-            return Err(ValidationError::EmptyMatrix);
+            return Err(NormalizationError::EmptyMatrix);
         }
 
         // Check that the criteria is valid (i.e., only -1 for cost or 1 for profit)
@@ -225,7 +237,7 @@ impl Normalize for Logarithmic {
 
         // Ensure enough criteria types for all criteria
         if types.len() != matrix.ncols() {
-            return Err(ValidationError::NormalizationCriteraTypeMismatch);
+            return Err(NormalizationError::NormalizationCriteraTypeMismatch);
         }
 
         // Initialize a matrix to store the normalized values
@@ -237,7 +249,7 @@ impl Normalize for Logarithmic {
 
             for (j, value) in col.iter().enumerate() {
                 if (*value).abs() < f64::EPSILON {
-                    return Err(ValidationError::ZeroRange);
+                    return Err(NormalizationError::ZeroRange);
                 }
 
                 let ln_ratio = (*value).ln() / col_prod.ln();
@@ -270,10 +282,10 @@ impl Max {
     pub fn normalize(
         matrix: &Array2<f64>,
         types: &Array1<i8>,
-    ) -> Result<Array2<f64>, ValidationError> {
+    ) -> Result<Array2<f64>, NormalizationError> {
         // Check if the matrix is not empty
         if matrix.is_empty() {
-            return Err(ValidationError::EmptyMatrix);
+            return Err(NormalizationError::EmptyMatrix);
         }
 
         // Check that the criteria is valid (i.e., only -1 for cost or 1 for profit)
@@ -281,7 +293,7 @@ impl Max {
 
         // Ensure enough criteria types for all criteria
         if types.len() != matrix.ncols() {
-            return Err(ValidationError::NormalizationCriteraTypeMismatch);
+            return Err(NormalizationError::NormalizationCriteraTypeMismatch);
         }
 
         // Initialize a matrix to store the normalized values
@@ -293,11 +305,11 @@ impl Max {
                 .into_iter()
                 .cloned()
                 .reduce(f64::max)
-                .ok_or_else(|| ValidationError::NoMaximum)?;
+                .ok_or_else(|| NormalizationError::NoMaximum)?;
 
             // Avoid division by zero
             if (max_value).abs() < f64::EPSILON {
-                return Err(ValidationError::ZeroRange);
+                return Err(NormalizationError::ZeroRange);
             }
 
             for (j, value) in col.iter().enumerate() {
@@ -327,10 +339,13 @@ impl Max {
 pub struct MinMax;
 
 impl Normalize for MinMax {
-    fn normalize(matrix: &Array2<f64>, types: &Array1<i8>) -> Result<Array2<f64>, ValidationError> {
+    fn normalize(
+        matrix: &Array2<f64>,
+        types: &Array1<i8>,
+    ) -> Result<Array2<f64>, NormalizationError> {
         // Check if the matrix is not empty
         if matrix.is_empty() {
-            return Err(ValidationError::EmptyMatrix);
+            return Err(NormalizationError::EmptyMatrix);
         }
 
         // Check that the criteria is valid (i.e., only -1 for cost or 1 for profit)
@@ -338,7 +353,7 @@ impl Normalize for MinMax {
 
         // Ensure enough criteria types for all criteria
         if types.len() != matrix.ncols() {
-            return Err(ValidationError::NormalizationCriteraTypeMismatch);
+            return Err(NormalizationError::NormalizationCriteraTypeMismatch);
         }
 
         // Initialize a matrix to store the normalized values
@@ -350,16 +365,16 @@ impl Normalize for MinMax {
                 .into_iter()
                 .cloned()
                 .reduce(f64::min)
-                .ok_or_else(|| ValidationError::NoMinimum)?;
+                .ok_or_else(|| NormalizationError::NoMinimum)?;
             let max_value = col
                 .into_iter()
                 .cloned()
                 .reduce(f64::max)
-                .ok_or_else(|| ValidationError::NoMaximum)?;
+                .ok_or_else(|| NormalizationError::NoMaximum)?;
 
             // Avoid division by zero
             if (max_value - min_value).abs() < f64::EPSILON {
-                return Err(ValidationError::ZeroRange);
+                return Err(NormalizationError::ZeroRange);
             }
 
             for (j, value) in col.iter().enumerate() {
@@ -392,10 +407,10 @@ impl NonLinear {
     pub fn normalize(
         matrix: &Array2<f64>,
         types: &Array1<i8>,
-    ) -> Result<Array2<f64>, ValidationError> {
+    ) -> Result<Array2<f64>, NormalizationError> {
         // Check if the matrix is not empty
         if matrix.is_empty() {
-            return Err(ValidationError::EmptyMatrix);
+            return Err(NormalizationError::EmptyMatrix);
         }
 
         // Check that the criteria is valid (i.e., only -1 for cost or 1 for profit)
@@ -403,7 +418,7 @@ impl NonLinear {
 
         // Ensure enough criteria types for all criteria
         if types.len() != matrix.ncols() {
-            return Err(ValidationError::NormalizationCriteraTypeMismatch);
+            return Err(NormalizationError::NormalizationCriteraTypeMismatch);
         }
 
         // Initialize a matrix to store the normalized values
@@ -415,21 +430,21 @@ impl NonLinear {
                 .into_iter()
                 .cloned()
                 .reduce(f64::min)
-                .ok_or_else(|| ValidationError::NoMinimum)?;
+                .ok_or_else(|| NormalizationError::NoMinimum)?;
             let max_value = col
                 .into_iter()
                 .cloned()
                 .reduce(f64::max)
-                .ok_or_else(|| ValidationError::NoMaximum)?;
+                .ok_or_else(|| NormalizationError::NoMaximum)?;
 
             // Avoid division by zero
             if (max_value - min_value).abs() < f64::EPSILON {
-                return Err(ValidationError::ZeroRange);
+                return Err(NormalizationError::ZeroRange);
             }
 
             for (j, value) in col.iter().enumerate() {
                 if (*value).abs() < f64::EPSILON {
-                    return Err(ValidationError::ZeroRange);
+                    return Err(NormalizationError::ZeroRange);
                 }
 
                 if types[i] == -1 {
@@ -457,10 +472,13 @@ impl NonLinear {
 pub struct Sum;
 
 impl Normalize for Sum {
-    fn normalize(matrix: &Array2<f64>, types: &Array1<i8>) -> Result<Array2<f64>, ValidationError> {
+    fn normalize(
+        matrix: &Array2<f64>,
+        types: &Array1<i8>,
+    ) -> Result<Array2<f64>, NormalizationError> {
         // Check if the matrix is not empty
         if matrix.is_empty() {
-            return Err(ValidationError::EmptyMatrix);
+            return Err(NormalizationError::EmptyMatrix);
         }
 
         // Check that the criteria is valid (i.e., only -1 for cost or 1 for profit)
@@ -468,7 +486,7 @@ impl Normalize for Sum {
 
         // Ensure enough criteria types for all criteria
         if types.len() != matrix.ncols() {
-            return Err(ValidationError::NormalizationCriteraTypeMismatch);
+            return Err(NormalizationError::NormalizationCriteraTypeMismatch);
         }
 
         // Initialize a matrix to store the normalized values
@@ -484,7 +502,7 @@ impl Normalize for Sum {
 
             for (j, value) in col.iter().enumerate() {
                 if (*value).abs() < f64::EPSILON {
-                    return Err(ValidationError::ZeroRange);
+                    return Err(NormalizationError::ZeroRange);
                 }
 
                 if types[i] == -1 {
@@ -512,10 +530,13 @@ impl Normalize for Sum {
 pub struct Vector;
 
 impl Normalize for Vector {
-    fn normalize(matrix: &Array2<f64>, types: &Array1<i8>) -> Result<Array2<f64>, ValidationError> {
+    fn normalize(
+        matrix: &Array2<f64>,
+        types: &Array1<i8>,
+    ) -> Result<Array2<f64>, NormalizationError> {
         // Check if the matrix is not empty
         if matrix.is_empty() {
-            return Err(ValidationError::EmptyMatrix);
+            return Err(NormalizationError::EmptyMatrix);
         }
 
         // Check that the criteria is valid (i.e., only -1 for cost or 1 for profit)
@@ -523,7 +544,7 @@ impl Normalize for Vector {
 
         // Ensure enough criteria types for all criteria
         if types.len() != matrix.ncols() {
-            return Err(ValidationError::NormalizationCriteraTypeMismatch);
+            return Err(NormalizationError::NormalizationCriteraTypeMismatch);
         }
 
         // Initialize a matrix to store the normalized values
@@ -535,7 +556,7 @@ impl Normalize for Vector {
 
             for (j, value) in col.iter().enumerate() {
                 if (*value).abs() < f64::EPSILON {
-                    return Err(ValidationError::ZeroRange);
+                    return Err(NormalizationError::ZeroRange);
                 }
 
                 if types[i] == -1 {
@@ -567,10 +588,10 @@ impl ZavadskasTurskis {
     pub fn normalize(
         matrix: &Array2<f64>,
         types: &Array1<i8>,
-    ) -> Result<Array2<f64>, ValidationError> {
+    ) -> Result<Array2<f64>, NormalizationError> {
         // Check if the matrix is not empty
         if matrix.is_empty() {
-            return Err(ValidationError::EmptyMatrix);
+            return Err(NormalizationError::EmptyMatrix);
         }
 
         // Check that the criteria is valid (i.e., only -1 for cost or 1 for profit)
@@ -578,7 +599,7 @@ impl ZavadskasTurskis {
 
         // Ensure enough criteria types for all criteria
         if types.len() != matrix.ncols() {
-            return Err(ValidationError::NormalizationCriteraTypeMismatch);
+            return Err(NormalizationError::NormalizationCriteraTypeMismatch);
         }
 
         // Initialize a matrix to store the normalized values
@@ -590,16 +611,16 @@ impl ZavadskasTurskis {
                 .into_iter()
                 .cloned()
                 .reduce(f64::min)
-                .ok_or_else(|| ValidationError::NoMinimum)?;
+                .ok_or_else(|| NormalizationError::NoMinimum)?;
             let max_value = col
                 .into_iter()
                 .cloned()
                 .reduce(f64::max)
-                .ok_or_else(|| ValidationError::NoMaximum)?;
+                .ok_or_else(|| NormalizationError::NoMaximum)?;
 
             // Avoid division by zero
             if (max_value).abs() < f64::EPSILON || (min_value).abs() < f64::EPSILON {
-                return Err(ValidationError::ZeroRange);
+                return Err(NormalizationError::ZeroRange);
             }
 
             for (j, value) in col.iter().enumerate() {
@@ -617,11 +638,11 @@ impl ZavadskasTurskis {
 
 /// Criteria types can only represent profit (1) or costs (-1). This function checks the validity of
 /// the criteria types.
-fn check_criteria_type_values(array: &Array1<i8>) -> Result<(), ValidationError> {
+fn check_criteria_type_values(array: &Array1<i8>) -> Result<(), NormalizationError> {
     // NOTE: Might be worth making the type an enum of Postive and Negative instead of -1,1
     for &val in array.iter() {
         if val != -1 && val != 1 {
-            return Err(ValidationError::InvalidValue);
+            return Err(NormalizationError::InvalidValue);
         }
     }
     Ok(())

@@ -1,5 +1,6 @@
+use crate::errors::WeightingError;
+use crate::normalization::Normalize;
 use crate::normalization::Sum;
-use crate::{errors::ValidationError, normalization::Normalize};
 use ndarray::{Array1, Array2, Axis};
 
 /// A trait for calculating weights in Multiple-Criteria Decision Making (MCDM) problems.
@@ -37,10 +38,10 @@ use ndarray::{Array1, Array2, Axis};
 ///
 /// # Returns
 ///
-/// This method returns a `Result<Array1<f64>, ValidationError>`, where:
+/// This method returns a `Result<Array1<f64>, WeightingError>`, where:
 ///
 /// * `Array1<f64>` is a 1D array of weights corresponding to each criterion.
-/// * `ValidationError` is returned if an error occurs while calculating the weights (e.g., an
+/// * `WeightingError` is returned if an error occurs while calculating the weights (e.g., an
 /// invalid matrix shape or calculation failure).
 pub trait Weight {
     /// Calculate a weight vector for the criteria in the decision matrix.
@@ -56,9 +57,9 @@ pub trait Weight {
     ///
     /// # Returns
     ///
-    /// * `Result<Array1<f64>, ValidationError>` - A vector of weights for each criterion, or error
+    /// * `Result<Array1<f64>, WeightingError>` - A vector of weights for each criterion, or error
     /// if the weighting calculation fails.
-    fn weight(matrix: &Array2<f64>) -> Result<Array1<f64>, ValidationError>;
+    fn weight(matrix: &Array2<f64>) -> Result<Array1<f64>, WeightingError>;
 }
 
 /// A weighting method that assigns equal weights to all criteria in the decision matrix.
@@ -80,15 +81,15 @@ pub trait Weight {
 /// # Returns
 ///
 /// This method returns an array of equal weights for each criterion. If the matrix has no criteria
-/// (i.e., zero columns), it returns a [ValidationError::ZeroRange] error.
+/// (i.e., zero columns), it returns a [WeightingError::ZeroRange] error.
 pub struct Equal;
 
 impl Weight for Equal {
-    fn weight(matrix: &Array2<f64>) -> Result<Array1<f64>, ValidationError> {
+    fn weight(matrix: &Array2<f64>) -> Result<Array1<f64>, WeightingError> {
         let num_criteria = matrix.ncols();
 
         if num_criteria == 0 {
-            return Err(ValidationError::ZeroRange);
+            return Err(WeightingError::ZeroRange);
         }
 
         let weight = 1.0 / num_criteria as f64;
@@ -120,11 +121,11 @@ impl Weight for Equal {
 /// # Returns
 ///
 /// This method returns a `Result` containing an array of entropy-based weights for each
-/// criterion. On an error, this method returns [ValidationError].
+/// criterion. On an error, this method returns [WeightingError].
 pub struct Entropy;
 
 impl Weight for Entropy {
-    fn weight(matrix: &Array2<f64>) -> Result<Array1<f64>, ValidationError> {
+    fn weight(matrix: &Array2<f64>) -> Result<Array1<f64>, WeightingError> {
         let (num_alternatives, num_criteria) = matrix.dim();
 
         let types = Array1::ones(num_criteria);
@@ -166,11 +167,11 @@ impl Weight for Entropy {
 /// # Returns
 ///
 /// This method returns a `Result` containing an array of entropy-based weights for each
-/// criterion. On an error, this method returns [ValidationError].
+/// criterion. On an error, this method returns [WeightingError].
 pub struct StandardDeviation;
 
 impl Weight for StandardDeviation {
-    fn weight(matrix: &Array2<f64>) -> Result<Array1<f64>, ValidationError> {
+    fn weight(matrix: &Array2<f64>) -> Result<Array1<f64>, WeightingError> {
         // Compute the standard deviation across columns (criteria).
         // NOTE: The Axis(0) here confused me for a long time, so I'm adding this note in hopes that
         // future me doesn't have to re-research what's going on here. Unlike `ndarray`'s
