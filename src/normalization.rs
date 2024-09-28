@@ -110,12 +110,12 @@ impl Normalize for EnhancedAccuracy {
                 .into_iter()
                 .cloned()
                 .reduce(f64::min)
-                .ok_or_else(|| NormalizationError::NoMinimum)?;
+                .ok_or(NormalizationError::NoMinimum)?;
             let max_value = col
                 .into_iter()
                 .cloned()
                 .reduce(f64::max)
-                .ok_or_else(|| NormalizationError::NoMaximum)?;
+                .ok_or(NormalizationError::NoMaximum)?;
 
             let col_sum = if types[i] == -1 {
                 col.mapv(|x| x - min_value).sum()
@@ -181,12 +181,12 @@ impl Normalize for Linear {
                 .into_iter()
                 .cloned()
                 .reduce(f64::min)
-                .ok_or_else(|| NormalizationError::NoMinimum)?;
+                .ok_or(NormalizationError::NoMinimum)?;
             let max_value = col
                 .into_iter()
                 .cloned()
                 .reduce(f64::max)
-                .ok_or_else(|| NormalizationError::NoMaximum)?;
+                .ok_or(NormalizationError::NoMaximum)?;
 
             // Avoid division by zero
             if (max_value).abs() < f64::EPSILON {
@@ -305,7 +305,7 @@ impl Max {
                 .into_iter()
                 .cloned()
                 .reduce(f64::max)
-                .ok_or_else(|| NormalizationError::NoMaximum)?;
+                .ok_or(NormalizationError::NoMaximum)?;
 
             // Avoid division by zero
             if (max_value).abs() < f64::EPSILON {
@@ -365,12 +365,12 @@ impl Normalize for MinMax {
                 .into_iter()
                 .cloned()
                 .reduce(f64::min)
-                .ok_or_else(|| NormalizationError::NoMinimum)?;
+                .ok_or(NormalizationError::NoMinimum)?;
             let max_value = col
                 .into_iter()
                 .cloned()
                 .reduce(f64::max)
-                .ok_or_else(|| NormalizationError::NoMaximum)?;
+                .ok_or(NormalizationError::NoMaximum)?;
 
             // Avoid division by zero
             if (max_value - min_value).abs() < f64::EPSILON {
@@ -430,12 +430,12 @@ impl NonLinear {
                 .into_iter()
                 .cloned()
                 .reduce(f64::min)
-                .ok_or_else(|| NormalizationError::NoMinimum)?;
+                .ok_or(NormalizationError::NoMinimum)?;
             let max_value = col
                 .into_iter()
                 .cloned()
                 .reduce(f64::max)
-                .ok_or_else(|| NormalizationError::NoMaximum)?;
+                .ok_or(NormalizationError::NoMaximum)?;
 
             // Avoid division by zero
             if (max_value - min_value).abs() < f64::EPSILON {
@@ -611,12 +611,12 @@ impl ZavadskasTurskis {
                 .into_iter()
                 .cloned()
                 .reduce(f64::min)
-                .ok_or_else(|| NormalizationError::NoMinimum)?;
+                .ok_or(NormalizationError::NoMinimum)?;
             let max_value = col
                 .into_iter()
                 .cloned()
                 .reduce(f64::max)
-                .ok_or_else(|| NormalizationError::NoMaximum)?;
+                .ok_or(NormalizationError::NoMaximum)?;
 
             // Avoid division by zero
             if (max_value).abs() < f64::EPSILON || (min_value).abs() < f64::EPSILON {
