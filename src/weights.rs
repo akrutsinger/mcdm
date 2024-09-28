@@ -34,7 +34,7 @@ use ndarray::{Array1, Array2, Axis};
 /// # Arguments
 ///
 /// * `matrix` - A reference to a 2D decision matrix (`Array2<f64>`), where rows represent
-/// alternatives and columns represent criteria.
+///   alternatives and columns represent criteria.
 ///
 /// # Returns
 ///
@@ -42,7 +42,7 @@ use ndarray::{Array1, Array2, Axis};
 ///
 /// * `Array1<f64>` is a 1D array of weights corresponding to each criterion.
 /// * `WeightingError` is returned if an error occurs while calculating the weights (e.g., an
-/// invalid matrix shape or calculation failure).
+///   invalid matrix shape or calculation failure).
 pub trait Weight {
     /// Calculate a weight vector for the criteria in the decision matrix.
     ///
@@ -53,12 +53,12 @@ pub trait Weight {
     /// # Arguments
     ///
     /// * `matrix` - A 2d decision matrix (`Array2<f64>`) where rows represent alternative and
-    /// columns represent criteria.
+    ///   columns represent criteria.
     ///
     /// # Returns
     ///
     /// * `Result<Array1<f64>, WeightingError>` - A vector of weights for each criterion, or error
-    /// if the weighting calculation fails.
+    ///   if the weighting calculation fails.
     fn weight(matrix: &Array2<f64>) -> Result<Array1<f64>, WeightingError>;
 }
 

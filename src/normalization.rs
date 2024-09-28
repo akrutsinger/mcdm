@@ -36,9 +36,9 @@ use ndarray::{Array1, Array2, Axis};
 /// # Arguments
 ///
 /// * `matrix` - A 2D decision matrix (`Array2<f64>`), where each row represents an alternative and
-/// each column represents a criterion.
+///   each column represents a criterion.
 /// * `types` - A 1D array (`Array1<i8>`) indicating the type of each criterion (either -1 for
-/// cost or 1 for profit). The length of this array must match the number of columns in `matrix`.
+///   cost or 1 for profit). The length of this array must match the number of columns in `matrix`.
 ///
 /// # Returns
 ///
@@ -46,7 +46,7 @@ use ndarray::{Array1, Array2, Axis};
 ///
 /// - `Array2<f64>` is the normalized matrix with the same dimensions as the input matrix.
 /// - [NormalizationError] is returned if the normalization process fails (e.g., due to a mismatch
-/// in the dimensions of `matrix` and `types` or invalid input values).
+///   in the dimensions of `matrix` and `types` or invalid input values).
 pub trait Normalize {
     /// Normalizes the decision matrix incorporating the specified criteria types.
     ///
@@ -57,13 +57,13 @@ pub trait Normalize {
     /// # Arguments
     ///
     /// * `matrix` - The decision matrix to normalize. This should be a 2D array where rows
-    /// represent alternatives, and columns represent criteria.
+    ///   represent alternatives, and columns represent criteria.
     /// * `types` - A 1D array indicating the type of each criterion (`-1` for cost, `1` for profit).
     ///
     /// # Returns
     ///
     /// * `Result<Array2<f64>, NormalizationError>` - A normalized decision matrix, or an error
-    /// if the normalization fails (e.g., due to mismatched dimensions or invalid types).
+    ///   if the normalization fails (e.g., due to mismatched dimensions or invalid types).
     fn normalize(
         matrix: &Array2<f64>,
         types: &Array1<i8>,

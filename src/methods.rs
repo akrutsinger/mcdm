@@ -28,19 +28,19 @@ use ndarray::{Array1, Array2, Axis};
 /// # Arguments
 ///
 /// * `matrix` - A normalized decision matrix (`Array2<f64>`), where rows represent alternatives
-/// and columns represent criteria. This matrix must already be normalized, as the ranking process
-/// assumes that the values are comparable across criteria.
+///   and columns represent criteria. This matrix must already be normalized, as the ranking process
+///   assumes that the values are comparable across criteria.
 /// * `weights` - A 1D array (`Array1<f64>`) representing the relative importance of each criterion.
-/// The length of this array must match the number of columns in `matrix`.
+///   The length of this array must match the number of columns in `matrix`.
 ///
 /// # Returns
 ///
 /// This method returns a `Result<Array1<f64>, RankingError>`, where:
 ///
 /// - `Array1<f64>` is a 1D array containing the preference values for each alternative. Higher
-/// values indicate better alternatives.
+///   values indicate better alternatives.
 /// - [RankingError] is returned if the ranking process fails (e.g., due to a mismatch between the
-/// dimensions of `matrix` and `weights`, or other calculation errors).
+///   dimensions of `matrix` and `weights`, or other calculation errors).
 pub trait Rank {
     /// Ranks the alternatives in a normalized decision matrix based on the provided criteria
     /// weights.
@@ -52,13 +52,13 @@ pub trait Rank {
     /// # Arguments
     ///
     /// * `matrix` - A normalized decision matrix where each row represents an alternative and each
-    /// column represents a criterion.
+    ///   column represents a criterion.
     /// * `weights` - A 1D array of weights corresponding to the relative importance of each criterion.
     ///
     /// # Returns
     ///
     /// * `Result<Array1<f64>, RankingError>` - A 1D array of preference values, or an error if the
-    /// ranking process fails.
+    ///   ranking process fails.
     fn rank(matrix: &Array2<f64>, weights: &Array1<f64>) -> Result<Array1<f64>, RankingError>;
 }
 
@@ -81,9 +81,9 @@ pub trait Rank {
 /// use ndarray::{array, Array2};
 ///
 /// let matrix = array![
-/// 	[0.1, 0.1, 0.1, 0.1],
-/// 	[0.2, 0.2, 0.2, 0.2],
-/// 	[0.3, 0.3, 0.3, 0.3]
+///     [0.1, 0.1, 0.1, 0.1],
+///     [0.2, 0.2, 0.2, 0.2],
+///     [0.3, 0.3, 0.3, 0.3]
 /// ];
 /// let weights = array![0.25, 0.25, 0.25, 0.25];
 /// let ranking = TOPSIS::rank(&matrix, &weights).unwrap();
@@ -137,13 +137,13 @@ impl Rank for TOPSIS {
 /// # Arguments
 ///
 /// * `matrix` - A normalized decision matrix where each row represents an alternative and each
-/// column represents a criterion.
+///   column represents a criterion.
 /// * `weights` - A 1D array of weights corresponding to the relative importance of each criterion.
 ///
 /// # Returns
 ///
 /// * `Result<Array1<f64>, RankingError>` - A 1D array containing the preference values for each
-/// alternative, or an error if the ranking process fails.
+///   alternative, or an error if the ranking process fails.
 ///
 /// # Example
 ///
