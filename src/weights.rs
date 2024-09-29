@@ -170,13 +170,14 @@ impl Weight for Entropy {
 /// # Example
 ///
 /// ```rust
-/// use mcdm::normalization::LinearNormalization;
-/// use mcdm::weighting::MEREC;
+/// use mcdm::normalization::{Linear, Normalize};
+/// use mcdm::weights::{Merec, Weight};
 /// use ndarray::array;
 ///
 /// let matrix = array![[0.2, 0.8], [0.5, 0.5], [0.9, 0.1]];
-/// let normalized_matrix = LinearNormalization::normalize(&matrix, &criteria_types).unwrap();
-/// let weights = MEREC::weight(&normalized_matrix).unwrap();
+/// let criteria_types = array![-1, 1];  // -1 for cost, 1 for profit
+/// let normalized_matrix = Linear::normalize(&matrix, &criteria_types).unwrap();
+/// let weights = Merec::weight(&normalized_matrix).unwrap();
 /// ```
 pub struct Merec;
 
