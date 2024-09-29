@@ -147,6 +147,94 @@ impl Weight for Entropy {
     }
 }
 
+/// Calculate weights using the MEREC method.
+///
+/// The Method Based on the Removal Effects of Criiteria (MEREC) method requires that the decision
+/// matrix is normalized using a specific linear normalization technique *before* calling this
+/// function. Failure to do so may result in incorrect weights.
+///
+/// # ⚠️ **Caution** ⚠️
+/// Ensure that the decision matrix is normalized using the [Linear](crate::normalization::Linear)
+/// normalization method applying the MEREC weighting method. This method assumes the matrix has
+/// already been normalized.
+///
+/// # Arguments
+///
+/// * `matrix` - A normalized decision matrix.
+///
+/// # Returns
+///
+/// * `Result<Array1<f64>, WeightingError>` - A vector of weights for each criterion, or a
+///   [WeightingError] if the computation fails.
+///
+/// # Example
+///
+/// ```rust
+/// use mcdm::normalization::LinearNormalization;
+/// use mcdm::weighting::MEREC;
+/// use ndarray::array;
+///
+/// let matrix = array![[0.2, 0.8], [0.5, 0.5], [0.9, 0.1]];
+/// let normalized_matrix = LinearNormalization::normalize(&matrix, &criteria_types).unwrap();
+/// let weights = MEREC::weight(&normalized_matrix).unwrap();
+/// ```
+pub struct Merec;
+
+impl Weight for Merec {
+    fn weight(matrix: &Array2<f64>) -> Result<Array1<f64>, WeightingError> {
+        let (n, m) = matrix.dim();
+
+        if n == 0 || m == 0 {
+            return Err(WeightingError::EmptyMatrix);
+        }
+
+        // Step 1: Calculate S
+        let log_matrix = matrix.mapv(|x| (x + f64::EPSILON).ln().abs()); // Add a small value (EPSILON) to avoid log(0)
+        let mean_reference_entropy =
+            (log_matrix.sum_axis(Axis(1)) / m as f64).mapv(|x| (1.0 + x).ln());
+
+        // Step 2: Calculate S_prim by excluding each column in turn
+        let mut modified_entropy = Array2::<f64>::zeros((n, m));
+
+        for j in 0..m {
+            // Create ex_matrix by removing the j-th column from the original matrix
+            let ex_matrix = {
+                let mut ex_matrix = Array2::zeros((n, m - 1));
+                for (i, row) in matrix.axis_iter(Axis(0)).enumerate() {
+                    let mut ex_row = ex_matrix.row_mut(i);
+                    ex_row.assign(
+                        &row.iter()
+                            .enumerate()
+                            .filter(|&(idx, _)| idx != j)
+                            .map(|(_, &v)| v)
+                            .collect::<Array1<f64>>(),
+                    );
+                }
+                ex_matrix
+            };
+
+            let ex_log_matrix = ex_matrix.mapv(|x| (x + f64::EPSILON).ln().abs());
+            let sum_ex_matrix =
+                (ex_log_matrix.sum_axis(Axis(1)) / m as f64).mapv(|x| (1.0 + x).ln());
+
+            modified_entropy.column_mut(j).assign(&sum_ex_matrix);
+        }
+
+        // Step 3: Calculate E as the absolute difference between modified_entropy and mean_reference_entropy
+        let mut criterion_information_loss = Array1::<f64>::zeros(m);
+        for j in 0..m {
+            let diff = modified_entropy.column(j).to_owned() - &mean_reference_entropy;
+            criterion_information_loss[j] = diff.mapv(f64::abs).sum();
+        }
+
+        // Step 4: Normalize the E vector to get the final weights
+        let sum_e = criterion_information_loss.sum();
+        let weights = criterion_information_loss.mapv(|e| e / sum_e);
+
+        Ok(weights)
+    }
+}
+
 /// Calculates the weights for the given decision matrix using standard deviation.
 ///
 /// First calculate the standard deviation measure for all of the critera using:
