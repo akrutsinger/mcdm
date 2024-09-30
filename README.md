@@ -60,15 +60,18 @@ Here’s an example demonstrating how to use the mcdm library for decision-makin
 
 ```rust
 use mcdm::{
-    errors::McdmError, methods::TOPSIS, normalization::MinMax,
-    weights::Equal,
+    errors::McdmError,
+    methods::{Rank, TOPSIS},
+    normalization::{MinMax, Normalize},
+    weights::{Equal, Weight},
+    CriteriaType,
 };
-use ndarray::{array, Array1, Array2};
+use ndarray::array;
 
 fn main() -> Result<(), McdmError> {
     // Define the decision matrix (alternatives x criteria)
-    let alternatives: Array2<f64> = array![[4.0, 7.0, 8.0], [2.0, 9.0, 6.0], [3.0, 6.0, 9.0]];
-    let criteria_types: Array1<i8> = array![-1, 1, 1];
+    let alternatives = array![[4.0, 7.0, 8.0], [2.0, 9.0, 6.0], [3.0, 6.0, 9.0]];
+    let criteria_types = CriteriaType::from_vec(vec![-1, 1, 1])?;
     // Apply normalization using Min-Max
     let normalized_matrix = MinMax::normalize(&alternatives, &criteria_types)?;
     // Alternatively, use equal weights

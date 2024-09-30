@@ -1,5 +1,6 @@
 use crate::errors::NormalizationError;
-use ndarray::{Array1, Array2, Axis};
+use crate::CriteriaType;
+use ndarray::{Array2, Axis};
 
 /// A trait for normalizing decision matrices in Multiple-Criteria Decision Making (MCDM) problems.
 ///
@@ -13,22 +14,22 @@ use ndarray::{Array1, Array2, Axis};
 /// The normalization process requires an array of criteria types (`types`) to indicate whether each
 /// criterion is a **profit** or a **cost** criterion:
 ///
-/// - **Profit Criterion (1)**: Higher values are preferred.
-/// - **Cost Criterion (-1)**: Lower values are preferred.
+/// - [CriteriaType::Profit]: Higher values are preferred.
+/// - [CriteriaType::Cost]: Lower values are preferred.
 ///
 /// The `types` array must have the same length as the number of columns in the decision matrix.
-/// Each value in the array can only be -1 (for cost criteria) or 1 (for profit criteria).
 ///
 /// # Example
 ///
 /// Here's an example of normalizing a decision matrix:
 ///
 /// ```rust
+/// use mcdm::CriteriaType;
 /// use mcdm::normalization::{MinMax, Normalize};
 /// use ndarray::{array, Array1};
 ///
 /// let decision_matrix = array![[4.0, 7.0, 8.0], [2.0, 9.0, 6.0], [3.0, 6.0, 9.0]];
-/// let criteria_types = array![-1, 1, 1];  // -1 for cost, 1 for profit
+/// let criteria_types = CriteriaType::from_vec(vec![-1, 1, 1]).unwrap();
 /// let normalized_matrix = MinMax::normalize(&decision_matrix, &criteria_types).unwrap();
 /// println!("{:?}", normalized_matrix);
 /// ```
@@ -37,8 +38,9 @@ use ndarray::{Array1, Array2, Axis};
 ///
 /// * `matrix` - A 2D decision matrix (`Array2<f64>`), where each row represents an alternative and
 ///   each column represents a criterion.
-/// * `types` - A 1D array (`Array1<i8>`) indicating the type of each criterion (either -1 for
-///   cost or 1 for profit). The length of this array must match the number of columns in `matrix`.
+/// * `types` - An array slice of &[[crate::CriteriaType]] indicating the [CriteriaType::Cost] or
+///   [CriteriaType::Profit] of each criterion.
+///   The length of this array must match the number of columns in `matrix`.
 ///
 /// # Returns
 ///
@@ -58,7 +60,7 @@ pub trait Normalize {
     ///
     /// * `matrix` - The decision matrix to normalize. This should be a 2D array where rows
     ///   represent alternatives, and columns represent criteria.
-    /// * `types` - A 1D array indicating the type of each criterion (`-1` for cost, `1` for profit).
+    /// * `types` - An array slice indicating if each criterion is a profit or cost.
     ///
     /// # Returns
     ///
@@ -66,7 +68,7 @@ pub trait Normalize {
     ///   if the normalization fails (e.g., due to mismatched dimensions or invalid types).
     fn normalize(
         matrix: &Array2<f64>,
-        types: &Array1<i8>,
+        types: &[CriteriaType],
     ) -> Result<Array2<f64>, NormalizationError>;
 }
 
@@ -86,15 +88,12 @@ pub struct EnhancedAccuracy;
 impl Normalize for EnhancedAccuracy {
     fn normalize(
         matrix: &Array2<f64>,
-        types: &Array1<i8>,
+        types: &[CriteriaType],
     ) -> Result<Array2<f64>, NormalizationError> {
         // Check if the matrix is not empty
         if matrix.is_empty() {
             return Err(NormalizationError::EmptyMatrix);
         }
-
-        // Check that the criteria is valid (i.e., only -1 for cost or 1 for profit)
-        check_criteria_type_values(types)?;
 
         // Ensure enough criteria types for all criteria
         if types.len() != matrix.ncols() {
@@ -117,10 +116,9 @@ impl Normalize for EnhancedAccuracy {
                 .reduce(f64::max)
                 .ok_or(NormalizationError::NoMaximum)?;
 
-            let col_sum = if types[i] == -1 {
-                col.mapv(|x| x - min_value).sum()
-            } else {
-                col.mapv(|x| max_value - x).sum()
+            let col_sum = match types[i] {
+                CriteriaType::Cost => col.mapv(|x| max_value - x).sum(),
+                CriteriaType::Profit => col.mapv(|x| x - min_value).sum(),
             };
 
             for (j, value) in col.iter().enumerate() {
@@ -128,10 +126,9 @@ impl Normalize for EnhancedAccuracy {
                     return Err(NormalizationError::ZeroRange);
                 }
 
-                if types[i] == -1 {
-                    normalized_matrix[[j, i]] = (*value - min_value) / col_sum;
-                } else if types[i] == 1 {
-                    normalized_matrix[[j, i]] = (max_value - *value) / col_sum;
+                normalized_matrix[[j, i]] = match types[i] {
+                    CriteriaType::Cost => (*value - min_value) / col_sum,
+                    CriteriaType::Profit => (max_value - *value) / col_sum,
                 };
             }
         }
@@ -157,15 +154,12 @@ pub struct Linear;
 impl Normalize for Linear {
     fn normalize(
         matrix: &Array2<f64>,
-        types: &Array1<i8>,
+        types: &[CriteriaType],
     ) -> Result<Array2<f64>, NormalizationError> {
         // Check if the matrix is not empty
         if matrix.is_empty() {
             return Err(NormalizationError::EmptyMatrix);
         }
-
-        // Check that the criteria is valid (i.e., only -1 for cost or 1 for profit)
-        check_criteria_type_values(types)?;
 
         // Ensure enough criteria types for all criteria
         if types.len() != matrix.ncols() {
@@ -198,11 +192,10 @@ impl Normalize for Linear {
                     return Err(NormalizationError::ZeroRange);
                 }
 
-                if types[i] == -1 {
-                    normalized_matrix[[j, i]] = min_value / *value;
-                } else if types[i] == 1 {
-                    normalized_matrix[[j, i]] = *value / max_value;
-                }
+                normalized_matrix[[j, i]] = match types[i] {
+                    CriteriaType::Cost => min_value / *value,
+                    CriteriaType::Profit => *value / max_value,
+                };
             }
         }
 
@@ -225,15 +218,12 @@ pub struct Logarithmic;
 impl Normalize for Logarithmic {
     fn normalize(
         matrix: &Array2<f64>,
-        types: &Array1<i8>,
+        types: &[CriteriaType],
     ) -> Result<Array2<f64>, NormalizationError> {
         // Check if the matrix is not empty
         if matrix.is_empty() {
             return Err(NormalizationError::EmptyMatrix);
         }
-
-        // Check that the criteria is valid (i.e., only -1 for cost or 1 for profit)
-        check_criteria_type_values(types)?;
 
         // Ensure enough criteria types for all criteria
         if types.len() != matrix.ncols() {
@@ -254,10 +244,9 @@ impl Normalize for Logarithmic {
 
                 let ln_ratio = (*value).ln() / col_prod.ln();
 
-                if types[i] == -1 {
-                    normalized_matrix[[j, i]] = (1.0 - ln_ratio) / (matrix.ncols() as f64 - 1.0);
-                } else if types[i] == 1 {
-                    normalized_matrix[[j, i]] = ln_ratio;
+                normalized_matrix[[j, i]] = match types[i] {
+                    CriteriaType::Cost => (1.0 - ln_ratio) / (matrix.ncols() as f64 - 1.0),
+                    CriteriaType::Profit => ln_ratio,
                 };
             }
         }
@@ -278,18 +267,15 @@ impl Normalize for Logarithmic {
 /// (column), and $\max_j$ is the maximum criterion value in the decision matrix.
 pub struct Max;
 
-impl Max {
-    pub fn normalize(
+impl Normalize for Max {
+    fn normalize(
         matrix: &Array2<f64>,
-        types: &Array1<i8>,
+        types: &[CriteriaType],
     ) -> Result<Array2<f64>, NormalizationError> {
         // Check if the matrix is not empty
         if matrix.is_empty() {
             return Err(NormalizationError::EmptyMatrix);
         }
-
-        // Check that the criteria is valid (i.e., only -1 for cost or 1 for profit)
-        check_criteria_type_values(types)?;
 
         // Ensure enough criteria types for all criteria
         if types.len() != matrix.ncols() {
@@ -313,11 +299,10 @@ impl Max {
             }
 
             for (j, value) in col.iter().enumerate() {
-                if types[i] == -1 {
-                    normalized_matrix[[j, i]] = 1.0 - (*value / (max_value));
-                } else if types[i] == 1 {
-                    normalized_matrix[[j, i]] = *value / max_value;
-                }
+                normalized_matrix[[j, i]] = match types[i] {
+                    CriteriaType::Cost => 1.0 - (*value / max_value),
+                    CriteriaType::Profit => *value / max_value,
+                };
             }
         }
 
@@ -341,15 +326,12 @@ pub struct MinMax;
 impl Normalize for MinMax {
     fn normalize(
         matrix: &Array2<f64>,
-        types: &Array1<i8>,
+        types: &[CriteriaType],
     ) -> Result<Array2<f64>, NormalizationError> {
         // Check if the matrix is not empty
         if matrix.is_empty() {
             return Err(NormalizationError::EmptyMatrix);
         }
-
-        // Check that the criteria is valid (i.e., only -1 for cost or 1 for profit)
-        check_criteria_type_values(types)?;
 
         // Ensure enough criteria types for all criteria
         if types.len() != matrix.ncols() {
@@ -378,11 +360,10 @@ impl Normalize for MinMax {
             }
 
             for (j, value) in col.iter().enumerate() {
-                if types[i] == -1 {
-                    normalized_matrix[[j, i]] = (max_value - *value) / (max_value - min_value);
-                } else if types[i] == 1 {
-                    normalized_matrix[[j, i]] = (*value - min_value) / (max_value - min_value);
-                }
+                normalized_matrix[[j, i]] = match types[i] {
+                    CriteriaType::Cost => (max_value - *value) / (max_value - min_value),
+                    CriteriaType::Profit => (*value - min_value) / (max_value - min_value),
+                };
             }
         }
 
@@ -406,15 +387,12 @@ pub struct NonLinear;
 impl NonLinear {
     pub fn normalize(
         matrix: &Array2<f64>,
-        types: &Array1<i8>,
+        types: &[CriteriaType],
     ) -> Result<Array2<f64>, NormalizationError> {
         // Check if the matrix is not empty
         if matrix.is_empty() {
             return Err(NormalizationError::EmptyMatrix);
         }
-
-        // Check that the criteria is valid (i.e., only -1 for cost or 1 for profit)
-        check_criteria_type_values(types)?;
 
         // Ensure enough criteria types for all criteria
         if types.len() != matrix.ncols() {
@@ -447,11 +425,10 @@ impl NonLinear {
                     return Err(NormalizationError::ZeroRange);
                 }
 
-                if types[i] == -1 {
-                    normalized_matrix[[j, i]] = (min_value / *value).powi(3);
-                } else if types[i] == 1 {
-                    normalized_matrix[[j, i]] = (*value / max_value).powi(2);
-                }
+                normalized_matrix[[j, i]] = match types[i] {
+                    CriteriaType::Cost => (min_value / *value).powi(3),
+                    CriteriaType::Profit => (*value / max_value).powi(2),
+                };
             }
         }
 
@@ -474,15 +451,12 @@ pub struct Sum;
 impl Normalize for Sum {
     fn normalize(
         matrix: &Array2<f64>,
-        types: &Array1<i8>,
+        types: &[CriteriaType],
     ) -> Result<Array2<f64>, NormalizationError> {
         // Check if the matrix is not empty
         if matrix.is_empty() {
             return Err(NormalizationError::EmptyMatrix);
         }
-
-        // Check that the criteria is valid (i.e., only -1 for cost or 1 for profit)
-        check_criteria_type_values(types)?;
 
         // Ensure enough criteria types for all criteria
         if types.len() != matrix.ncols() {
@@ -494,10 +468,9 @@ impl Normalize for Sum {
 
         // Iterate over each column (criterion)
         for (i, col) in matrix.axis_iter(Axis(1)).enumerate() {
-            let col_sum = if types[i] == -1 {
-                col.mapv(|x| 1.0 / x).sum()
-            } else {
-                col.sum()
+            let col_sum = match types[i] {
+                CriteriaType::Cost => col.mapv(|x| 1.0 / x).sum(),
+                CriteriaType::Profit => col.sum(),
             };
 
             for (j, value) in col.iter().enumerate() {
@@ -505,10 +478,9 @@ impl Normalize for Sum {
                     return Err(NormalizationError::ZeroRange);
                 }
 
-                if types[i] == -1 {
-                    normalized_matrix[[j, i]] = (1.0 / *value) / col_sum;
-                } else if types[i] == 1 {
-                    normalized_matrix[[j, i]] = *value / col_sum;
+                normalized_matrix[[j, i]] = match types[i] {
+                    CriteriaType::Cost => (1.0 / *value) / col_sum,
+                    CriteriaType::Profit => *value / col_sum,
                 };
             }
         }
@@ -532,15 +504,12 @@ pub struct Vector;
 impl Normalize for Vector {
     fn normalize(
         matrix: &Array2<f64>,
-        types: &Array1<i8>,
+        types: &[CriteriaType],
     ) -> Result<Array2<f64>, NormalizationError> {
         // Check if the matrix is not empty
         if matrix.is_empty() {
             return Err(NormalizationError::EmptyMatrix);
         }
-
-        // Check that the criteria is valid (i.e., only -1 for cost or 1 for profit)
-        check_criteria_type_values(types)?;
 
         // Ensure enough criteria types for all criteria
         if types.len() != matrix.ncols() {
@@ -559,10 +528,9 @@ impl Normalize for Vector {
                     return Err(NormalizationError::ZeroRange);
                 }
 
-                if types[i] == -1 {
-                    normalized_matrix[[j, i]] = 1.0 - (*value / sqrt_col_sum);
-                } else if types[i] == 1 {
-                    normalized_matrix[[j, i]] = *value / sqrt_col_sum;
+                normalized_matrix[[j, i]] = match types[i] {
+                    CriteriaType::Cost => 1.0 - (*value / sqrt_col_sum),
+                    CriteriaType::Profit => *value / sqrt_col_sum,
                 };
             }
         }
@@ -587,15 +555,12 @@ pub struct ZavadskasTurskis;
 impl ZavadskasTurskis {
     pub fn normalize(
         matrix: &Array2<f64>,
-        types: &Array1<i8>,
+        types: &[CriteriaType],
     ) -> Result<Array2<f64>, NormalizationError> {
         // Check if the matrix is not empty
         if matrix.is_empty() {
             return Err(NormalizationError::EmptyMatrix);
         }
-
-        // Check that the criteria is valid (i.e., only -1 for cost or 1 for profit)
-        check_criteria_type_values(types)?;
 
         // Ensure enough criteria types for all criteria
         if types.len() != matrix.ncols() {
@@ -624,26 +589,13 @@ impl ZavadskasTurskis {
             }
 
             for (j, value) in col.iter().enumerate() {
-                if types[i] == -1 {
-                    normalized_matrix[[j, i]] = 1.0 - ((min_value - *value).abs() / min_value);
-                } else if types[i] == 1 {
-                    normalized_matrix[[j, i]] = 1.0 - ((max_value - *value).abs() / max_value);
-                }
+                normalized_matrix[[j, i]] = match types[i] {
+                    CriteriaType::Cost => 1.0 - ((min_value - *value).abs() / min_value),
+                    CriteriaType::Profit => 1.0 - ((max_value - *value).abs() / max_value),
+                };
             }
         }
 
         Ok(normalized_matrix)
     }
-}
-
-/// Criteria types can only represent profit (1) or costs (-1). This function checks the validity of
-/// the criteria types.
-fn check_criteria_type_values(array: &Array1<i8>) -> Result<(), NormalizationError> {
-    // NOTE: Might be worth making the type an enum of Postive and Negative instead of -1,1
-    for &val in array.iter() {
-        if val != -1 && val != 1 {
-            return Err(NormalizationError::InvalidValue);
-        }
-    }
-    Ok(())
 }

@@ -1,6 +1,7 @@
 use crate::errors::WeightingError;
 use crate::normalization::Normalize;
 use crate::normalization::Sum;
+use crate::CriteriaType;
 use ndarray::{Array1, Array2, Axis};
 
 /// A trait for calculating weights in Multiple-Criteria Decision Making (MCDM) problems.
@@ -128,7 +129,7 @@ impl Weight for Entropy {
     fn weight(matrix: &Array2<f64>) -> Result<Array1<f64>, WeightingError> {
         let (num_alternatives, num_criteria) = matrix.dim();
 
-        let types = Array1::ones(num_criteria);
+        let types = CriteriaType::profits(num_criteria);
         let normalized_matrix = Sum::normalize(matrix, &types)?;
         let mut entropies = Array1::zeros(num_criteria);
 
@@ -172,10 +173,11 @@ impl Weight for Entropy {
 /// ```rust
 /// use mcdm::normalization::{Linear, Normalize};
 /// use mcdm::weights::{Merec, Weight};
+/// use mcdm::CriteriaType;
 /// use ndarray::array;
 ///
 /// let matrix = array![[0.2, 0.8], [0.5, 0.5], [0.9, 0.1]];
-/// let criteria_types = array![-1, 1];  // -1 for cost, 1 for profit
+/// let criteria_types = CriteriaType::from_vec(vec![-1, 1]).unwrap();
 /// let normalized_matrix = Linear::normalize(&matrix, &criteria_types).unwrap();
 /// let weights = Merec::weight(&normalized_matrix).unwrap();
 /// ```
