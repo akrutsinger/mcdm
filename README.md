@@ -1,5 +1,9 @@
 # 🤔 mcdm
 
+[![Crates.io](https://img.shields.io/crates/v/mcdm.svg?logo=rust)](https://crates.io/crates/mcdm)
+[![Documentation](https://img.shields.io/docsrs/mcdm?logo=docs.rs
+)](https://docs.rs/mcdm)
+
 `mcdm` is a Rust library to assist with solving Multiple-Criteria Decision Making (MCDM) problems. It provides a comprehensive set of tools for decision analysis, including normalization techniques, weighting methods, and ranking algorithms.
 
 ## ✨ Features
