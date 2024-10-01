@@ -1,5 +1,6 @@
 # 🤔 mcdm
 
+[![Build Status](https://github.com/akrutsinger/mcdm/actions/workflows/rust.yml/badge.svg)](https://github.com/akrutsinger/mcdm/actions)
 [![Crates.io](https://img.shields.io/crates/v/mcdm.svg?logo=rust)](https://crates.io/crates/mcdm)
 [![Documentation](https://img.shields.io/docsrs/mcdm?logo=docs.rs
 )](https://docs.rs/mcdm)
