@@ -17,7 +17,7 @@
 //! fn main() -> Result<(), McdmError> {
 //!     // Define the decision matrix (alternatives x criteria)
 //!     let alternatives = array![[4.0, 7.0, 8.0], [2.0, 9.0, 6.0], [3.0, 6.0, 9.0]];
-//!     let criteria_types = CriteriaType::from_vec(vec![-1, 1, 1])?;
+//!     let criteria_types = CriteriaType::from(vec![-1, 1, 1])?;
 //!
 //!     // Apply normalization using Min-Max
 //!     let normalized_matrix = MinMax::normalize(&alternatives, &criteria_types)?;
@@ -55,19 +55,21 @@ pub enum CriteriaType {
     Profit,
 }
 
-/// Create a new `CriteriaTypes` from an array of `i8` values (-1 for Cost, 1 for Profit).
+/// Create a new `CriteriaTypes` from an iterator of `i8` values (-1 for Cost, 1 for Profit).
 ///
 /// # Arguments
 ///
-/// * `types_array` - A 1D array where -1 represents Cost and 1 represents Profit.
+/// * `iter` - An iterator of `i8` where -1 represents Cost and 1 represents Profit.
 ///
 /// # Returns
 ///
-/// * `Result<Self, ValidationError>` - An array of `CriteriaTypes` or an error for invalid values.
+/// * `Result<Self, ValidationError>` - A vector of `CriteriaType` or an error for invalid values.
 impl CriteriaType {
-    pub fn from_vec(types_array: Vec<i8>) -> Result<Vec<CriteriaType>, ValidationError> {
-        types_array
-            .into_iter()
+    pub fn from<I>(iter: I) -> Result<Vec<CriteriaType>, ValidationError>
+    where
+        I: IntoIterator<Item = i8>,
+    {
+        iter.into_iter()
             .map(|value| match value {
                 -1 => Ok(CriteriaType::Cost),
                 1 => Ok(CriteriaType::Profit),

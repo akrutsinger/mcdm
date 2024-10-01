@@ -29,7 +29,7 @@ use ndarray::{Array2, Axis};
 /// use ndarray::{array, Array1};
 ///
 /// let decision_matrix = array![[4.0, 7.0, 8.0], [2.0, 9.0, 6.0], [3.0, 6.0, 9.0]];
-/// let criteria_types = CriteriaType::from_vec(vec![-1, 1, 1]).unwrap();
+/// let criteria_types = CriteriaType::from(vec![-1, 1, 1]).unwrap();
 /// let normalized_matrix = MinMax::normalize(&decision_matrix, &criteria_types).unwrap();
 /// println!("{:?}", normalized_matrix);
 /// ```

@@ -177,7 +177,7 @@ impl Weight for Entropy {
 /// use ndarray::array;
 ///
 /// let matrix = array![[0.2, 0.8], [0.5, 0.5], [0.9, 0.1]];
-/// let criteria_types = CriteriaType::from_vec(vec![-1, 1]).unwrap();
+/// let criteria_types = CriteriaType::from(vec![-1, 1]).unwrap();
 /// let normalized_matrix = Linear::normalize(&matrix, &criteria_types).unwrap();
 /// let weights = Merec::weight(&normalized_matrix).unwrap();
 /// ```
