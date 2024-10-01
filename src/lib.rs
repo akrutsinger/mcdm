@@ -55,16 +55,36 @@ pub enum CriteriaType {
     Profit,
 }
 
-/// Create a new `CriteriaTypes` from an iterator of `i8` values (-1 for Cost, 1 for Profit).
-///
-/// # Arguments
-///
-/// * `iter` - An iterator of `i8` where -1 represents Cost and 1 represents Profit.
-///
-/// # Returns
-///
-/// * `Result<Self, ValidationError>` - A vector of `CriteriaType` or an error for invalid values.
 impl CriteriaType {
+    /// Converts an iterator of `i8` values (-1 for `Cost`, 1 for `Profit`) into a vector of `CriteriaType`.
+    ///
+    /// # Arguments
+    ///
+    /// * `iter` - An iterator of `i8` values. Each value should be either `-1` (for `Cost`) or `1`
+    ///   (for `Profit`).
+    ///
+    /// # Returns
+    ///
+    /// * `Result<Vec<CriteriaType>, ValidationError>` - A vector of `CriteriaType` if the values
+    ///   are valid, or an error if an invalid value is encountered.
+    ///
+    /// # Errors
+    ///
+    /// * `ValidationError::InvalidValue` - If the iterator contains values other than `-1` or `1`.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use mcdm::errors::ValidationError;
+    /// use mcdm::CriteriaType;
+    /// use ndarray::array;
+    ///
+    /// let criteria_types = vec![-1, 1, 1]; // -1 for Cost, 1 for Profit
+    /// let criteria = CriteriaType::from(criteria_types).unwrap();
+    /// assert_eq!(criteria, vec![CriteriaType::Cost, CriteriaType::Profit, CriteriaType::Profit]);
+    /// let criteria = CriteriaType::from(array![1, 1, 1]).unwrap();
+    /// assert_eq!(criteria, vec![CriteriaType::Profit, CriteriaType::Profit, CriteriaType::Profit]);
+    /// ```
     pub fn from<I>(iter: I) -> Result<Vec<CriteriaType>, ValidationError>
     where
         I: IntoIterator<Item = i8>,
@@ -78,12 +98,12 @@ impl CriteriaType {
             .collect::<Result<Vec<CriteriaType>, ValidationError>>()
     }
 
-    /// Generate a vector of `CriteriaType::Profit` of the given length `len`.
+    /// Generate a vector of [CriteriaType::Profit] of the given length `len`.
     pub fn profits(len: usize) -> Vec<CriteriaType> {
         vec![CriteriaType::Profit; len]
     }
 
-    /// Generate a vector of `CriteriaType::Cost` of the given length `len`.
+    /// Generate a vector of [CriteriaType::Cost] of the given length `len`.
     pub fn costs(len: usize) -> Vec<CriteriaType> {
         vec![CriteriaType::Cost; len]
     }
