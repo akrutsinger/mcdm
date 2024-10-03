@@ -128,6 +128,76 @@ impl Rank for TOPSIS {
     }
 }
 
+/// Computes the Weighted Product Model (WPM) preference values for alternatives.
+///
+/// The WPM model expects the decision matrix is normalized using the [Sum](crate::normalization::Sum)
+/// method. Then computes the ranking using:
+///
+/// $$ WPM = \prod_{j=1}^n(x_{ij})^{w_j} $$
+///
+/// where $x_{ij}$ is the $i$th element of the alternative (row), $j$th elements of the criterion
+/// (column) with $n$ total criteria, and $w_j$ is the weight of the $j$th criterion.
+///
+/// # Arguments
+///
+/// * `matrix` - A normalized decision matrix where each row represents an alternative and each
+///   column represents a criterion.
+/// * `weights` - A 1D array of weights corresponding to the relative importance of each criterion.
+///
+/// # Returns
+///
+/// * `Array1<f64>` - A 1D array containing the preference values for each alternative.
+///
+/// # Example
+///
+/// ```rust
+/// use approx::assert_abs_diff_eq;
+/// use mcdm::methods::{Rank, WeightedProduct};
+/// use mcdm::normalization::{Normalize, Sum};
+/// use mcdm::CriteriaType;
+/// use ndarray::{array};
+///
+/// let matrix = array![
+///     [2.9, 2.31, 0.56, 1.89],
+///     [1.2, 1.34, 0.21, 2.48],
+///     [0.3, 2.48, 1.75, 1.69]
+/// ];
+/// let weights = array![0.25, 0.25, 0.25, 0.25];
+/// let criteria_type = CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
+/// let normalized_matrix = Sum::normalize(&matrix, &criteria_type).unwrap();
+/// let ranking = WeightedProduct::rank(&normalized_matrix, &weights).unwrap();
+/// assert_abs_diff_eq!(
+///     ranking,
+///     array![0.21711531, 0.17273414, 0.53281425],
+///     epsilon = 1e-5
+/// );
+/// ```
+
+pub struct WeightedProduct;
+
+impl Rank for WeightedProduct {
+    fn rank(matrix: &Array2<f64>, weights: &Array1<f64>) -> Result<Array1<f64>, RankingError> {
+        if weights.len() != matrix.ncols() {
+            return Err(RankingError::DimensionMismatch);
+        }
+
+        // Compute the weighted matrix by raising each element of the decision matrix to the power
+        // of the corresponding weight.
+        let mut weighted_matrix = Array2::zeros(matrix.dim());
+
+        // NOTE: I'm sure there is an idiomatic way to do this, but I can't seem to figure it out.
+        for (i, row) in matrix.axis_iter(Axis(0)).enumerate() {
+            for (j, &value) in row.iter().enumerate() {
+                weighted_matrix[[i, j]] = value.powf(weights[j]);
+                println!("{:?}", weighted_matrix[[i, j]]);
+            }
+        }
+
+        // Compute the product of each row
+        Ok(weighted_matrix.map_axis(Axis(1), |row| row.product()))
+    }
+}
+
 /// Rank the alternatives using the WeightedSum method.
 ///
 /// The `WeightedSum` method ranks alternatives based on the weighted sum of their criteria values.

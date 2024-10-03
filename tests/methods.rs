@@ -34,6 +34,38 @@ mod topsis_tests {
     }
 }
 
+mod weighted_product_tests {
+    use super::*;
+    use mcdm::normalization::{Normalize, Sum};
+    use mcdm::CriteriaType;
+
+    #[test]
+    fn test_rank() {
+        let matrix = array![
+            [2.9, 2.31, 0.56, 1.89],
+            [1.2, 1.34, 0.21, 2.48],
+            [0.3, 2.48, 1.75, 1.69]
+        ];
+        let weights = array![0.25, 0.25, 0.25, 0.25];
+        let criteria_type = CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
+        let normalized_matrix = Sum::normalize(&matrix, &criteria_type).unwrap();
+        let ranking = WeightedProduct::rank(&normalized_matrix, &weights).unwrap();
+        assert_abs_diff_eq!(
+            ranking,
+            array![0.21711531, 0.17273414, 0.53281425],
+            epsilon = 1e-5
+        );
+    }
+
+    #[test]
+    fn test_rank_with_invalid_dimensions() {
+        let matrix = array![[0.2, 0.8], [0.5, 0.5], [0.9, 0.1]];
+        let weights = array![0.6];
+        let ranking = WeightedSum::rank(&matrix, &weights);
+        assert!(ranking.is_err());
+    }
+}
+
 mod weighted_sum_tests {
     use super::*;
     #[test]
