@@ -64,6 +64,32 @@ pub trait Rank {
 
 /// Ranks the alternatives using the TOPSIS method.
 ///
+/// The TOPSIS method expects the decision matrix is normalized using the [MinMax](crate::normalization::MinMax)
+/// method. Then computes a weighted matrix $v_{ij}$ using
+///
+/// $$ v_{ij} = x_{ij}{w_j} $$
+///
+/// where $x_{ij}$ is the $i$th element of the alternative (row), $j$th elements of the criterion
+/// (column), and $w_j$ is the weight of the $j$th criterion.
+///
+/// We then derive a positive ideal solution (PIS) and a negative ideal solution (NIS). The PIS is
+/// calculated as the maximum value for each criterion, and the NIS is the minimum value for each
+/// criterion.
+///
+/// $$ v_j^+ = \left\\{v_1^+, v_2^+, \dots, v_n^+\right\\} = \max_j v_{ij} $$
+/// $$ v_j^- = \left\\{v_1^-, v_2^-, \dots, v_n^-\right\\} = \min_j v_{ij} $$
+///
+/// where $v_j^+$ is the positive ideal solution, $v_j^-$ is the negative ideal solution, $n$ is the
+/// number of criteria, and $i$ is the alternative index
+///
+/// Finally we determine the distance to the PIS ($D_i^+$) and NIS ($D_i^-$). The distance to the
+/// PIS is calculated as the square root of the sum of the squares of the differences between the
+/// weighted matrix row and the PIS. The distance to the NIS is calculated as the square root of the
+/// sum of the squares of the differences between the weighted matrix row and the NIS as follows:
+///
+/// $$ D_i^+ = \sqrt{ \sum_{j=1}^{n} (v_{ij} - v_j^+)^2 } $$
+/// $$ D_i^- = \sqrt{ \sum_{j=1}^{n} (v_{ij} - v_j^-)^2 } $$
+///
 /// # Arguments
 ///
 /// * `matrix` - A normalized decision matrix of alternatives (alternatives x criteria).
@@ -172,7 +198,6 @@ impl Rank for TOPSIS {
 ///     epsilon = 1e-5
 /// );
 /// ```
-
 pub struct WeightedProduct;
 
 impl Rank for WeightedProduct {
@@ -202,7 +227,14 @@ impl Rank for WeightedProduct {
 ///
 /// The `WeightedSum` method ranks alternatives based on the weighted sum of their criteria values.
 /// Each alternative's score is calculated by multiplying its criteria values by the corresponding
-/// weights and summing the results.
+/// weights and summing the results. The decision matrix is expected to be normalized using the
+/// [Sum](crate::normalization::Sum) method.
+///
+/// $$ WSM = \sum_{j=1}^n x_{ij}{w_j} $$
+///
+/// where $x_{ij}$ is the $i$th element of the alternative (row), $j$th elements of the criterion
+/// (column) with $n$ total criteria, and $w_j$ is the weight of the $j$th criterion.
+///
 ///
 /// # Arguments
 ///
