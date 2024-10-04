@@ -151,6 +151,25 @@ impl Weight for Entropy {
 /// normalization method *before* calling this function. Failure to do so may result in incorrect
 /// weights.
 ///
+/// The MEREC weighting method is based on the following formula:
+///
+/// $$ S_i = \ln \left( 1 + \left ( \frac{1}{m}\sum_j \ln(n^x_{ij}) \right) \right) $$
+///
+/// where $S_i$ is the overall performance of alternative $i$, $m$ is the number of alternatives,
+/// and $n^x_{ij}$ is the value of normalized decision matrix for criterion $j$.
+///
+/// Next, calculate the performance of alternatives after removal of each criterion:
+///
+/// $$ S_i^{\prime} = \ln \left( 1 + \left(\frac{1}{m} \sum_{k,k \neq j} \left | \ln(n^x_{ij}) \right | \right) \right) $$
+///
+/// Next, calculate the sum of absolute deviations using the following:
+///
+/// $$ E_j = \sum_i S_{ij}^{\prime} - S_i $$
+///
+/// Finally, calculate the weights using the following:
+///
+/// $$ w_j = \frac{E_j}{\sum_k E_k} $$
+///
 /// # Arguments
 ///
 /// * `matrix` - A normalized decision matrix.
