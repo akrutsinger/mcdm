@@ -1,7 +1,4 @@
 use crate::errors::WeightingError;
-use crate::normalization::Normalize;
-use crate::normalization::Sum;
-use crate::CriteriaType;
 use ndarray::{Array1, Array2, Axis};
 
 /// A trait for calculating weights in Multiple-Criteria Decision Making (MCDM) problems.
@@ -102,8 +99,9 @@ impl Weight for Equal {
 
 /// Calculates the entropy-based weights for the given decision matrix.
 ///
-/// Before the weight can be calculated, the decision matrix is normalized using the [Sum]
-/// normalization method.
+/// # ⚠️ **Caution** ⚠️
+/// This method expects the decision matrix be normalized using the [Sum](crate::normalization::Sum) normalization method
+/// *before* calling this function. Failure to do so may result in incorrect weights.
 ///
 /// Each criterion (column) in the normalized matrix is evaluated for its entropy. If any value in a
 /// column is zero, the entropy for that column is set to zero. Otherwise, the entropy is calculated
@@ -129,12 +127,10 @@ impl Weight for Entropy {
     fn weight(matrix: &Array2<f64>) -> Result<Array1<f64>, WeightingError> {
         let (num_alternatives, num_criteria) = matrix.dim();
 
-        let types = CriteriaType::profits(num_criteria);
-        let normalized_matrix = Sum::normalize(matrix, &types)?;
         let mut entropies = Array1::zeros(num_criteria);
 
         // Iterate over all criteria in the normalized matrix
-        for (i, col) in normalized_matrix.axis_iter(Axis(1)).enumerate() {
+        for (i, col) in matrix.axis_iter(Axis(1)).enumerate() {
             if col.iter().all(|&x| x != 0.0) {
                 let col_entropy = col.iter().map(|&x| x * x.ln()).sum();
 
@@ -148,16 +144,12 @@ impl Weight for Entropy {
     }
 }
 
-/// Calculate weights using the MEREC method.
-///
-/// The Method Based on the Removal Effects of Criiteria (MEREC) method requires that the decision
-/// matrix is normalized using a specific linear normalization technique *before* calling this
-/// function. Failure to do so may result in incorrect weights.
+/// Calculate weights using the Method Based on the Removal Effects of Criiteria (MEREC) method.
 ///
 /// # ⚠️ **Caution** ⚠️
-/// Ensure that the decision matrix is normalized using the [Linear](crate::normalization::Linear)
-/// normalization method applying the MEREC weighting method. This method assumes the matrix has
-/// already been normalized.
+/// This method expects the decision matrix is normalized using the [Linear](crate::normalization::Linear)
+/// normalization method *before* calling this function. Failure to do so may result in incorrect
+/// weights.
 ///
 /// # Arguments
 ///
