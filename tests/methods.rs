@@ -64,9 +64,20 @@ mod weighted_product_tests {
     fn test_rank_with_invalid_dimensions() {
         let matrix = array![[0.2, 0.8], [0.5, 0.5], [0.9, 0.1]];
         let weights = array![0.6];
-        let ranking = WeightedSum::rank(&matrix, &weights);
+        let ranking = WeightedProduct::rank(&matrix, &weights);
         assert!(ranking.is_err());
     }
+
+    #[test]
+    fn test_rank_with_zero_weights() {
+        let matrix = array![[0.3, 0.5], [0.6, 0.9], [0.1, 0.2]];
+        let weights = array![0.0, 0.0];
+        let criteria_type = CriteriaType::from(vec![1, -1]).unwrap(); 
+        let normalized_matrix = Sum::normalize(&matrix, &criteria_type).unwrap();
+        let ranking = WeightedProduct::rank(&normalized_matrix, &weights).unwrap();     
+        assert_eq!(ranking, array![1.0, 1.0, 1.0]);
+    }
+
 }
 
 mod weighted_sum_tests {
