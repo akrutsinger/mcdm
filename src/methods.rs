@@ -3,17 +3,17 @@ use ndarray::{Array1, Array2, Axis};
 
 /// A trait for ranking alternatives in Multiple-Criteria Decision Making (MCDM).
 ///
-/// The [Rank] trait defines a method used to rank alternatives based on a normalized decision
+/// The [`Rank`] trait defines a method used to rank alternatives based on a normalized decision
 /// matrix and a set of weights for the criteria. The ranking process evaluates how well each
 /// alternative performs across the criteria, considering the relative importance of each criterion
 /// as given by the `weights` array.
 ///
 /// Higher preference values indicate better alternatives. The specific ranking method used (such as
-/// [TOPSIS] or others) will depend on the implementation of this trait.
+/// [`TOPSIS`] or others) will depend on the implementation of this trait.
 ///
 /// # Example
 ///
-/// Here’s an example of ranking alternatives using the [Rank] trait:
+/// Here’s an example of ranking alternatives using the [`Rank`] trait:
 ///
 /// ```rust
 /// use mcdm::methods::{TOPSIS, Rank};
@@ -39,7 +39,7 @@ use ndarray::{Array1, Array2, Axis};
 ///
 /// - `Array1<f64>` is a 1D array containing the preference values for each alternative. Higher
 ///   values indicate better alternatives.
-/// - [RankingError] is returned if the ranking process fails (e.g., due to a mismatch between the
+/// - [`RankingError`] is returned if the ranking process fails (e.g., due to a mismatch between the
 ///   dimensions of `matrix` and `weights`, or other calculation errors).
 pub trait Rank {
     /// Ranks the alternatives in a normalized decision matrix based on the provided criteria
@@ -64,7 +64,7 @@ pub trait Rank {
 
 /// Ranks the alternatives using the TOPSIS method.
 ///
-/// The TOPSIS method expects the decision matrix is normalized using the [MinMax](crate::normalization::MinMax)
+/// The TOPSIS method expects the decision matrix is normalized using the [`MinMax`](crate::normalization::MinMax)
 /// method. Then computes a weighted matrix $v_{ij}$ using
 ///
 /// $$ v_{ij} = x_{ij}{w_j} $$
@@ -159,7 +159,7 @@ impl Rank for TOPSIS {
 
 /// Computes the Weighted Product Model (WPM) preference values for alternatives.
 ///
-/// The WPM model expects the decision matrix is normalized using the [Sum](crate::normalization::Sum)
+/// The WPM model expects the decision matrix is normalized using the [`Sum`](crate::normalization::Sum)
 /// method. Then computes the ranking using:
 ///
 /// $$ WPM = \prod_{j=1}^n(x_{ij})^{w_j} $$
@@ -226,12 +226,12 @@ impl Rank for WeightedProduct {
     }
 }
 
-/// Rank the alternatives using the WeightedSum method.
+/// Rank the alternatives using the Weighted Sum Model.
 ///
 /// The `WeightedSum` method ranks alternatives based on the weighted sum of their criteria values.
 /// Each alternative's score is calculated by multiplying its criteria values by the corresponding
 /// weights and summing the results. The decision matrix is expected to be normalized using the
-/// [Sum](crate::normalization::Sum) method.
+/// [`Sum`](crate::normalization::Sum) method.
 ///
 /// $$ WSM = \sum_{j=1}^n x_{ij}{w_j} $$
 ///

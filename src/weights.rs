@@ -3,7 +3,7 @@ use ndarray::{Array1, Array2, Axis};
 
 /// A trait for calculating weights in Multiple-Criteria Decision Making (MCDM) problems.
 ///
-/// The [Weight] trait defines the method used to calculate the weight vector for the criteria in a
+/// The [`Weight`] trait defines the method used to calculate the weight vector for the criteria in a
 /// decision matrix. Weights represent the relative importance of each criterion in the
 /// decision-making process and are used in conjunction with other MCDM techniques like
 /// normalization and ranking.
@@ -13,12 +13,12 @@ use ndarray::{Array1, Array2, Axis};
 ///
 /// # Required Methods
 ///
-/// The [Weight] trait requires the implementation of the `weight` method, which generates a weight
+/// The [`Weight`] trait requires the implementation of the `weight` method, which generates a weight
 /// vector based on the decision matrix provided.
 ///
 /// # Example
 ///
-/// Here's an example of how to use the [Weight] trait with an [Equal] weighting scheme:
+/// Here's an example of how to use the [`Weight`] trait with an [`Equal`] weighting scheme:
 ///
 /// ```rust
 /// use mcdm::{weights::{Equal, Weight}};
@@ -62,7 +62,7 @@ pub trait Weight {
 
 /// A weighting method that assigns equal weights to all criteria in the decision matrix.
 ///
-/// The [Equal] struct implements the [Weight] trait by distributing equal importance to each
+/// The [`Equal`] struct implements the [`Weight`] trait by distributing equal importance to each
 /// criterion in a decision matrix, regardless of its values. This method is useful when all
 /// criteria are assumed to be equally significant in the decision-making process.
 ///
@@ -79,7 +79,7 @@ pub trait Weight {
 /// # Returns
 ///
 /// This method returns an array of equal weights for each criterion. If the matrix has no criteria
-/// (i.e., zero columns), it returns a [WeightingError::ZeroRange] error.
+/// (i.e., zero columns), it returns a [`WeightingError::ZeroRange`] error.
 pub struct Equal;
 
 impl Weight for Equal {
@@ -100,7 +100,7 @@ impl Weight for Equal {
 /// Calculates the entropy-based weights for the given decision matrix.
 ///
 /// # ⚠️ **Caution** ⚠️
-/// This method expects the decision matrix be normalized using the [Sum](crate::normalization::Sum) normalization method
+/// This method expects the decision matrix be normalized using the [`Sum`](crate::normalization::Sum) normalization method
 /// *before* calling this function. Failure to do so may result in incorrect weights.
 ///
 /// Each criterion (column) in the normalized matrix is evaluated for its entropy. If any value in a
@@ -120,7 +120,7 @@ impl Weight for Equal {
 /// # Returns
 ///
 /// This method returns a `Result` containing an array of entropy-based weights for each
-/// criterion. On an error, this method returns [WeightingError].
+/// criterion. On an error, this method returns [`WeightingError`].
 pub struct Entropy;
 
 impl Weight for Entropy {
@@ -147,7 +147,7 @@ impl Weight for Entropy {
 /// Calculate weights using the Method Based on the Removal Effects of Criiteria (MEREC) method.
 ///
 /// # ⚠️ **Caution** ⚠️
-/// This method expects the decision matrix is normalized using the [Linear](crate::normalization::Linear)
+/// This method expects the decision matrix is normalized using the [`Linear`](crate::normalization::Linear)
 /// normalization method *before* calling this function. Failure to do so may result in incorrect
 /// weights.
 ///
@@ -177,7 +177,7 @@ impl Weight for Entropy {
 /// # Returns
 ///
 /// * `Result<Array1<f64>, WeightingError>` - A vector of weights for each criterion, or a
-///   [WeightingError] if the computation fails.
+///   [`WeightingError`] if the computation fails.
 ///
 /// # Example
 ///
@@ -269,7 +269,7 @@ impl Weight for Merec {
 /// # Returns
 ///
 /// This method returns a `Result` containing an array of entropy-based weights for each
-/// criterion. On an error, this method returns [WeightingError].
+/// criterion. On an error, this method returns [`WeightingError`].
 pub struct StandardDeviation;
 
 impl Weight for StandardDeviation {

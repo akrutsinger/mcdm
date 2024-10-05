@@ -98,12 +98,12 @@ impl CriteriaType {
             .collect::<Result<Vec<CriteriaType>, ValidationError>>()
     }
 
-    /// Generate a vector of [CriteriaType::Profit] of the given length `len`.
+    /// Generate a vector of [`CriteriaType::Profit`] of the given length `len`.
     pub fn profits(len: usize) -> Vec<CriteriaType> {
         vec![CriteriaType::Profit; len]
     }
 
-    /// Generate a vector of [CriteriaType::Cost] of the given length `len`.
+    /// Generate a vector of [`CriteriaType::Cost`] of the given length `len`.
     pub fn costs(len: usize) -> Vec<CriteriaType> {
         vec![CriteriaType::Cost; len]
     }

@@ -4,20 +4,18 @@ use ndarray::{Array2, Axis};
 
 /// A trait for normalizing decision matrices in Multiple-Criteria Decision Making (MCDM) problems.
 ///
-/// The [Normalize] trait defines a method to transform a decision matrix into a normalized form,
+/// The [`Normalize`] trait defines a method to transform a decision matrix into a normalized form,
 /// where the values of the criteria are scaled to make them comparable. This is an essential step
 /// in MCDM techniques, as the criteria can have different units, ranges, and orientations (e.g.,
 /// profit or cost).
 ///
 /// # Criteria Types
 ///
-/// The normalization process requires an array of criteria types (`types`) to indicate whether each
-/// criterion is a **profit** or a **cost** criterion:
+/// The normalization process requires an array of criteria types to indicate whether each criterion
+/// is a **profit** or a **cost** criterion:
 ///
-/// - [CriteriaType::Profit]: Higher values are preferred.
-/// - [CriteriaType::Cost]: Lower values are preferred.
-///
-/// The `types` array must have the same length as the number of columns in the decision matrix.
+/// - [`CriteriaType::Profit`]: Higher values are preferred.
+/// - [`CriteriaType::Cost`]: Lower values are preferred.
 ///
 /// # Example
 ///
@@ -38,16 +36,16 @@ use ndarray::{Array2, Axis};
 ///
 /// * `matrix` - A 2D decision matrix (`Array2<f64>`), where each row represents an alternative and
 ///   each column represents a criterion.
-/// * `types` - An array slice of &[[crate::CriteriaType]] indicating the [CriteriaType::Cost] or
-///   [CriteriaType::Profit] of each criterion.
-///   The length of this array must match the number of columns in `matrix`.
+/// * `types` - An array slice of &[[`CriteriaType`]] indicating the [`CriteriaType::Cost`] or
+///   [`CriteriaType::Profit`] of each criterion. The length of this array must match the number of
+///   columns in `matrix`.
 ///
 /// # Returns
 ///
 /// This method returns a `Result<Array2<f64>, NormalizationError>`, where:
 ///
 /// - `Array2<f64>` is the normalized matrix with the same dimensions as the input matrix.
-/// - [NormalizationError] is returned if the normalization process fails (e.g., due to a mismatch
+/// - [`NormalizationError`] is returned if the normalization process fails (e.g., due to a mismatch
 ///   in the dimensions of `matrix` and `types` or invalid input values).
 pub trait Normalize {
     /// Normalizes the decision matrix incorporating the specified criteria types.
