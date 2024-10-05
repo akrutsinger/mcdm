@@ -105,12 +105,12 @@ impl Normalize for EnhancedAccuracy {
         for (i, col) in matrix.axis_iter(Axis(1)).enumerate() {
             let min_value = col
                 .into_iter()
-                .cloned()
+                .copied()
                 .reduce(f64::min)
                 .ok_or(NormalizationError::NoMinimum)?;
             let max_value = col
                 .into_iter()
-                .cloned()
+                .copied()
                 .reduce(f64::max)
                 .ok_or(NormalizationError::NoMaximum)?;
 
@@ -171,12 +171,12 @@ impl Normalize for Linear {
         for (i, col) in matrix.axis_iter(Axis(1)).enumerate() {
             let min_value = col
                 .into_iter()
-                .cloned()
+                .copied()
                 .reduce(f64::min)
                 .ok_or(NormalizationError::NoMinimum)?;
             let max_value = col
                 .into_iter()
-                .cloned()
+                .copied()
                 .reduce(f64::max)
                 .ok_or(NormalizationError::NoMaximum)?;
 
@@ -287,7 +287,7 @@ impl Normalize for Max {
         for (i, col) in matrix.axis_iter(Axis(1)).enumerate() {
             let max_value = col
                 .into_iter()
-                .cloned()
+                .copied()
                 .reduce(f64::max)
                 .ok_or(NormalizationError::NoMaximum)?;
 
@@ -343,12 +343,12 @@ impl Normalize for MinMax {
         for (i, col) in matrix.axis_iter(Axis(1)).enumerate() {
             let min_value = col
                 .into_iter()
-                .cloned()
+                .copied()
                 .reduce(f64::min)
                 .ok_or(NormalizationError::NoMinimum)?;
             let max_value = col
                 .into_iter()
-                .cloned()
+                .copied()
                 .reduce(f64::max)
                 .ok_or(NormalizationError::NoMaximum)?;
 
@@ -404,12 +404,12 @@ impl NonLinear {
         for (i, col) in matrix.axis_iter(Axis(1)).enumerate() {
             let min_value = col
                 .into_iter()
-                .cloned()
+                .copied()
                 .reduce(f64::min)
                 .ok_or(NormalizationError::NoMinimum)?;
             let max_value = col
                 .into_iter()
-                .cloned()
+                .copied()
                 .reduce(f64::max)
                 .ok_or(NormalizationError::NoMaximum)?;
 
@@ -572,12 +572,12 @@ impl ZavadskasTurskis {
         for (i, col) in matrix.axis_iter(Axis(1)).enumerate() {
             let min_value = col
                 .into_iter()
-                .cloned()
+                .copied()
                 .reduce(f64::min)
                 .ok_or(NormalizationError::NoMinimum)?;
             let max_value = col
                 .into_iter()
-                .cloned()
+                .copied()
                 .reduce(f64::max)
                 .ok_or(NormalizationError::NoMaximum)?;
 
