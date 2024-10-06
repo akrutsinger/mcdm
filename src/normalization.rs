@@ -115,8 +115,8 @@ impl Normalize for EnhancedAccuracy {
                 .ok_or(NormalizationError::NoMaximum)?;
 
             let col_sum = match types[i] {
-                CriteriaType::Cost => col.mapv(|x| max_value - x).sum(),
-                CriteriaType::Profit => col.mapv(|x| x - min_value).sum(),
+                CriteriaType::Cost => col.mapv(|x| x - min_value).sum(),
+                CriteriaType::Profit => col.mapv(|x| max_value - x).sum(),
             };
 
             for (j, value) in col.iter().enumerate() {
@@ -125,8 +125,8 @@ impl Normalize for EnhancedAccuracy {
                 }
 
                 normalized_matrix[[j, i]] = match types[i] {
-                    CriteriaType::Cost => (*value - min_value) / col_sum,
-                    CriteriaType::Profit => (max_value - *value) / col_sum,
+                    CriteriaType::Cost => 1.0 - ((*value - min_value) / col_sum),
+                    CriteriaType::Profit => 1.0 - ((max_value - *value) / col_sum),
                 };
             }
         }
