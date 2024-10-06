@@ -210,7 +210,7 @@ impl Normalize for Linear {
 /// $$r_{ij} = \frac{1 - \frac{\ln(x_{ij})}{\ln(\prod_{i=1}^m x_{ij})}}{m - 1}$$
 ///
 /// where $x_{ij}$ is the $i$th element of the alternative (row) and $j$th elements of the criterion
-/// (column) with $m$ total criteria.
+/// (column) with $m$ total alternatives.
 pub struct Logarithmic;
 
 impl Normalize for Logarithmic {
@@ -243,7 +243,7 @@ impl Normalize for Logarithmic {
                 let ln_ratio = (*value).ln() / col_prod.ln();
 
                 normalized_matrix[[j, i]] = match types[i] {
-                    CriteriaType::Cost => (1.0 - ln_ratio) / (matrix.ncols() as f64 - 1.0),
+                    CriteriaType::Cost => (1.0 - ln_ratio) / (matrix.nrows() as f64 - 1.0),
                     CriteriaType::Profit => ln_ratio,
                 };
             }
