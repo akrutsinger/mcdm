@@ -56,7 +56,7 @@ dependencies = [
 
 [[package]]
 name = "mcdm"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "approx",
  "error_set",
