@@ -107,11 +107,15 @@ impl Weight for Equal {
 /// column is zero, the entropy for that column is set to zero. Otherwise, the entropy is calculated
 /// by:
 ///
-/// $$E_j -\frac{\sum_{i=1}^m p_{ij}\ln(p_{ij})}{\ln(m)}$$
+/// $$E_j = -\frac{\sum_{i=1}^m p_{ij}\ln(p_{ij})}{\ln(m)}$$
 ///
 /// where $E_j$ is the entropy of column $j$, $m$ is the number of alternatives, $n$ is the number
 /// of criteria, and $p_{ij}$ is the value of normalized decision matrix for criterion $j$ and
 /// alternative $i$
+///
+/// After calculating entropy measure $E_j$ for each criterion, derive the weights for each criterion:
+///
+/// $$ w_j = \frac{1 - E_j}{\sum_{i=1}^n (1 - E_i)} \quad \text{for} \quad j=1, \ldots, n $$
 ///
 /// # Arguments
 ///
@@ -138,9 +142,10 @@ impl Weight for Entropy {
             }
         }
 
-        entropies /= (num_alternatives as f64).ln();
+        entropies /= -(num_alternatives as f64).ln();
+        entropies = 1.0 - entropies;
 
-        Ok(entropies)
+        Ok(entropies.clone() / entropies.sum())
     }
 }
 
