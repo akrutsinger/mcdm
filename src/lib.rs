@@ -107,4 +107,24 @@ impl CriteriaType {
     pub fn costs(len: usize) -> Vec<CriteriaType> {
         vec![CriteriaType::Cost; len]
     }
+
+    /// Switches each `Cost` to a `Profit` and each `Profit` to a `Cost` in the given vector.
+    ///
+    /// # Arguments
+    ///
+    /// * `types` - A vector of `CriteriaType`.
+    ///
+    /// # Returns
+    ///
+    /// * `Vec<CriteriaType>` - A vector with each `Cost` switched to a `Profit` and each `Profit`
+    ///   switched to a `Cost`.
+    pub fn switch(types: Vec<CriteriaType>) -> Vec<CriteriaType> {
+        types
+            .into_iter()
+            .map(|t| match t {
+                CriteriaType::Cost => CriteriaType::Profit,
+                CriteriaType::Profit => CriteriaType::Cost,
+            })
+            .collect()
+    }
 }

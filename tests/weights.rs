@@ -52,8 +52,9 @@ mod merec_tests {
         ];
 
         // NOTE: This is the "oposite" of the criteria types we'd expect to use for other methods.
-        let criteria_types = CriteriaType::from(vec![1, -1, -1, 1]).unwrap();
-        let normalized_matrix = Linear::normalize(&matrix, &criteria_types).unwrap();
+        let criteria_types = CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
+        let normalized_matrix =
+            Linear::normalize(&matrix, &CriteriaType::switch(criteria_types)).unwrap();
         let weights = Merec::weight(&normalized_matrix).unwrap();
         let expected_weights = array![0.40559526, 0.14185966, 0.37609753, 0.07644754];
         assert_abs_diff_eq!(weights, expected_weights, epsilon = 1e-5);
