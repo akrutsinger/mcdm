@@ -60,6 +60,64 @@ pub trait Weight {
     fn weight(matrix: &Array2<f64>) -> Result<Array1<f64>, WeightingError>;
 }
 
+/// Calculates the weights for the given decision matrix using angular distance.
+///
+/// The `Angular` struct implements the `Weight` trait by calculating the weights for each
+/// criterion using the angular distance between the criterion's values and the mean of the
+/// criterion's values. The weights are then normalized to sum to 1.0.
+///
+/// # ⚠️ **Caution** ⚠️
+/// This method expects the decision matrix be normalized using the [`Sum`](crate::normalization::Sum)
+/// normalization method.
+///
+/// # Weight Calculation
+///
+/// Calculate the angle between the criterion's values and the mean of the criterion's values.
+///
+/// $$ \theta_j = \arccos \left(\frac{\sum_{i=1}^m \left(\frac{x_{ij}}{m}\right)}{\sqrt{\sum_{i=1}^m \left(x_{ij}\right)^2} \sqrt{\sum_{i=1}^m \left(\frac{1}{m}\right)^2}} \right) $$
+///
+/// Then, normalize the angle by dividing it by the sum of the angles.
+///
+/// $$ w_j = \frac{\theta_j}{\sum_{j=1}^m \theta_j} $$
+///
+/// where $x_{ij}$ is the $i$th element of the alternative (row) and $j$th elements of the criterion
+/// (column) with $m$ total criteria.
+///
+/// # Arguments
+///
+/// * `matrix` - A 2D array where rows represent alternatives and columns represent criteria.
+///
+/// # Returns
+///
+/// This method returns a `Result` containing an array of angular-based weights for each criterion.
+/// On an error, this method returns [`WeightingError`].
+pub struct Angular;
+
+impl Weight for Angular {
+    fn weight(matrix: &Array2<f64>) -> Result<Array1<f64>, WeightingError> {
+        let (n, m) = matrix.dim();
+
+        if n == 0 || m == 0 {
+            return Err(WeightingError::EmptyMatrix);
+        }
+
+        let mut weights: Vec<f64> = vec![0.0; m];
+        let add_col = Array2::ones((n, 1)) / m as f64;
+
+        for (i, col) in matrix.axis_iter(Axis(1)).enumerate() {
+            let dot_product = col.sum() / m as f64;
+            let norm_vec = col.mapv(|x| x.powi(2)).sum().sqrt();
+            let norm_add_col = add_col.mapv(|x: f64| x.powi(2)).sum().sqrt();
+            weights[i] = dot_product / (norm_vec * norm_add_col);
+            weights[i] = weights[i].acos();
+        }
+
+        let sum_weights = weights.iter().sum::<f64>();
+        weights.iter_mut().for_each(|x| *x /= sum_weights);
+        Ok(weights.into())
+    }
+}
+
 /// A weighting method that assigns equal weights to all criteria in the decision matrix.
 ///
 /// The [`Equal`] struct implements the [`Weight`] trait by distributing equal importance to each
