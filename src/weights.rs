@@ -161,6 +161,8 @@ impl Weight for Equal {
 /// This method expects the decision matrix be normalized using the [`Sum`](crate::normalization::Sum) normalization method
 /// *before* calling this function. Failure to do so may result in incorrect weights.
 ///
+/// # Weight Calculation
+///
 /// Each criterion (column) in the normalized matrix is evaluated for its entropy. If any value in a
 /// column is zero, the entropy for that column is set to zero. Otherwise, the entropy is calculated
 /// by:
@@ -215,6 +217,8 @@ impl Weight for Entropy {
 /// to the `Linear` normalization method, you must flip the criteria types. I.e., each of the costs
 /// are switch to profits and all profits are switched to costs. Failure to do so may result in unexpected
 /// weights.
+///
+/// # Weight Calculation
 ///
 /// The MEREC weighting method is based on the following formula:
 ///
@@ -315,6 +319,8 @@ impl Weight for Merec {
 }
 
 /// Calculates the weights for the given decision matrix using standard deviation.
+///
+/// # Weight Calculation
 ///
 /// First calculate the standard deviation measure for all of the critera using:
 ///
