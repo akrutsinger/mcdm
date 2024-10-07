@@ -153,7 +153,9 @@ impl Weight for Entropy {
 ///
 /// # ⚠️ **Caution** ⚠️
 /// This method expects the decision matrix is normalized using the [`Linear`](crate::normalization::Linear)
-/// normalization method *before* calling this function. Failure to do so may result in incorrect
+/// normalization method *before* calling this function. Likewise, when passing the `CriteriaType`
+/// to the `Linear` normalization method, you must flip the criteria types. I.e., each of the costs
+/// are switch to profits and all profits are switched to costs. Failure to do so may result in unexpected
 /// weights.
 ///
 /// The MEREC weighting method is based on the following formula:
