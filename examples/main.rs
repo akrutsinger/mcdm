@@ -1,7 +1,7 @@
 use mcdm::{
     errors::McdmError,
-    methods::{Rank, TOPSIS},
     normalization::{MinMax, Normalize},
+    rankings::{Rank, TOPSIS},
     weights::{Equal, Weight},
     CriteriaType,
 };

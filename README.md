@@ -70,7 +70,7 @@ Here’s an example demonstrating how to use the mcdm library for decision-makin
 ```rust
 use mcdm::{
     errors::McdmError,
-    methods::{Rank, TOPSIS},
+    rankings::{Rank, TOPSIS},
     normalization::{MinMax, Normalize},
     weights::{Equal, Weight},
     CriteriaType,

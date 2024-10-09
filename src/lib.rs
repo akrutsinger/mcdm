@@ -7,7 +7,7 @@
 //! ```rust
 //! use mcdm::{
 //!     errors::McdmError,
-//!     methods::{Rank, TOPSIS},
+//!     rankings::{Rank, TOPSIS},
 //!     normalization::{MinMax, Normalize},
 //!     weights::{Equal, Weight},
 //!     CriteriaType,
@@ -39,10 +39,10 @@ use errors::ValidationError;
 
 /// A set of errors that can occur in the `mcdm` crate.
 pub mod errors;
-/// Techniques for ranking alternatives.
-pub mod methods;
 /// Normalization techniques for normalizing a decision matrix.
 pub mod normalization;
+/// Techniques for ranking alternatives.
+pub mod rankings;
 /// Weighting methods for assigning weights to criteria of a normalized matrix.
 pub mod weights;
 
