@@ -11,11 +11,12 @@ repository = "https://github.com/akrutsinger/mcdm"
 
 [dependencies]
 error_set = "0.5.0"
-ndarray = "0.15.6"
+ndarray = "0.16.0"
+ndarray-stats = "0.6.0"
 
 [dev-dependencies]
-approx = "0.5.1"
-ndarray = { version = "0.15.*", features = ["approx-0_5"] }
+ndarray = { version = "0.16.1", features = ["approx"] }
+approx = "0.5"
 
 [package.metadata.docs.rs]
 all-features = true

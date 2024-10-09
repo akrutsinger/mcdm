@@ -34,11 +34,14 @@ Weights reflect the relative importance of each criterion. Different weighting t
 
 | 📊 Name               | 📝 Description |
 | :----------------: | :---------: |
-| Entropy			 | Weights each criterion based on the entropy of all alternatives for the given criterion. |
-| Equal              | Assumes all criteria are of equal importance. Each criterion is assigned the same weight. |
-| Method Based on the Removal Effects of Criiteria (MEREC) | Considers the redundancy or "information loss" when a criterion is removed. General idea assigns higher weights to criteria that cause more variation in the overall evaluation when excluded. |
-| Standard Deviation | Criteria weights are derived from standard deviation across the criteria. This method leads to smaller weights for criteria that have similiar values.
-|  |  |
+| Angular | Measures angle between each criterion and an ideal point in a multidimensional space. Criteria that are closer to that ideal point (i.e., have smaller angles) are considered more important and assigned higher weights. |
+| CRiteria Importance Through Intercriteria Correlation (CRITIC) |Determines weights by combining the variability (standard deviation) of each criterion and the correlation between criteria. A criterion with high variablity and low correlation with others is considered more important. |
+| Entropy			 | Measures the uncertainty or disorder within the criterion's values across alternatives. Criteria with higher variability (i.e., more dispersed values) have higher entropy and are assigned lower weights. Criteria with more structured values receive higher weights. |
+| Equal              | Assumes all criteria are equally important and each criterion is assigned the same weight. |
+| Gini | Based on the Gini coefficient, which measures inequality or dispersion. Criteria with greaterinequality or larger variation across alternatives receive higher weights. |
+| Method Based on the Removal Effects of Criiteria (MEREC) | Evaluates how the absence of a criterion affects the overall decision. Criteria that, when removed, significantly change the ranking of alternatives are considered more important and are given higher weights. |
+| Standard Deviation | Criteria weights are derived from standard deviation of criteria across alternatives. Criteria with hiigher standard deviation (i.e., more variation) are given higher weights because they better differentiate the alternatives.
+| Variance | Similiar to standard deviation, variance weighting assigns weights to criteria based on the dispersion (variance) of their values across alternatives. Criter with higher variance are consideredmore important. |
 
 ### 📈 Ranking Methods
 

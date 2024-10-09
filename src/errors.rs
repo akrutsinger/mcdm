@@ -35,9 +35,8 @@ error_set! {
     /// matrix criteria. These errors may involve invalid matrix dimensions, lack of minimum/maximum
     /// values, or incorrect weight ranges.
     WeightingError = {
-        /// A general error placeholder for weighting operations. Replace with more specific error
-        /// types as weighting methods expand.
-        AnError,
+        /// Indicates that the input array was empty.
+        EmptyInput(ndarray_stats::errors::EmptyInput),
     } || ValidationError;
 
     /// Data validation errors.
