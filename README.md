@@ -107,4 +107,4 @@ If you have any suggestions that could make this project better, please feel fre
 
 ## 📄 License
 
-Distributed under the MIT license. See [LICENSE-MIT.txt](LICENSE-MIT.txt) for more information.
+Distributed under the MIT license. See [LICENSE-MIT](LICENSE-MIT) for more information.
