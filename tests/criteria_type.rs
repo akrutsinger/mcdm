@@ -1,9 +1,10 @@
 mod criteria_type_tests {
+    use mcdm::errors::McdmError;
     use mcdm::errors::ValidationError;
     use mcdm::CriteriaType;
 
     #[test]
-    fn test_from_valid_values() {
+    fn test_from_valid_values() -> Result<(), McdmError> {
         let input = vec![-1, 1, -1, 1];
         let expected = vec![
             CriteriaType::Cost,
@@ -11,16 +12,20 @@ mod criteria_type_tests {
             CriteriaType::Cost,
             CriteriaType::Profit,
         ];
-        let result = CriteriaType::from(input);
-        assert_eq!(result.unwrap(), expected);
+        let result = CriteriaType::from(input)?;
+        assert_eq!(result, expected);
+
+        Ok(())
     }
 
     #[test]
-    fn test_from_invalid_values() {
+    fn test_from_invalid_values() -> Result<(), McdmError> {
         let input = vec![-1, 2, 1];
         let result = CriteriaType::from(input);
         assert!(result.is_err());
         assert!(matches!(result.unwrap_err(), ValidationError::InvalidValue));
+
+        Ok(())
     }
 
     #[test]
