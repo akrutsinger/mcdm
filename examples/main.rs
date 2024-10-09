@@ -1,8 +1,8 @@
 use mcdm::{
     errors::McdmError,
     normalization::{MinMax, Normalize},
-    rankings::{Rank, TOPSIS},
-    weights::{Equal, Weight},
+    ranking::{Rank, TOPSIS},
+    weighting::{Equal, Weight},
     CriteriaType,
 };
 use ndarray::array;

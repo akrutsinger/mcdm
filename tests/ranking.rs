@@ -1,6 +1,6 @@
 use approx::assert_abs_diff_eq;
 use mcdm::errors::McdmError;
-use mcdm::rankings::*;
+use mcdm::ranking::*;
 use ndarray::array;
 
 mod topsis_tests {

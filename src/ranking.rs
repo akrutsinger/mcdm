@@ -16,13 +16,13 @@ use ndarray::{Array1, Array2, Axis};
 /// Here’s an example of ranking alternatives using the [`Rank`] trait:
 ///
 /// ```rust
-/// use mcdm::rankings::{TOPSIS, Rank};
+/// use mcdm::ranking::{TOPSIS, Rank};
 /// use ndarray::{array, Array1, Array2};
 ///
 /// let normalized_matrix: Array2<f64> = array![[0.8, 0.6], [0.5, 0.9], [0.3, 0.7]];
 /// let weights: Array1<f64> = array![0.6, 0.4];
-/// let rankings = TOPSIS::rank(&normalized_matrix, &weights).unwrap();
-/// println!("Rankings: {:?}", rankings);
+/// let ranking = TOPSIS::rank(&normalized_matrix, &weights).unwrap();
+/// println!("Ranking: {:?}", ranking);
 /// ```
 ///
 /// # Arguments
@@ -103,7 +103,7 @@ pub trait Rank {
 ///
 /// ```rust
 /// use approx::assert_abs_diff_eq;
-/// use mcdm::rankings::{Rank, TOPSIS};
+/// use mcdm::ranking::{Rank, TOPSIS};
 /// use mcdm::normalization::{MinMax, Normalize};
 /// use ndarray::{array, Array2};
 ///
@@ -181,7 +181,7 @@ impl Rank for TOPSIS {
 ///
 /// ```rust
 /// use approx::assert_abs_diff_eq;
-/// use mcdm::rankings::{Rank, WeightedProduct};
+/// use mcdm::ranking::{Rank, WeightedProduct};
 /// use mcdm::normalization::{Normalize, Sum};
 /// use mcdm::CriteriaType;
 /// use ndarray::{array};
@@ -254,7 +254,7 @@ impl Rank for WeightedProduct {
 ///
 /// ```rust
 /// use approx::assert_abs_diff_eq;
-/// use mcdm::rankings::{WeightedSum, Rank};
+/// use mcdm::ranking::{WeightedSum, Rank};
 /// use ndarray::{array, Array1, Array2};
 ///
 /// let matrix = array![[0.2, 0.8], [0.5, 0.5], [0.9, 0.1]];

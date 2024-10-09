@@ -7,9 +7,9 @@
 //! ```rust
 //! use mcdm::{
 //!     errors::McdmError,
-//!     rankings::{Rank, TOPSIS},
+//!     ranking::{Rank, TOPSIS},
 //!     normalization::{MinMax, Normalize},
-//!     weights::{Equal, Weight},
+//!     weighting::{Equal, Weight},
 //!     CriteriaType,
 //! };
 //! use ndarray::array;
@@ -42,9 +42,9 @@ pub mod errors;
 /// Normalization techniques for normalizing a decision matrix.
 pub mod normalization;
 /// Techniques for ranking alternatives.
-pub mod rankings;
+pub mod ranking;
 /// Weighting methods for assigning weights to criteria of a normalized matrix.
-pub mod weights;
+pub mod weighting;
 
 /// Enum to represent the type of each criterion: either Cost or Profit.
 #[derive(Clone, Debug, PartialEq, Eq)]

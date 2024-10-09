@@ -22,7 +22,7 @@ use ndarray_stats::CorrelationExt;
 /// Here's an example of how to use the [`Weight`] trait with an [`Equal`] weighting scheme:
 ///
 /// ```rust
-/// use mcdm::{weights::{Equal, Weight}};
+/// use mcdm::weighting::{Equal, Weight};
 /// use ndarray::array;
 ///
 /// let decision_matrix = array![[3.0, 4.0, 2.0], [1.0, 5.0, 3.0]];
@@ -379,7 +379,7 @@ impl Weight for Gini {
 ///
 /// ```rust
 /// use mcdm::normalization::{Linear, Normalize};
-/// use mcdm::weights::{Merec, Weight};
+/// use mcdm::weighting::{Merec, Weight};
 /// use mcdm::CriteriaType;
 /// use ndarray::array;
 ///

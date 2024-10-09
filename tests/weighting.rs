@@ -1,7 +1,7 @@
 use approx::assert_abs_diff_eq;
 use mcdm::errors::McdmError;
 use mcdm::normalization::*;
-use mcdm::weights::*;
+use mcdm::weighting::*;
 use mcdm::CriteriaType;
 use ndarray::array;
 
