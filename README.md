@@ -49,6 +49,7 @@ Ranking algorithms combine normalized data and weights to determine the best alt
 
 | 🥇 Name               | 📝 Description |
 | :----------------: | :---------: |
+| Multi-Attributive Border Approximation Area Comparison (MABAC) | A compensatory ranking method that allows for the trade-off between criteria. The general approach is to calculate the distance between each alternative and an ideal solution called the "border approximation area". |
 | Technique for Order of Preference by Similarity to Ideal Solution (TOPSIS)          |   Conceptually says the best alternative should have the shortest geometric distance from the postivei ideal solution and the longest distance form the negative ideal solution.  |
 | Weighted Product Model | Ranks alternatives based on product of each weighted alternative. |
 | Weighted Sum | Ranks alternatives based on the weighted sum of the alternatives criteria values. |

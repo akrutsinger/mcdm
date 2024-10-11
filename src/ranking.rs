@@ -62,6 +62,88 @@ pub trait Rank {
     fn rank(matrix: &Array2<f64>, weights: &Array1<f64>) -> Result<Array1<f64>, RankingError>;
 }
 
+/// Ranks the alternatives using the Multi-Attributive Border Approximation Area Comparison (MABAC) method.
+///
+/// The MABAC method expects the decision matrix is normalized using the [`MinMax`](crate::normalization::MinMax)
+/// method. Then computes a weighted matrix $v_{ij}$ using
+///
+/// $$ v_{ij} = {w_j}(x_{ij} + 1) $$
+///
+/// where $x_{ij}$ is the $i$th element of the alternative (row), $j$th elements of the criterion
+/// (column), and $w_j$ is the weight of the $j$th criterion.
+///
+/// We then compute the boundary appromixation area for all criteria.
+///
+/// $$ g_i = \left( \prod_{j=1}^m v_{ij} \right)^{1/m} $$
+///
+/// where $g_i$ is the boundary approximation area for the $i$th alternative, $v_{ij}$ is the weighted
+/// matrix for the $i$th alternative and $j$th criterion, and $m$ is the number of criteria.
+///
+/// Next we calculate the distance of the $i$th alternative and $j$th criterion from the boundary
+/// approximation area
+///
+/// $$ q_{ij} = v_{ij} - g_j $$
+///
+/// Lastly, we rank the alternatives according to the sum of the distances of the alternatives from
+/// the border approximation area.
+///
+/// $$ S_i = \sum_{j=1}^{m} q_{ij} \quad \text{for} \quad i=1, \ldots, n \quad \text{and} \quad j=1, \ldots, m $$
+///
+/// where $q_{ij}$ is the distance of the $i$th alternative and $j$th criterion of the weighted
+/// matrix $v_{ij}$ to the boundary approximation $g_i$, $n$ is the number of alternatives and $m$
+/// is the number of criteria.
+///
+/// # Arguments
+///
+/// * `matrix` - A normalized decision matrix of alternatives (alternatives x criteria).
+/// * `weights` - A vector of weights for each criterion.
+///
+/// # Returns
+///
+/// * `Result<Array1<f64>, RankingError>` - A vector of scores for each alternative.
+///
+/// # Example
+///
+/// ```rust
+/// use approx::assert_abs_diff_eq;
+/// use mcdm::ranking::{Rank, Mabac};
+/// use mcdm::normalization::{MinMax, Normalize};
+/// use ndarray::{array, Array2};
+///
+/// let matrix = array![
+///     [2.9, 2.31, 0.56, 1.89],
+///     [1.2, 1.34, 0.21, 2.48],
+///     [0.3, 2.48, 1.75, 1.69]
+/// ];
+/// let weights = array![0.25, 0.25, 0.25, 0.25];
+/// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
+/// let normalized_matrix = MinMax::normalize(&matrix, &criteria_types).unwrap();
+/// let ranking = Mabac::rank(&normalized_matrix, &weights).unwrap();
+/// assert_abs_diff_eq!(ranking, array![-0.01955314, -0.31233795,  0.52420052], epsilon = 1e-5);
+/// ```
+pub struct Mabac;
+
+impl Rank for Mabac {
+    fn rank(matrix: &Array2<f64>, weights: &Array1<f64>) -> Result<Array1<f64>, RankingError> {
+        if weights.len() != matrix.ncols() {
+            return Err(RankingError::DimensionMismatch);
+        }
+
+        // Calculation of the elements from the weighted matrix
+        let weighted_matrix = (matrix + 1.0) * weights;
+
+        // Determining the border approximation area matrix
+        let g = weighted_matrix
+            .map_axis(Axis(0), |row| row.product())
+            .mapv(|x| x.powf(1.0 / matrix.nrows() as f64));
+
+        // Calculation of the distance border approximation area
+        let q = weighted_matrix - g;
+
+        Ok(q.sum_axis(Axis(1)))
+    }
+}
+
 /// Ranks the alternatives using the TOPSIS method.
 ///
 /// The TOPSIS method expects the decision matrix is normalized using the [`MinMax`](crate::normalization::MinMax)
