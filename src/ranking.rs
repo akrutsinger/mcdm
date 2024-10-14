@@ -1,5 +1,6 @@
 use crate::errors::RankingError;
 use ndarray::{Array1, Array2, Axis};
+use ndarray_stats::QuantileExt;
 
 /// A trait for ranking alternatives in Multiple-Criteria Decision Making (MCDM).
 ///
@@ -62,7 +63,103 @@ pub trait Rank {
     fn rank(matrix: &Array2<f64>, weights: &Array1<f64>) -> Result<Array1<f64>, RankingError>;
 }
 
-/// Ranks the alternatives using the Multi-Attributive Border Approximation Area Comparison (MABAC) method.
+/// Ranks the alternatives using the COmbined Compromise SOlution (COCOSO) method.
+///
+/// The COCOSO method expects the decision matrix is normalized using the [`MinMax`](crate::normalization::MinMax)
+/// method. Then calculate the weighted sum of the comparision sequence and the total power weight
+/// of the comparison sequence for each alternative. The values of $S_i$ are based on the grey
+/// relationship generation method and the values for $P_i$ are based on the multiplicative WASPAS
+/// method.
+///
+/// $$ S_i = \sum_{j=1}^m(w_j r_{ij}) $$
+/// $$ P_i = \sum_{j=1}^m(r_{ij})^{w_j} $$
+///
+/// where $S_i$ is the grey relationship, $P_i$ is the multiplicative `WASPAS`, $m$ is the number of
+/// criteria, $r_{ij}$ is the $i$th element of the alternative, $j$th elements of the criterion of
+/// the normalized decision matrix, and $w_j$ is the $j$th weight.
+///
+/// We then compute the relative weights of alternatives using aggregation strategies.
+///
+/// $$ k_{ia} = \frac{P_i + S_i}{\sum_{i=1}^n \left(P_i + S_i\right)} $$
+/// $$ k_{ib} = \frac{S_i}{\min_i(S_i)} + \frac{P_i}{\min_i(P_i)} $$
+/// $$ k_{ic} = \frac{\lambda(S_i) + (1 - \lambda)(P_i)}{\lambda \max_i(S_i) + (1 - \lambda) \max_i(P_i)} \quad 0 \leq \lambda \leq 1 $$
+///
+/// where $k_{ia}$ represents the average of the sums of [`WeightedSum`] and [`WeightedProduct`]
+/// scores, $k_{ib}$ represents the [`WeightedSum`] and [`WeightedProduct`] scores over the best
+/// scores for each each method respectfully, and $k_{ic}$ represents the [`WeightedSum`],
+/// [`WeightedProduct`] scores using the compromise strategy, and $n$ is the number of alternatives.
+///
+/// Lastly, we rank the alternatives as follows:
+///
+/// $$ k_i = (k_{ia}k_{ib}k_{ic})^{\frac{1}{3}} + \frac{1}{3}(k_{ia} + k_{ib} + k_{ic}) $$
+///
+///
+/// # Arguments
+///
+/// * `matrix` - A normalized decision matrix of alternatives (alternatives x criteria).
+/// * `weights` - A vector of weights for each criterion.
+///
+/// # Returns
+///
+/// * `Result<Array1<f64>, RankingError>` - A vector of scores for each alternative.
+///
+/// # Example
+///
+/// ```rust
+/// use approx::assert_abs_diff_eq;
+/// use mcdm::ranking::{Rank, Cocoso};
+/// use mcdm::normalization::{MinMax, Normalize};
+/// use ndarray::{array, Array2};
+///
+/// let matrix = array![
+///     [2.9, 2.31, 0.56, 1.89],
+///     [1.2, 1.34, 0.21, 2.48],
+///     [0.3, 2.48, 1.75, 1.69]
+/// ];
+/// let weights = array![0.25, 0.25, 0.25, 0.25];
+/// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
+/// let normalized_matrix = MinMax::normalize(&matrix, &criteria_types).unwrap();
+/// let ranking = Cocoso::rank(&normalized_matrix, &weights).unwrap();
+/// assert_abs_diff_eq!(ranking, array![3.24754746, 1.14396494, 5.83576765], epsilon = 1e-5);
+/// ```
+pub struct Cocoso;
+
+impl Rank for Cocoso {
+    fn rank(matrix: &Array2<f64>, weights: &Array1<f64>) -> Result<Array1<f64>, RankingError> {
+        if weights.len() != matrix.ncols() {
+            return Err(RankingError::DimensionMismatch);
+        }
+
+        let l = 0.5;
+
+        // Vectors of S and P
+        let s = (matrix * weights).sum_axis(Axis(1));
+
+        let mut p = Array1::zeros(matrix.nrows());
+        //let mut p = matrix.mapv(|x| x.powf(*weights));
+        for (i, row) in matrix.axis_iter(Axis(0)).enumerate() {
+            let mut row_sum = 0.0;
+            for (j, &value) in row.iter().enumerate() {
+                row_sum += value.powf(weights[j]);
+            }
+            p[i] = row_sum;
+        }
+        // Calculate score strategies
+        let ksi_a = (p.clone() + s.clone()) / (p.clone() + s.clone()).sum();
+        let ksi_b = s.clone() / *s.min()? + p.clone() / *p.min()?;
+        let ksi_c =
+            (l * s.clone() + (1.0 - l) * p.clone()) / (l * s.max()? + (1.0 - l) * p.max()?);
+
+        // Compute the performance score
+        let ksi = (ksi_a.clone() * ksi_b.clone() * ksi_c.clone()).powf(1.0 / 3.0)
+            + ((ksi_a.clone() + ksi_b.clone() + ksi_c.clone()) / 3.0f64);
+
+        Ok(ksi)
+    }
+}
+
+/// Ranks the alternatives using the Multi-Attributive Border Approximation Area Comparison (MABAC)
+/// method.
 ///
 /// The MABAC method expects the decision matrix is normalized using the [`MinMax`](crate::normalization::MinMax)
 /// method. Then computes a weighted matrix $v_{ij}$ using
@@ -76,8 +173,9 @@ pub trait Rank {
 ///
 /// $$ g_i = \left( \prod_{j=1}^m v_{ij} \right)^{1/m} $$
 ///
-/// where $g_i$ is the boundary approximation area for the $i$th alternative, $v_{ij}$ is the weighted
-/// matrix for the $i$th alternative and $j$th criterion, and $m$ is the number of criteria.
+/// where $g_i$ is the boundary approximation area for the $i$th alternative, $v_{ij}$ is the
+/// weighted matrix for the $i$th alternative and $j$th criterion, and $m$ is the number of
+/// criteria.
 ///
 /// Next we calculate the distance of the $i$th alternative and $j$th criterion from the boundary
 /// approximation area
@@ -299,7 +397,6 @@ impl Rank for WeightedProduct {
         for (i, row) in matrix.axis_iter(Axis(0)).enumerate() {
             for (j, &value) in row.iter().enumerate() {
                 weighted_matrix[[i, j]] = value.powf(weights[j]);
-                println!("{:?}", weighted_matrix[[i, j]]);
             }
         }
 

@@ -13,9 +13,8 @@ error_set! {
     /// TOPSIS or other ranking algorithms. Currently, it includes general placeholders but can be
     /// extended to provide more precise errors as method implementations evolve.
     RankingError = {
-        /// A general error placeholder for ranking. Replace with more specific error types as the
-        /// ranking algorithms evolve.
-        AnError,
+        /// An error computing a minimum/maximum value.
+        MinMaxError(ndarray_stats::errors::MinMaxError),
     } || ValidationError;
 
     /// Normalization related errors.

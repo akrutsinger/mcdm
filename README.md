@@ -49,6 +49,7 @@ Ranking algorithms combine normalized data and weights to determine the best alt
 
 | 🥇 Name               | 📝 Description |
 | :----------------: | :---------: |
+| COmbined COmpromise SOlution (COCOSO) | Combines aspects of compromise ranking methods to evaluate and rank alternatives by integrating three approaches: simple additive weighting (SAW), weighted product model (WPM), and the average ranking of alternatives based on their relative performance. This method finds a compromise solution by blending these different ranking strategies, making it robust in handling conflicting criteria. |
 | Multi-Attributive Border Approximation Area Comparison (MABAC) | A compensatory ranking method that allows for the trade-off between criteria. The general approach is to calculate the distance between each alternative and an ideal solution called the "border approximation area". |
 | Technique for Order of Preference by Similarity to Ideal Solution (TOPSIS)          |   Conceptually says the best alternative should have the shortest geometric distance from the postivei ideal solution and the longest distance form the negative ideal solution.  |
 | Weighted Product Model | Ranks alternatives based on product of each weighted alternative. |

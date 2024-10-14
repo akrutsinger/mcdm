@@ -3,6 +3,61 @@ use mcdm::errors::McdmError;
 use mcdm::ranking::*;
 use ndarray::array;
 
+mod cocoso_tests {
+    use super::*;
+    use mcdm::normalization::{MinMax, Normalize};
+
+    #[test]
+    fn test_rank() -> Result<(), McdmError> {
+        let matrix = array![
+            [2.9, 2.31, 0.56, 1.89],
+            [1.2, 1.34, 0.21, 2.48],
+            [0.3, 2.48, 1.75, 1.69]
+        ];
+        let weights = array![0.25, 0.25, 0.25, 0.25];
+        let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1])?;
+        let normalized_matrix = MinMax::normalize(&matrix, &criteria_types)?;
+        let ranking = Cocoso::rank(&normalized_matrix, &weights)?;
+        assert_abs_diff_eq!(
+            ranking,
+            array![3.24754746, 1.14396494, 5.83576765],
+            epsilon = 1e-5
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_with_zero_weights() -> Result<(), McdmError> {
+        let matrix = array![[0.2, 0.8], [0.5, 0.5], [0.9, 0.1]];
+        let weights = array![0.0, 0.0];
+        let ranking = Cocoso::rank(&matrix, &weights)?;
+        //assert_eq!(ranking, array![0.0, 0.0, 0.0]);
+        println!(
+            "\n\x1b[93mRanking\x1b[0m: {} ===== {}\n",
+            ranking,
+            ranking.is_nan()
+        );
+        //NOTE: ideally, the function `is_all_nan()` should return true, but for some reason always
+        // returns falsed. This is effectively the same thing. Currently building against ndarray
+        // v0.16.0.
+        //assert_eq!(ranking.is_all_nan(), true);
+        assert_eq!(ranking.is_nan(), array![true, true, true]);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_rank_with_invalid_dimensions() -> Result<(), McdmError> {
+        let matrix = array![[0.2, 0.8], [0.5, 0.5], [0.9, 0.1]];
+        let weights = array![0.6];
+        let ranking = Cocoso::rank(&matrix, &weights);
+        assert!(ranking.is_err());
+
+        Ok(())
+    }
+}
+
 mod mabac_tests {
     use super::*;
     use mcdm::normalization::{MinMax, Normalize};
