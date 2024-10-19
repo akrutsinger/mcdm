@@ -95,7 +95,6 @@ mod merec_tests {
             [0.3, 2.48, 1.75, 1.69]
         ];
 
-        // NOTE: This is the "oposite" of the criteria types we'd expect to use for other methods.
         let criteria_types = CriteriaType::from(vec![-1, 1, 1, -1])?;
         let normalized_matrix = Linear::normalize(&matrix, &CriteriaType::switch(criteria_types))?;
         let weights = Merec::weight(&normalized_matrix)?;

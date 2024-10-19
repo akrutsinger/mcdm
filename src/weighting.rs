@@ -29,19 +29,6 @@ use ndarray_stats::CorrelationExt;
 /// let weights = Equal::weight(&decision_matrix).unwrap();
 /// println!("{:?}", weights);
 /// ```
-///
-/// # Arguments
-///
-/// * `matrix` - A reference to a 2D decision matrix (`Array2<f64>`), where rows represent
-///   alternatives and columns represent criteria.
-///
-/// # Returns
-///
-/// This method returns a `Result<Array1<f64>, WeightingError>`, where:
-///
-/// * `Array1<f64>` is a 1D array of weights corresponding to each criterion.
-/// * `WeightingError` is returned if an error occurs while calculating the weights (e.g., an
-///   invalid matrix shape or calculation failure).
 pub trait Weight {
     /// Calculate a weight vector for the criteria in the decision matrix.
     ///
@@ -67,13 +54,11 @@ pub trait Weight {
 /// criterion using the angular distance between the criterion's values and the mean of the
 /// criterion's values. The weights are then normalized to sum to 1.0.
 ///
-/// # ⚠️ **Caution** ⚠️
-/// This method expects the decision matrix be normalized using the [`Sum`](crate::normalization::Sum)
-/// normalization method.
-///
 /// # Weight Calculation
 ///
-/// Calculate the angle between the criterion's values and the mean of the criterion's values.
+/// Normalize the decision matrix using the [`Sum`](crate::normalization::Sum) normalization method.
+///
+/// Next, calculate the angle between the criterion's values and the mean of the criterion's values.
 ///
 /// $$ \theta_j = \arccos \left(\frac{\sum_{i=1}^m \left(\frac{x_{ij}}{m}\right)}{\sqrt{\sum_{i=1}^m \left(x_{ij}\right)^2} \sqrt{\sum_{i=1}^m \left(\frac{1}{m}\right)^2}} \right) $$
 ///
@@ -86,7 +71,8 @@ pub trait Weight {
 ///
 /// # Arguments
 ///
-/// * `matrix` - A 2D array where rows represent alternatives and columns represent criteria.
+/// * `matrix` - A 2D normalized decision matrix where rows represent alternatives and columns
+///   represent criteria.
 ///
 /// # Returns
 ///
@@ -129,13 +115,12 @@ impl Weight for Angular {
 /// (i.e., redundant) should have less weight compared to those that are independent or less
 /// correlated.
 ///
-/// # ⚠️ **Caution** ⚠️
-/// This method expects the decision matrix be normalized using the [`MinMax`](crate::normalization::MinMax)
-/// normalization method where all criteria are treated as profit types.
-///
 /// # Weight Calculation
 ///
-/// Calculate the standard devision. This reflects the degree of contrast (variation) in that
+/// Normalize the decision matrix using the [`MinMax`](crate::normalization::MinMax) normalization
+/// method.
+///
+/// Then calculate the standard devision. This reflects the degree of contrast (variation) in that
 /// criterion. Criteria with a higher standard deviation are considered more important.
 ///
 /// $$ \sigma_j = \sqrt{\frac{\sum_{i=1}^m (x_{ij} - x_j)^2}{m}} \quad \text{for} \quad j=1, \ldots, n $$
@@ -161,7 +146,8 @@ impl Weight for Angular {
 ///
 /// # Arguments
 ///
-/// * `matrix` - A 2D array where rows represent alternatives and columns represent criteria.
+/// * `matrix` - A 2D normalized decision matrix where rows represent alternatives and columns
+///   represent criteria.
 ///
 /// # Returns
 ///
@@ -204,10 +190,15 @@ impl Weight for Critic {
 /// where $w_i$ is the weight assigned to criterion $i$, and $n$ is the total number of
 /// criteria in the decision matrix.
 ///
+/// # Arguments
+///
+/// * `matrix` - A 2D normalized decision matrix where rows represent alternatives and columns
+///   represent criteria.
+///
 /// # Returns
 ///
 /// This method returns an array of equal weights for each criterion. If the matrix has no criteria
-/// (i.e., zero columns), it returns a [`WeightingError::ZeroRange`] error.
+/// (i.e., zero columns), it returns a [`WeightingError`] error.
 pub struct Equal;
 
 impl Weight for Equal {
@@ -227,11 +218,9 @@ impl Weight for Equal {
 
 /// Calculates the entropy-based weights for the given decision matrix.
 ///
-/// # ⚠️ **Caution** ⚠️
-/// This method expects the decision matrix be normalized using the [`Sum`](crate::normalization::Sum) normalization method
-/// *before* calling this function. Failure to do so may result in incorrect weights.
-///
 /// # Weight Calculation
+///
+/// Normalize the decision matrix using the [`Sum`](crate::normalization::Sum) normalization method.
 ///
 /// Each criterion (column) in the normalized matrix is evaluated for its entropy. If any value in a
 /// column is zero, the entropy for that column is set to zero. Otherwise, the entropy is calculated
@@ -249,7 +238,8 @@ impl Weight for Equal {
 ///
 /// # Arguments
 ///
-/// * `matrix` - A 2D array where rows represent alternatives and columns represent criteria.
+/// * `matrix` - A 2D normalized decision matrix where rows represent alternatives and columns
+///   represent criteria.
 ///
 /// # Returns
 ///
@@ -300,7 +290,8 @@ impl Weight for Entropy {
 ///
 /// # Arguments
 ///
-/// * `matrix` - A 2D array where rows represent alternatives and columns represent criteria.
+/// * `matrix` - A 2D normalized decision matrix where rows represent alternatives and columns
+///   represent criteria.
 ///
 /// # Returns
 ///
@@ -338,14 +329,11 @@ impl Weight for Gini {
 
 /// Calculate weights using the Method Based on the Removal Effects of Criiteria (MEREC) method.
 ///
-/// # ⚠️ **Caution** ⚠️
-/// This method expects the decision matrix is normalized using the [`Linear`](crate::normalization::Linear)
-/// normalization method *before* calling this function. Likewise, when passing the `CriteriaType`
-/// to the `Linear` normalization method, you must flip the criteria types. I.e., each of the costs
-/// are switch to profits and all profits are switched to costs. Failure to do so may result in unexpected
-/// weights.
-///
 /// # Weight Calculation
+///
+/// Normalize the decision matrix using the [`Linear`](crate::normalization::Linear) method. When
+/// passing the `CriteriaType` to the `Linear` normalization method, you must switch the criteria
+/// types so each cost becomes a profit and each profit becomes a cost.
 ///
 /// The MEREC weighting method is based on the following formula:
 ///
@@ -368,7 +356,8 @@ impl Weight for Gini {
 ///
 /// # Arguments
 ///
-/// * `matrix` - A normalized decision matrix.
+/// * `matrix` - A 2D normalized decision matrix where rows represent alternatives and columns
+///   represent criteria.
 ///
 /// # Returns
 ///
@@ -462,7 +451,8 @@ impl Weight for Merec {
 ///
 /// # Arguments
 ///
-/// * `matrix` - A 2D array where rows represent alternatives and columns represent criteria.
+/// * `matrix` - A 2D normalized decision matrix where rows represent alternatives and columns
+///   represent criteria.
 ///
 /// # Returns
 ///
@@ -502,14 +492,12 @@ impl Weight for StandardDeviation {
 /// alternatives. Therefore, criteria with higher variance are given more weight in the
 /// decision-making process.
 ///
-/// # ⚠️ **Caution** ⚠️
-/// This method expects the decision matrix be normalized using the [`MinMax`](crate::normalization::MinMax)
-/// normalization method with all criteria as profits*before* calling this function. Failure to do
-/// so may result in incorrect weights.
-///
 /// # Weight Calculation
 ///
-/// First calculate the variance measure for all of the criteria using:
+/// Normalize the decision matrix using the [`MinMax`](crate::normalization::MinMax) normalization
+/// method.
+///
+/// Then calculate the variance measure for all of the criteria using:
 ///
 /// $$ V_j = \frac{1}{n} \sum_{i=1}^n (x_{ij} - \bar{x}_j)^2 \quad \text{for} \quad j=1, \ldots, m $$
 ///
@@ -525,7 +513,8 @@ impl Weight for StandardDeviation {
 ///
 /// # Arguments
 ///
-/// * [matrix](cci:4://file:///home/austyn/code/mcdm/src/lib.rs:45:0-56:0) - A 2D array where rows represent alternatives and columns represent criteria.
+/// * `matrix` - A 2D normalized decision matrix where rows represent alternatives and columns
+///   represent criteria.
 ///
 /// # Returns
 ///
