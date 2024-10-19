@@ -15,7 +15,8 @@ mod angular_tests {
             [1.2, 1.34, 0.21, 2.48],
             [0.3, 2.48, 1.75, 1.69]
         ];
-        let weights = Angular::weight(&matrix)?;
+        let normalized_matrix = Sum::normalize(&matrix, &CriteriaType::profits(matrix.ncols()))?;
+        let weights = Angular::weight(&normalized_matrix)?;
         let expected_weights = array![0.37183274, 0.14136016, 0.39029729, 0.09650981];
         assert_abs_diff_eq!(weights, expected_weights, epsilon = 1e-5);
 
