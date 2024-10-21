@@ -1,3 +1,5 @@
+//! A set of errors that can occur in the `mcdm` crate.
+
 use error_set::error_set;
 
 error_set! {
@@ -36,6 +38,8 @@ error_set! {
     WeightingError = {
         /// Indicates that the input array was empty.
         EmptyInput(ndarray_stats::errors::EmptyInput),
+        /// No null spaces identified in the matrix.
+        NoNullSpace,
     } || ValidationError;
 
     /// Data validation errors.

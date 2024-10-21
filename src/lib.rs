@@ -35,16 +35,12 @@
 //! }
 //! ```
 
-use errors::ValidationError;
-
-/// A set of errors that can occur in the `mcdm` crate.
 pub mod errors;
-/// Normalization techniques for normalizing a decision matrix.
 pub mod normalization;
-/// Techniques for ranking alternatives.
 pub mod ranking;
-/// Weighting methods for assigning weights to criteria of a normalized matrix.
 pub mod weighting;
+
+use errors::ValidationError;
 
 /// Enum to represent the type of each criterion: either Cost or Profit.
 #[derive(Clone, Debug, PartialEq, Eq)]

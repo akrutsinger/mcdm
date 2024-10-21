@@ -1,3 +1,5 @@
+//! Techniques for ranking alternatives.
+
 use crate::errors::RankingError;
 use ndarray::{Array1, Array2, Axis};
 use ndarray_stats::QuantileExt;
@@ -25,23 +27,6 @@ use ndarray_stats::QuantileExt;
 /// let ranking = TOPSIS::rank(&normalized_matrix, &weights).unwrap();
 /// println!("Ranking: {:?}", ranking);
 /// ```
-///
-/// # Arguments
-///
-/// * `matrix` - A normalized decision matrix (`Array2<f64>`), where rows represent alternatives
-///   and columns represent criteria. This matrix must already be normalized, as the ranking process
-///   assumes that the values are comparable across criteria.
-/// * `weights` - A 1D array (`Array1<f64>`) representing the relative importance of each criterion.
-///   The length of this array must match the number of columns in `matrix`.
-///
-/// # Returns
-///
-/// This method returns a `Result<Array1<f64>, RankingError>`, where:
-///
-/// - `Array1<f64>` is a 1D array containing the preference values for each alternative. Higher
-///   values indicate better alternatives.
-/// - [`RankingError`] is returned if the ranking process fails (e.g., due to a mismatch between the
-///   dimensions of `matrix` and `weights`, or other calculation errors).
 pub trait Rank {
     /// Ranks the alternatives in a normalized decision matrix based on the provided criteria
     /// weights.
@@ -54,7 +39,8 @@ pub trait Rank {
     ///
     /// * `matrix` - A normalized decision matrix where each row represents an alternative and each
     ///   column represents a criterion.
-    /// * `weights` - A 1D array of weights corresponding to the relative importance of each criterion.
+    /// * `weights` - A 1D array of weights corresponding to the relative importance of each
+    ///   criterion.
     ///
     /// # Returns
     ///

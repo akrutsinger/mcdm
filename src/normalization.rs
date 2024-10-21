@@ -1,3 +1,5 @@
+//! Normalization techniques for normalizing a decision matrix.
+
 use crate::errors::NormalizationError;
 use crate::CriteriaType;
 use ndarray::{Array2, Axis};
@@ -31,22 +33,6 @@ use ndarray::{Array2, Axis};
 /// let normalized_matrix = MinMax::normalize(&decision_matrix, &criteria_types).unwrap();
 /// println!("{:?}", normalized_matrix);
 /// ```
-///
-/// # Arguments
-///
-/// * `matrix` - A 2D decision matrix (`Array2<f64>`), where each row represents an alternative and
-///   each column represents a criterion.
-/// * `types` - An array slice of &[[`CriteriaType`]] indicating the [`CriteriaType::Cost`] or
-///   [`CriteriaType::Profit`] of each criterion. The length of this array must match the number of
-///   columns in `matrix`.
-///
-/// # Returns
-///
-/// This method returns a `Result<Array2<f64>, NormalizationError>`, where:
-///
-/// - `Array2<f64>` is the normalized matrix with the same dimensions as the input matrix.
-/// - [`NormalizationError`] is returned if the normalization process fails (e.g., due to a mismatch
-///   in the dimensions of `matrix` and `types` or invalid input values).
 pub trait Normalize {
     /// Normalizes the decision matrix incorporating the specified criteria types.
     ///
