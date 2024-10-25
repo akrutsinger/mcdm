@@ -17,7 +17,7 @@ error_set! {
     RankingError = {
         /// An error computing a minimum/maximum value.
         MinMaxError(ndarray_stats::errors::MinMaxError),
-    } || ValidationError;
+    } || NormalizationError ||ValidationError;
 
     /// Normalization related errors.
     ///

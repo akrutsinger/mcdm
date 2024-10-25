@@ -3,6 +3,25 @@ use mcdm::errors::McdmError;
 use mcdm::ranking::*;
 use ndarray::array;
 
+mod aras_tests {
+    use super::*;
+
+    #[test]
+    fn test_rank() -> Result<(), McdmError> {
+        let matrix = array![
+            [2.9, 2.31, 0.56, 1.89],
+            [1.2, 1.34, 0.21, 2.48],
+            [0.3, 2.48, 1.75, 1.69]
+        ];
+        let weights = array![0.25, 0.25, 0.25, 0.25];
+        let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1])?;
+        let ranking = Aras::rank(&matrix, &criteria_types, &weights)?;
+        assert_abs_diff_eq!(ranking, array![0.49447117, 0.35767527, 1.0], epsilon = 1e-5);
+
+        Ok(())
+    }
+}
+
 mod cocoso_tests {
     use super::*;
     use mcdm::normalization::{MinMax, Normalize};

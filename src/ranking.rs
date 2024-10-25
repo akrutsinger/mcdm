@@ -1,7 +1,9 @@
 //! Techniques for ranking alternatives.
 
 use crate::errors::RankingError;
-use ndarray::{Array1, Array2, Axis};
+use crate::normalization::{Normalize, Sum};
+use crate::CriteriaType;
+use ndarray::{s, Array1, Array2, Axis};
 use ndarray_stats::QuantileExt;
 
 /// A trait for ranking alternatives in Multiple-Criteria Decision Making (MCDM).
@@ -28,7 +30,7 @@ use ndarray_stats::QuantileExt;
 /// println!("Ranking: {:?}", ranking);
 /// ```
 pub trait Rank {
-    /// Ranks the alternatives in a normalized decision matrix based on the provided criteria
+    /// Ranks the alternatives of a normalized decision matrix based on the provided criteria
     /// weights.
     ///
     /// This method computes preference values for each alternative in the decision matrix by
@@ -47,6 +49,179 @@ pub trait Rank {
     /// * `Result<Array1<f64>, RankingError>` - A 1D array of preference values, or an error if the
     ///   ranking process fails.
     fn rank(matrix: &Array2<f64>, weights: &Array1<f64>) -> Result<Array1<f64>, RankingError>;
+}
+
+/// A trait for ranking alternatives in Multiple-Criteria Decision Making (MCDM).
+///
+/// The [`RankWithCriteriaType`] trait defines a method used to rank alternatives based on a
+/// decision matrix and a set of weights for the criteria. The ranking process evaluates how well
+/// each alternative performs across the criteria, considering the relative importance of each
+/// criterion as given by the `weights` array.
+///
+/// Higher preference values indicate better alternatives. The specific ranking method used (such as
+/// [`Aras`] or others) will depend on the implementation of this trait.
+///
+/// # Example
+///
+/// Here’s an example of ranking alternatives using the [`RankWithCriteriaType`] trait:
+///
+/// ```rust
+/// use mcdm::ranking::{Aras, RankWithCriteriaType};
+/// use ndarray::{array, Array1, Array2};
+///
+/// let normalized_matrix: Array2<f64> = array![[0.8, 0.6], [0.5, 0.9], [0.3, 0.7]];
+/// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1]).unwrap();
+/// let weights: Array1<f64> = array![0.6, 0.4];
+/// let ranking = Aras::rank(&normalized_matrix, &criteria_types, &weights).unwrap();
+/// println!("Ranking: {:?}", ranking);
+/// ```
+pub trait RankWithCriteriaType {
+    /// Ranks the alternatives of a decision matrix based on the provided criteria types and
+    /// weights.
+    ///
+    /// This method computes preference values for each alternative in the decision matrix by
+    /// applying the weights for each criterion and accounting for each criteria being a cost or
+    /// profit. The alternatives are ranked based on these preference values, with higher values
+    /// indicating better alternatives.
+    ///
+    /// # Arguments
+    ///
+    /// * `matrix` - A normalized decision matrix where each row represents an alternative and each
+    ///   column represents a criterion.
+    /// * `types` - An array of criteria types indicating whether each criterion is a cost or profit.
+    /// * `weights` - A 1D array of weights corresponding to the relative importance of each
+    ///   criterion.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<Array1<f64>, RankingError>` - A 1D array of preference values, or an error if the
+    ///   ranking process fails.
+    fn rank(
+        matrix: &Array2<f64>,
+        types: &[CriteriaType],
+        weights: &Array1<f64>,
+    ) -> Result<Array1<f64>, RankingError>;
+}
+
+/// Ranks decision matrix alternatives using the Additive Ratio ASsessment (ARAS) method.
+///
+/// The ARAS method expects the decision matrix before any normalization or manipulation. The method
+/// assesses alternatives by comparing their overall performance to the ideal (best) alternative. It
+/// calculates a utility degree for each alternative based on the ratio of the sum of weighted
+/// normalized values for each criterion relative to the ideal alternative, which has the maximum
+/// performance for each criterion.
+///
+/// This method takes an $n{\times}m$ decision matrix
+///
+/// $$ x_{ij} =
+/// \begin{bmatrix}
+/// x_{11} & x_{12} & \ldots & x_{1m} \\\\
+/// x_{21} & x_{22} & \ldots & x_{2m} \\\\
+/// \vdots & \vdots & \ddots & \vdots \\\\
+/// x_{n1} & x_{n2} & \ldots & x_{nm}
+/// \end{bmatrix}
+/// $$
+///
+/// then extends the matrix by adding an additional "best case" alternative row based on the
+/// minimum or maximum values of each criterion column. If that criterion is a profit, we use the
+/// maximum; if the criterion is a cost, we use the minimum.
+///
+/// $$ E =
+/// \begin{bmatrix}
+///     E_0(x_{i1}) & E_0(x_{i2}) & \ldots & E_0(x_{im}) \\\\
+///     x_{11} & x_{12} & \ldots & x_{1m} \\\\
+///     x_{21} & x_{22} & \ldots & x_{2m} \\\\
+///     \vdots & \vdots & \ddots & \vdots \\\\
+///     x_{(n+1)1} & x_{(n+1)2} & \ldots & x_{(n+1)m}
+/// \end{bmatrix}
+/// $$
+///
+/// where
+///
+/// $$
+/// E_0(x_{i1}) = \begin{cases}
+///     \max(x_{i1}) & \text{if } \text{criteria type} = \text{profit} \\\\
+///     \min(x_{i1}) & \text{if } \text{criteria type} = \text{cost}
+/// \end{cases}
+/// $$
+///
+/// Next, obtain the normalized matrix, $s_{ij}$ by using the [`Sum`] normalization method on $E$.
+/// Then compute the weighted matrix $v_{ij}$ using
+///
+/// $$ v_{ij} = w_j s_{ij} $$
+///
+/// Next, determine the optimal criterion values only for the extended "best case" alternative
+/// (remember, this is the first row of the extended matrix).
+///
+/// $$ S_0 = \sum_{j=1}^m v_{0j} $$
+///
+/// Likewise, determine the sum of each other alternative using
+///
+/// $$ S_i = \sum_{j=1}^m v_{ij} $$
+///
+/// Lastly, calculate the utility degree $K_i$ which determines the ranking of each alternative
+///
+/// $$ K_i = \frac{S_i}{S_0} $$
+///
+/// # Example
+///
+/// ```rust
+/// use approx::assert_abs_diff_eq;
+/// use mcdm::ranking::{RankWithCriteriaType, Aras};
+/// use mcdm::normalization::{Sum, Normalize};
+/// use ndarray::{array, Array2};
+///
+/// let matrix = array![
+///     [2.9, 2.31, 0.56, 1.89],
+///     [1.2, 1.34, 0.21, 2.48],
+///     [0.3, 2.48, 1.75, 1.69]
+/// ];
+/// let weights = array![0.25, 0.25, 0.25, 0.25];
+/// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
+/// let normalized_matrix = Sum::normalize(&matrix, &criteria_types).unwrap();
+/// let ranking = Aras::rank(&matrix, &criteria_types, &weights).unwrap();
+/// assert_abs_diff_eq!(ranking, array![0.49447117, 0.35767527, 1.0], epsilon = 1e-5);
+/// ```
+pub struct Aras;
+
+impl RankWithCriteriaType for Aras {
+    fn rank(
+        matrix: &Array2<f64>,
+        types: &[CriteriaType],
+        weights: &Array1<f64>,
+    ) -> Result<Array1<f64>, RankingError> {
+        let (num_alternatives, num_criteria) = matrix.dim();
+
+        if num_alternatives == 0 || num_criteria == 0 {
+            return Err(RankingError::EmptyMatrix);
+        }
+
+        if types.len() != num_criteria {
+            return Err(RankingError::DimensionMismatch);
+        }
+
+        let mut exmatrix = Array2::<f64>::zeros((num_alternatives + 1, num_criteria));
+        exmatrix.slice_mut(s![1.., ..]).assign(matrix);
+        println!("{}", exmatrix);
+        for (i, criteria_type) in types.iter().enumerate() {
+            if *criteria_type == CriteriaType::Profit {
+                exmatrix[[0, i]] = *matrix.slice(s![.., i]).max()?;
+            } else if *criteria_type == CriteriaType::Cost {
+                exmatrix[[0, i]] = *matrix.slice(s![.., i]).min()?;
+            }
+        }
+        println!("{}", exmatrix);
+
+        let nmatrix = Sum::normalize(&exmatrix, types)?;
+        let weighted_matrix = nmatrix.clone() * weights;
+
+        let s = weighted_matrix.sum_axis(Axis(1));
+        let k = s.slice(s![1..]).map(|x| x / s[0]);
+
+        println!("\n\n{}\n\n{}\n\n{}", nmatrix, s, k);
+
+        Ok(k)
+    }
 }
 
 /// Ranks the alternatives using the COmbined Compromise SOlution (COCOSO) method.
@@ -325,8 +500,8 @@ impl Rank for TOPSIS {
 
 /// Computes the Weighted Product Model (WPM) preference values for alternatives.
 ///
-/// The WPM model expects the decision matrix is normalized using the [`Sum`](crate::normalization::Sum)
-/// method. Then computes the ranking using:
+/// The WPM model expects the decision matrix is normalized using the [`Sum`] method. Then computes
+/// the ranking using:
 ///
 /// $$ WPM = \prod_{j=1}^n(x_{ij})^{w_j} $$
 ///
@@ -396,7 +571,7 @@ impl Rank for WeightedProduct {
 /// The `WeightedSum` method ranks alternatives based on the weighted sum of their criteria values.
 /// Each alternative's score is calculated by multiplying its criteria values by the corresponding
 /// weights and summing the results. The decision matrix is expected to be normalized using the
-/// [`Sum`](crate::normalization::Sum) method.
+/// [`Sum`] method.
 ///
 /// $$ WSM = \sum_{j=1}^n x_{ij}{w_j} $$
 ///
