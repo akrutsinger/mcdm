@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.6] - 2024-10-29
+
+### Added
+
+- More ranking methods.
+- More weighting tests.
+- Function named `switch` to `CriteriaTypes`. Useful for weighting methods like `MEREC`.
+
+### Changed
+
+- Renamed modules `weights` to `weighting` and `methods` to `ranking` to be more clear in their function and put them in the singular form.
+- - Tests now return appropriate errors instead of panicing on failures.
+
+### Fixed
+
+- Entropy and MEREC weighting method documentation to add more clarity.
+- Entopy weighting calculation.
+- Doc typos and clarity.
+- Getting more disciplined at actually trying to better follow semantic versioning.
+
 ## [0.1.5] - 2024-10-05
 
 ### Added

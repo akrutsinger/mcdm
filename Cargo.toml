@@ -3,19 +3,19 @@ name = "mcdm"
 description = "A Rust library to assist with solving Multiple-Criteria Decision Making (MCDM) problems."
 categories = ["science", "mathematics"]
 keywords = ["mcdm", "multiple-criteria", "decision-making", "optimization", "ranking"]
-version = "0.1.5"
+version = "0.1.6"
 edition = "2021"
 license = "MIT"
 documentation = "https://docs.rs/mcdm"
 repository = "https://github.com/akrutsinger/mcdm"
 
 [dependencies]
-error_set = "0.5.0"
+error_set = "0.6.0"
 ndarray = "0.16.0"
 ndarray-stats = "0.6.0"
 
 [dev-dependencies]
-ndarray = { version = "0.16.1", features = ["approx"] }
+ndarray = { version = "0.16.0", features = ["approx"] }
 approx = "0.5"
 
 [package.metadata.docs.rs]
