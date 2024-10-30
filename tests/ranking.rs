@@ -1,5 +1,6 @@
 use approx::assert_abs_diff_eq;
 use mcdm::errors::McdmError;
+use mcdm::normalization::*;
 use mcdm::ranking::*;
 use ndarray::array;
 
@@ -72,6 +73,29 @@ mod cocoso_tests {
         let weights = array![0.6];
         let ranking = Cocoso::rank(&matrix, &weights);
         assert!(ranking.is_err());
+
+        Ok(())
+    }
+}
+mod codas_tests {
+    use super::*;
+
+    #[test]
+    fn test_rank() -> Result<(), McdmError> {
+        let matrix = array![
+            [2.9, 2.31, 0.56, 1.89],
+            [1.2, 1.34, 0.21, 2.48],
+            [0.3, 2.48, 1.75, 1.69]
+        ];
+        let weights = array![0.25, 0.25, 0.25, 0.25];
+        let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1])?;
+        let normalized_matrix = Linear::normalize(&matrix, &criteria_types)?;
+        let ranking = Codas::rank(&normalized_matrix, &weights)?;
+        assert_abs_diff_eq!(
+            ranking,
+            array![-0.40977725, -1.15891275, 1.56869],
+            epsilon = 1e-5
+        );
 
         Ok(())
     }

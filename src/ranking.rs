@@ -227,7 +227,7 @@ impl RankWithCriteriaType for Aras {
 /// Ranks the alternatives using the COmbined Compromise SOlution (COCOSO) method.
 ///
 /// The COCOSO method expects the decision matrix is normalized using the [`MinMax`](crate::normalization::MinMax)
-/// method. Then calculate the weighted sum of the comparision sequence and the total power weight
+/// method. Then calculates the weighted sum of the comparision sequence and the total power weight
 /// of the comparison sequence for each alternative. The values of $S_i$ are based on the grey
 /// relationship generation method and the values for $P_i$ are based on the multiplicative WASPAS
 /// method.
@@ -317,6 +317,107 @@ impl Rank for Cocoso {
 
         Ok(ksi)
     }
+}
+
+/// Ranks the alternatives using the COmbinative Distance-based ASessment (CODAS) method.
+///
+/// The CODAS method expects the decision matrix is normalized using the [`Linear`](crate::normalization::Linear)
+/// method. Then calculates an assessment matrix based on the euclidean distance and taxicab
+/// distance from the negative ideal solution.
+///
+/// Build a weighted matrix $v_{ij}$ using the normalized decision matrix, $r_{ij}$, and weights.
+///
+/// $$ v_{ij} = r_{ij}{w_j} $$
+///
+/// Next, determine the negative ideal solution (NIS) using the weighted matrix $v_{ij}$.
+///
+/// $$ NIS_j = \min_{i=1}^n v_{ij} $$
+///
+/// Calculate the euclidean distance and taxicab distance from the negative ideal solution
+///
+/// $$ E_i = \sqrt{\sum_{i=1}^n(v_{ij} - NIS_j)^2} $$
+/// $$ T_i = \sum_{i=1}^n \left|v_{ij} - NIS_j\right| $$
+///
+/// Next, build the assessment matrix
+///
+/// $$ h_{ik} = (E_i - E_k) + (\psi(E_i - E_k) \times (T_i - T_k)) $$
+///
+/// where $k \in \{1, 2, \ldots, n\}$ and $\psi$ is the threshold function to recognize the equality
+/// of the Euclidean distance of the two alternatives, defined as follows:
+///
+/// $$ \psi(x) = \begin{cases} 1 & \text{if} & |x| \geq \tau \\\\ 0 & \text{if} & |x| \lt \tau \end{cases} $$
+///
+/// where $\tau$ is the threshold value determined by the decisionmaker. Suggested values for $\tau$
+/// are between 0.01 and 0.05.
+///
+/// Lastly, calculate the assessment score of each alternative
+///
+/// $$ H_i = \sum_{k=1}^n h_{ik} $$
+///
+/// # Example
+///
+/// ```rust
+/// use approx::assert_abs_diff_eq;
+/// use mcdm::ranking::{Rank, Codas};
+/// use mcdm::normalization::{Linear, Normalize};
+/// use ndarray::{array, Array2};
+///
+/// let matrix = array![
+///     [2.9, 2.31, 0.56, 1.89],
+///     [1.2, 1.34, 0.21, 2.48],
+///     [0.3, 2.48, 1.75, 1.69]
+/// ];
+/// let weights = array![0.25, 0.25, 0.25, 0.25];
+/// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
+/// let normalized_matrix = Linear::normalize(&matrix, &criteria_types).unwrap();
+/// let ranking = Codas::rank(&normalized_matrix, &weights).unwrap();
+/// assert_abs_diff_eq!(ranking, array![-0.40977725, -1.15891275, 1.56869], epsilon = 1e-5);
+/// ```
+pub struct Codas;
+
+impl Rank for Codas {
+    fn rank(matrix: &Array2<f64>, weights: &Array1<f64>) -> Result<Array1<f64>, RankingError> {
+        if weights.len() != matrix.ncols() {
+            return Err(RankingError::DimensionMismatch);
+        }
+
+        let weighted_matrix = matrix * weights;
+        // Compute the Negative Ideal Solution (NIS)
+        let nis = weighted_matrix.fold_axis(ndarray::Axis(0), f64::INFINITY, |m, &v| m.min(v));
+
+        let euclidean_distances = (&weighted_matrix - &nis)
+            .mapv(|x| x.powi(2))
+            .sum_axis(Axis(1))
+            .mapv(|x| x.sqrt());
+        let taxicab_distances = (&weighted_matrix - &nis)
+            .mapv(|x| x.abs())
+            .sum_axis(Axis(1));
+
+        let mut assessment_matrix =
+            Array2::zeros((weighted_matrix.nrows(), weighted_matrix.nrows()));
+
+        for i in 0..weighted_matrix.nrows() {
+            for j in 0..weighted_matrix.nrows() {
+                let e = euclidean_distances[i] - euclidean_distances[j];
+                let t = taxicab_distances[i] - taxicab_distances[j];
+                assessment_matrix[[i, j]] = (e) + ((psi_with_default_tau(e)) * (t));
+            }
+        }
+
+        Ok(assessment_matrix.sum_axis(Axis(1)))
+    }
+}
+
+fn psi(x: f64, tau: f64) -> f64 {
+    if x.abs() >= tau {
+        1.0
+    } else {
+        0.0
+    }
+}
+
+fn psi_with_default_tau(x: f64) -> f64 {
+    psi(x, 0.02)
 }
 
 /// Ranks the alternatives using the Multi-Attributive Border Approximation Area Comparison (MABAC)
