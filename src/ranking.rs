@@ -178,7 +178,6 @@ pub trait RankWithCriteriaType {
 /// ];
 /// let weights = array![0.25, 0.25, 0.25, 0.25];
 /// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
-/// let normalized_matrix = Sum::normalize(&matrix, &criteria_types).unwrap();
 /// let ranking = Aras::rank(&matrix, &criteria_types, &weights).unwrap();
 /// assert_abs_diff_eq!(ranking, array![0.49447117, 0.35767527, 1.0], epsilon = 1e-5);
 /// ```
@@ -186,11 +185,11 @@ pub struct Aras;
 
 impl RankWithCriteriaType for Aras {
     fn rank(
-        matrix: &Array2<f64>,
+        decision_matrix: &Array2<f64>,
         types: &[CriteriaType],
         weights: &Array1<f64>,
     ) -> Result<Array1<f64>, RankingError> {
-        let (num_alternatives, num_criteria) = matrix.dim();
+        let (num_alternatives, num_criteria) = decision_matrix.dim();
 
         if num_alternatives == 0 || num_criteria == 0 {
             return Err(RankingError::EmptyMatrix);
@@ -201,24 +200,24 @@ impl RankWithCriteriaType for Aras {
         }
 
         let mut exmatrix = Array2::<f64>::zeros((num_alternatives + 1, num_criteria));
-        exmatrix.slice_mut(s![1.., ..]).assign(matrix);
+        exmatrix.slice_mut(s![1.., ..]).assign(decision_matrix);
         println!("{}", exmatrix);
         for (i, criteria_type) in types.iter().enumerate() {
             if *criteria_type == CriteriaType::Profit {
-                exmatrix[[0, i]] = *matrix.slice(s![.., i]).max()?;
+                exmatrix[[0, i]] = *decision_matrix.slice(s![.., i]).max()?;
             } else if *criteria_type == CriteriaType::Cost {
-                exmatrix[[0, i]] = *matrix.slice(s![.., i]).min()?;
+                exmatrix[[0, i]] = *decision_matrix.slice(s![.., i]).min()?;
             }
         }
         println!("{}", exmatrix);
 
-        let nmatrix = Sum::normalize(&exmatrix, types)?;
-        let weighted_matrix = nmatrix.clone() * weights;
+        let normalized_matrix = Sum::normalize(&exmatrix, types)?;
+        let weighted_matrix = normalized_matrix.clone() * weights;
 
         let s = weighted_matrix.sum_axis(Axis(1));
         let k = s.slice(s![1..]).map(|x| x / s[0]);
 
-        println!("\n\n{}\n\n{}\n\n{}", nmatrix, s, k);
+        println!("\n\n{}\n\n{}\n\n{}", normalized_matrix, s, k);
 
         Ok(k)
     }
@@ -286,19 +285,22 @@ impl RankWithCriteriaType for Aras {
 pub struct Cocoso;
 
 impl Rank for Cocoso {
-    fn rank(matrix: &Array2<f64>, weights: &Array1<f64>) -> Result<Array1<f64>, RankingError> {
-        if weights.len() != matrix.ncols() {
+    fn rank(
+        normalized_matrix: &Array2<f64>,
+        weights: &Array1<f64>,
+    ) -> Result<Array1<f64>, RankingError> {
+        if weights.len() != normalized_matrix.ncols() {
             return Err(RankingError::DimensionMismatch);
         }
 
         let l = 0.5;
 
         // Vectors of S and P
-        let s = (matrix * weights).sum_axis(Axis(1));
+        let s = (normalized_matrix * weights).sum_axis(Axis(1));
 
-        let mut p = Array1::zeros(matrix.nrows());
+        let mut p = Array1::zeros(normalized_matrix.nrows());
         //let mut p = matrix.mapv(|x| x.powf(*weights));
-        for (i, row) in matrix.axis_iter(Axis(0)).enumerate() {
+        for (i, row) in normalized_matrix.axis_iter(Axis(0)).enumerate() {
             let mut row_sum = 0.0;
             for (j, &value) in row.iter().enumerate() {
                 row_sum += value.powf(weights[j]);
@@ -376,12 +378,15 @@ impl Rank for Cocoso {
 pub struct Codas;
 
 impl Rank for Codas {
-    fn rank(matrix: &Array2<f64>, weights: &Array1<f64>) -> Result<Array1<f64>, RankingError> {
-        if weights.len() != matrix.ncols() {
+    fn rank(
+        normalized_matrix: &Array2<f64>,
+        weights: &Array1<f64>,
+    ) -> Result<Array1<f64>, RankingError> {
+        if weights.len() != normalized_matrix.ncols() {
             return Err(RankingError::DimensionMismatch);
         }
 
-        let weighted_matrix = matrix * weights;
+        let weighted_matrix = normalized_matrix * weights;
         // Compute the Negative Ideal Solution (NIS)
         let nis = weighted_matrix.fold_axis(ndarray::Axis(0), f64::INFINITY, |m, &v| m.min(v));
 
@@ -422,11 +427,12 @@ fn psi_with_default_tau(x: f64) -> f64 {
 
 /// Ranks the alternatives using the COmplex PRoportional ASsessment (COPRAS) method.
 ///
-/// The COPRAS method evaluates alternatives by separately considering the effects of maximizing
-/// (beneficial) and minimizing (non-beneficial) index values of attributes. This approach allows
-/// COPRAS to assess the impact of each type of crition independently, ensuring both positive
-/// contributions and cost factors are accounted for in the final ranking. This separation provides
-/// a more balanced and accurate assessment of each alternative.
+/// The COPRAS method expects the decision matrix without normalization. This method evaluates
+/// alternatives by separately considering the effects of maximizing (beneficial) and minimizing
+/// (non-beneficial) index values of attributes. This approach allows COPRAS to assess the impact of
+/// each type of crition independently, ensuring both positive contributions and cost factors are
+/// accounted for in the final ranking. This separation provides a more balanced and accurate
+/// assessment of each alternative.
 ///
 /// Start by calculating the normalized decision matrix, $r_{ij}$, using the [`Sum`] method, but treat each
 /// criterion as a profit. The normalization is caclculated as:
@@ -481,11 +487,11 @@ pub struct Copras;
 
 impl RankWithCriteriaType for Copras {
     fn rank(
-        matrix: &Array2<f64>,
+        decision_matrix: &Array2<f64>,
         types: &[CriteriaType],
         weights: &Array1<f64>,
     ) -> Result<Array1<f64>, RankingError> {
-        let (num_alternatives, num_criteria) = matrix.dim();
+        let (num_alternatives, num_criteria) = decision_matrix.dim();
 
         if num_alternatives == 0 || num_criteria == 0 {
             return Err(RankingError::EmptyMatrix);
@@ -495,7 +501,8 @@ impl RankWithCriteriaType for Copras {
             return Err(RankingError::DimensionMismatch);
         }
 
-        let normalized_matrix = Sum::normalize(matrix, &CriteriaType::profits(types.len()))?;
+        let normalized_matrix =
+            Sum::normalize(decision_matrix, &CriteriaType::profits(types.len()))?;
         let weighted_matrix = normalized_matrix * weights;
 
         let (sum_normalized_profit, sum_normalized_cost): (Array1<f64>, Array1<f64>) =
@@ -586,18 +593,21 @@ impl RankWithCriteriaType for Copras {
 pub struct Mabac;
 
 impl Rank for Mabac {
-    fn rank(matrix: &Array2<f64>, weights: &Array1<f64>) -> Result<Array1<f64>, RankingError> {
-        if weights.len() != matrix.ncols() {
+    fn rank(
+        normalized_matrix: &Array2<f64>,
+        weights: &Array1<f64>,
+    ) -> Result<Array1<f64>, RankingError> {
+        if weights.len() != normalized_matrix.ncols() {
             return Err(RankingError::DimensionMismatch);
         }
 
         // Calculation of the elements from the weighted matrix
-        let weighted_matrix = (matrix + 1.0) * weights;
+        let weighted_matrix = (normalized_matrix + 1.0) * weights;
 
         // Determining the border approximation area matrix
         let g = weighted_matrix
             .map_axis(Axis(0), |row| row.product())
-            .mapv(|x| x.powf(1.0 / matrix.nrows() as f64));
+            .mapv(|x| x.powf(1.0 / normalized_matrix.nrows() as f64));
 
         // Calculation of the distance border approximation area
         let q = weighted_matrix - g;
@@ -665,8 +675,11 @@ impl Rank for Mabac {
 pub struct TOPSIS;
 
 impl Rank for TOPSIS {
-    fn rank(matrix: &Array2<f64>, weights: &Array1<f64>) -> Result<Array1<f64>, RankingError> {
-        if weights.len() != matrix.ncols() {
+    fn rank(
+        normalized_matrix: &Array2<f64>,
+        weights: &Array1<f64>,
+    ) -> Result<Array1<f64>, RankingError> {
+        if weights.len() != normalized_matrix.ncols() {
             return Err(RankingError::DimensionMismatch);
         }
 
@@ -674,9 +687,9 @@ impl Rank for TOPSIS {
             return Err(RankingError::InvalidValue);
         }
 
-        let num_rows = matrix.nrows();
+        let num_rows = normalized_matrix.nrows();
 
-        let weighted_matrix = matrix * weights;
+        let weighted_matrix = normalized_matrix * weights;
 
         // Compute the Positive Ideal Solution (PIS) and Negative Ideal Solution (NIS)
         let pis = weighted_matrix.fold_axis(ndarray::Axis(0), f64::NEG_INFINITY, |m, &v| m.max(v));
@@ -748,17 +761,20 @@ impl Rank for TOPSIS {
 pub struct WeightedProduct;
 
 impl Rank for WeightedProduct {
-    fn rank(matrix: &Array2<f64>, weights: &Array1<f64>) -> Result<Array1<f64>, RankingError> {
-        if weights.len() != matrix.ncols() {
+    fn rank(
+        normalized_matrix: &Array2<f64>,
+        weights: &Array1<f64>,
+    ) -> Result<Array1<f64>, RankingError> {
+        if weights.len() != normalized_matrix.ncols() {
             return Err(RankingError::DimensionMismatch);
         }
 
         // Compute the weighted matrix by raising each element of the decision matrix to the power
         // of the corresponding weight.
-        let mut weighted_matrix = Array2::zeros(matrix.dim());
+        let mut weighted_matrix = Array2::zeros(normalized_matrix.dim());
 
         // NOTE: I'm sure there is an idiomatic way to do this, but I can't seem to figure it out.
-        for (i, row) in matrix.axis_iter(Axis(0)).enumerate() {
+        for (i, row) in normalized_matrix.axis_iter(Axis(0)).enumerate() {
             for (j, &value) in row.iter().enumerate() {
                 weighted_matrix[[i, j]] = value.powf(weights[j]);
             }
@@ -808,12 +824,15 @@ impl Rank for WeightedProduct {
 pub struct WeightedSum;
 
 impl Rank for WeightedSum {
-    fn rank(matrix: &Array2<f64>, weights: &Array1<f64>) -> Result<Array1<f64>, RankingError> {
-        if weights.len() != matrix.ncols() {
+    fn rank(
+        normalized_matrix: &Array2<f64>,
+        weights: &Array1<f64>,
+    ) -> Result<Array1<f64>, RankingError> {
+        if weights.len() != normalized_matrix.ncols() {
             return Err(RankingError::DimensionMismatch);
         }
 
-        let weighted_matrix = matrix * weights;
+        let weighted_matrix = normalized_matrix * weights;
         Ok(weighted_matrix.sum_axis(Axis(1)))
     }
 }
