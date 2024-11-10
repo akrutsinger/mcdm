@@ -420,6 +420,108 @@ fn psi_with_default_tau(x: f64) -> f64 {
     psi(x, 0.02)
 }
 
+/// Ranks the alternatives using the COmplex PRoportional ASsessment (COPRAS) method.
+///
+/// The COPRAS method evaluates alternatives by separately considering the effects of maximizing
+/// (beneficial) and minimizing (non-beneficial) index values of attributes. This approach allows
+/// COPRAS to assess the impact of each type of crition independently, ensuring both positive
+/// contributions and cost factors are accounted for in the final ranking. This separation provides
+/// a more balanced and accurate assessment of each alternative.
+///
+/// Start by calculating the normalized decision matrix, $r_{ij}$, using the [`Sum`] method, but treat each
+/// criterion as a profit. The normalization is caclculated as:
+///
+/// $$ r_{ij} = \frac{x_{ij}}{\sum_{i=1}^m x_{ij}} $$
+///
+/// Next, build a weighted matrix $v_{ij}$ using the normalized decision matrix, $r_{ij}$, and
+/// weights.
+///
+/// $$ v_{ij} = r_{ij}{w_j} $$
+///
+/// Next, determine the sums of difficult normalized values of the weighted matrix $v_{ij}$.
+///
+/// $$ S_{+i} = \sum_{j=1}^k v_{ij} $$
+/// $$ S_{-i} = \sum_{j=k+1}^m v_{ij} $$
+///
+/// where $k$ is the number of attributes to maximize. The rest of the attributes from $k+1$ to $m$
+/// are minimized. $S_{+i}$ and $S_{-i}$ show the level of the goal achievement for alternatives.
+/// Higher value of $S_{+i}$ indicates the alternative is better and a lower value of $S_{-i}$
+/// indicate a better alternative.
+///
+/// Next, calculate the relative significance of alternatives using:
+///
+/// $$ Q_i = S_{+i} + \frac{S_{-\min} \sum_{i=1}^n S_{-i}}{S_{-i} \sum_{i=1}^n \left(\frac{S_{-\min}}{S_{-i}}\right)} $$
+///
+/// Lastly, rank the alternatives using:
+///
+/// $$ U_i = \frac{Q_i}{Q_i^{\max}} \times 100\\% $$
+///
+/// where $Q_i^{\max}$ is the maximum value of the utility function. Better alternatives have higher
+/// $U_i$ values.
+///
+/// # Example
+///
+/// ```rust
+/// use approx::assert_abs_diff_eq;
+/// use mcdm::ranking::{RankWithCriteriaType, Copras};
+/// use mcdm::normalization::{Linear, Normalize};
+/// use ndarray::{array, Array2};
+///
+/// let matrix = array![
+///     [2.9, 2.31, 0.56, 1.89],
+///     [1.2, 1.34, 0.21, 2.48],
+///     [0.3, 2.48, 1.75, 1.69]
+/// ];
+/// let weights = array![0.25, 0.25, 0.25, 0.25];
+/// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
+/// let ranking = Copras::rank(&matrix, &criteria_types, &weights).unwrap();
+/// assert_abs_diff_eq!(ranking, array![1.0, 0.6266752, 0.92104753], epsilon = 1e-5);
+/// ```
+pub struct Copras;
+
+impl RankWithCriteriaType for Copras {
+    fn rank(
+        matrix: &Array2<f64>,
+        types: &[CriteriaType],
+        weights: &Array1<f64>,
+    ) -> Result<Array1<f64>, RankingError> {
+        let (num_alternatives, num_criteria) = matrix.dim();
+
+        if num_alternatives == 0 || num_criteria == 0 {
+            return Err(RankingError::EmptyMatrix);
+        }
+
+        if types.len() != num_criteria {
+            return Err(RankingError::DimensionMismatch);
+        }
+
+        let normalized_matrix = Sum::normalize(matrix, &CriteriaType::profits(types.len()))?;
+        let weighted_matrix = normalized_matrix * weights;
+
+        let (sum_normalized_profit, sum_normalized_cost): (Array1<f64>, Array1<f64>) =
+            types.iter().zip(weighted_matrix.axis_iter(Axis(1))).fold(
+                (
+                    Array1::zeros(num_alternatives),
+                    Array1::zeros(num_alternatives),
+                ),
+                |(profit, cost), (criteria_type, row)| match criteria_type {
+                    CriteriaType::Profit => (profit + row, cost),
+                    CriteriaType::Cost => (profit, cost + row),
+                },
+            );
+
+        let min_sm = *sum_normalized_cost.clone().min()?;
+        let q = sum_normalized_profit
+            + ((min_sm * sum_normalized_cost.clone())
+                / (sum_normalized_cost.clone() * sum_normalized_cost.mapv(|x| min_sm / x)));
+
+        let max_q = *q.clone().max()?;
+        let q = q / max_q;
+
+        Ok(q)
+    }
+}
+
 /// Ranks the alternatives using the Multi-Attributive Border Approximation Area Comparison (MABAC)
 /// method.
 ///
