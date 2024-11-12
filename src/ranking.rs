@@ -470,7 +470,6 @@ fn psi_with_default_tau(x: f64) -> f64 {
 /// ```rust
 /// use approx::assert_abs_diff_eq;
 /// use mcdm::ranking::{RankWithCriteriaType, Copras};
-/// use mcdm::normalization::{Linear, Normalize};
 /// use ndarray::{array, Array2};
 ///
 /// let matrix = array![
@@ -526,6 +525,126 @@ impl RankWithCriteriaType for Copras {
         let q = q / max_q;
 
         Ok(q)
+    }
+}
+
+/// Ranks the alternatives using the Evaluation based on Distance from Average Solution (EDAS) method.
+///
+/// The EDAS method ranks the alternatives using the average distance from the average solution. The
+/// method expects a decision matrix before normalization. We define the decision matrix as:
+///
+/// $$ X_{ij} =
+/// \begin{bmatrix}
+///     x_{11} & x_{12} & \ldots & x_{1m} \\\\
+///     x_{21} & x_{22} & \ldots & x_{2m} \\\\
+///     \vdots & \vdots & \ddots & \vdots \\\\
+///     x_{n1} & x_{n2} & \ldots & x_{nm}
+/// \end{bmatrix}
+/// $$
+///
+/// Then calculate the average solution as:
+///
+/// $$ \overline{X}\_{ij} = \frac{\sum_{i=1}^{n} x_{ij}}{n} $$
+///
+/// Next, calculate the positive and negative distance from the mean solution for each alternative.
+/// When the criteria type is profit, compute the positive and negative distance as:
+///
+/// $$ PD_{i} = \frac{\max(0, (X_{ij} - \overline{X}\_{ij}))}{\overline{X}\_{ij}} $$
+/// $$ ND_{i} = \frac{\max(0, (\overline{X}\_{ij})) - X_{ij}}{\overline{X}\_{ij}} $$
+///
+/// When the criter type is cost, compute the positive and negative distance as:
+///
+/// $$ PD_{i} = \frac{\max(0, (\overline{X}\_{ij})) - X_{ij}}{\overline{X}\_{ij}} $$
+/// $$ ND_{i} = \frac{\max(0, (X_{ij} - \overline{X}\_{ij}))}{\overline{X}\_{ij}} $$
+///    
+/// Next, calculate the weighted sums for $PD$ and $ND$:
+///
+/// $$ SP_i = \sum_{j=1}^{m} w_j PD_{ij} $$
+/// $$ SN_i = \sum_{j=1}^{m} w_j ND_{ij} $$
+///
+/// Next, normalize the weighted sums:
+///
+/// $$ NSP_i = \frac{SP_i}{\max_i(SP_i)} $$
+/// $$ NSN_i = 1 - \frac{SN_i}{\max_i(SN_i)} $$
+///
+/// Finally, rank the alternatives by calculating their evaluation scores as:
+///
+/// $$ E_i = \frac{NSP_i + NSN_i}{2} $$
+///
+/// # Example
+///
+/// ```rust
+/// use approx::assert_abs_diff_eq;
+/// use mcdm::ranking::{RankWithCriteriaType, Edas};
+/// use ndarray::{array, Array2};
+///
+/// let matrix = array![
+///     [2.9, 2.31, 0.56, 1.89],
+///     [1.2, 1.34, 0.21, 2.48],
+///     [0.3, 2.48, 1.75, 1.69]
+/// ];
+/// let weights = array![0.25, 0.25, 0.25, 0.25];
+/// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
+/// let ranking = Edas::rank(&matrix, &criteria_types, &weights).unwrap();
+/// assert_abs_diff_eq!(ranking, array![0.04747397, 0.04029913, 1.0], epsilon = 1e-5);
+/// ```
+pub struct Edas;
+
+impl RankWithCriteriaType for Edas {
+    fn rank(
+        decision_matrix: &Array2<f64>,
+        types: &[CriteriaType],
+        weights: &Array1<f64>,
+    ) -> Result<Array1<f64>, RankingError> {
+        let (num_alternatives, num_criteria) = decision_matrix.dim();
+
+        if num_alternatives == 0 || num_criteria == 0 {
+            return Err(RankingError::EmptyMatrix);
+        }
+
+        if types.len() != num_criteria {
+            return Err(RankingError::DimensionMismatch);
+        }
+
+        let average_criteria = match decision_matrix.mean_axis(Axis(0)) {
+            Some(avg) => avg,
+            None => return Err(RankingError::DimensionMismatch),
+        };
+
+        let mut positive_distance_matrix = Array2::zeros(decision_matrix.dim());
+        let mut negative_distance_matrix = Array2::zeros(decision_matrix.dim());
+
+        for j in 0..num_criteria {
+            let matrix_col = decision_matrix.column(j);
+            let am_j = average_criteria[j];
+            let ideal_col = matrix_col.mapv(|x| (am_j - x) / am_j);
+            let exceeds_ideal_col = matrix_col.mapv(|x| (x - am_j) / am_j);
+
+            if types[j] == CriteriaType::Cost {
+                positive_distance_matrix.column_mut(j).assign(&ideal_col);
+                negative_distance_matrix
+                    .column_mut(j)
+                    .assign(&exceeds_ideal_col);
+            } else {
+                positive_distance_matrix
+                    .column_mut(j)
+                    .assign(&exceeds_ideal_col);
+                negative_distance_matrix.column_mut(j).assign(&ideal_col);
+            }
+        }
+
+        positive_distance_matrix =
+            positive_distance_matrix.mapv(|x| if x >= 0.0 { x } else { 0.0 });
+        negative_distance_matrix =
+            negative_distance_matrix.mapv(|x| if x >= 0.0 { x } else { 0.0 });
+
+        let sp = (weights * positive_distance_matrix).sum_axis(Axis(1));
+        let sn = (weights * negative_distance_matrix).sum_axis(Axis(1));
+
+        let nsp = sp.clone() / *sp.max()?;
+        let nsn = 1.0 - sn.clone() / *sn.max()?;
+
+        Ok((nsp + nsn) / 2.0)
     }
 }
 
