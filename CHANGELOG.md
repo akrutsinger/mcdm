@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Ranking functions parameter names to better reflect if the user should provide a decision matrix or a normalized decision matrix.
+- All weighting, normalization, and ranking methods are implemented for the `DMatrix<f64>` type.
 - Moved from `ndarray` to `nalgebra` for matrix types.
 
 ## [0.1.6] - 2024-10-29

@@ -1,9 +1,5 @@
 use mcdm::{
-    errors::McdmError,
-    normalization::{MinMax, Normalize},
-    ranking::{Rank, Topsis},
-    weighting::{Equal, Weight},
-    CriteriaType,
+    errors::McdmError, normalization::Normalize, ranking::Rank, weighting::Weight, CriteriaType,
 };
 use nalgebra::dmatrix;
 
@@ -13,16 +9,16 @@ fn main() -> Result<(), McdmError> {
     let criteria_types = CriteriaType::from(vec![-1, 1, 1])?;
 
     // Apply normalization using Min-Max
-    let normalized_matrix = MinMax::normalize(&alternatives, &criteria_types)?;
+    let normalized_matrix = alternatives.normalize_minmax(&criteria_types)?;
 
     // Alternatively, use equal weights
-    let equal_weights = Equal::weight(&normalized_matrix)?;
+    let equal_weights = normalized_matrix.weight_equal()?;
 
     // Apply the TOPSIS method for ranking
-    let ranking = Topsis::rank(&normalized_matrix, &equal_weights)?;
+    let ranking = normalized_matrix.rank_topsis(&equal_weights)?;
 
     // Output the ranking
-    println!("Ranking: {:.3?}", ranking);
+    println!("Ranking: {:.3}", ranking);
 
     Ok(())
 }

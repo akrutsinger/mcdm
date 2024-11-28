@@ -1,46 +1,98 @@
-// //! Techniques for ranking alternatives.
+//! Techniques for ranking alternatives.
 
 use crate::errors::RankingError;
-use crate::normalization::{Normalize, Sum};
+use crate::normalization::Normalize;
 use crate::CriteriaType;
 use crate::DMatrixExt;
 use nalgebra::{DMatrix, DVector};
 
 /// A trait for ranking alternatives in Multiple-Criteria Decision Making (MCDM).
 ///
-/// The [`Rank`] trait defines a method used to rank alternatives based on a normalized decision
-/// matrix and a set of weights for the criteria. The ranking process evaluates how well each
-/// alternative performs across the criteria, considering the relative importance of each criterion
-/// as given by the `weights` array.
+/// The [`Rank`] trait defines a method used to rank alternatives based on a normalized or
+/// un-normalized decision matrix and a set of weights for the criteria. The ranking process
+/// evaluates how well each alternative performs across the criteria, considering the relative
+/// importance of each criterion as given by the `weights` array.
 ///
 /// Higher preference values indicate better alternatives. The specific ranking method used (such as
-/// [`Topsis`] or others) will depend on the implementation of this trait.
+/// [`TOPSIS`](crate::ranking::Rank::rank_topsis) or others) will depend on the implementation of this trait.
 ///
 /// # Example
 ///
 /// Here’s an example of ranking alternatives using the [`Rank`] trait:
 ///
 /// ```rust
-/// use mcdm::ranking::{Topsis, Rank};
+/// use mcdm::ranking::Rank;
 /// use nalgebra::{dmatrix, dvector};
 ///
 /// let normalized_matrix = dmatrix![0.8, 0.6; 0.5, 0.9; 0.3, 0.7];
 /// let weights = dvector![0.6, 0.4];
-/// let ranking = Topsis::rank(&normalized_matrix, &weights).unwrap();
-/// println!("Ranking: {:?}", ranking);
+/// let ranking = normalized_matrix.rank_topsis(&weights).unwrap();
+/// println!("Ranking: {}", ranking);
 /// ```
 pub trait Rank {
-    /// Ranks the alternatives of a normalized decision matrix based on the provided criteria
-    /// weights.
+    /// Ranks decision matrix alternatives using the Additive Ratio ASsessment (ARAS) method.
     ///
-    /// This method computes preference values for each alternative in the decision matrix by
-    /// applying the weights for each criterion. The alternatives are ranked based on these
-    /// preference values, with higher values indicating better alternatives.
+    /// The ARAS method expects the decision matrix before any normalization or manipulation. The method
+    /// assesses alternatives by comparing their overall performance to the ideal (best) alternative. It
+    /// calculates a utility degree for each alternative based on the ratio of the sum of weighted
+    /// normalized values for each criterion relative to the ideal alternative, which has the maximum
+    /// performance for each criterion.
+    ///
+    /// This method takes an $n{\times}m$ decision matrix
+    ///
+    /// $$ x_{ij} =
+    /// \begin{bmatrix}
+    /// x_{11} & x_{12} & \ldots & x_{1m} \\\\
+    /// x_{21} & x_{22} & \ldots & x_{2m} \\\\
+    /// \vdots & \vdots & \ddots & \vdots \\\\
+    /// x_{n1} & x_{n2} & \ldots & x_{nm}
+    /// \end{bmatrix}
+    /// $$
+    ///
+    /// then extends the matrix by adding an additional "best case" alternative row based on the
+    /// minimum or maximum values of each criterion column. If that criterion is a profit, we use the
+    /// maximum; if the criterion is a cost, we use the minimum.
+    ///
+    /// $$ E =
+    /// \begin{bmatrix}
+    ///     E_0(x_{i1}) & E_0(x_{i2}) & \ldots & E_0(x_{im}) \\\\
+    ///     x_{11} & x_{12} & \ldots & x_{1m} \\\\
+    ///     x_{21} & x_{22} & \ldots & x_{2m} \\\\
+    ///     \vdots & \vdots & \ddots & \vdots \\\\
+    ///     x_{(n+1)1} & x_{(n+1)2} & \ldots & x_{(n+1)m}
+    /// \end{bmatrix}
+    /// $$
+    ///
+    /// where
+    ///
+    /// $$
+    /// E_0(x_{i1}) = \begin{cases}
+    ///     \max(x_{i1}) & \text{if } \text{criteria type} = \text{profit} \\\\
+    ///     \min(x_{i1}) & \text{if } \text{criteria type} = \text{cost}
+    /// \end{cases}
+    /// $$
+    ///
+    /// Next, obtain the normalized matrix, $s_{ij}$ by using the [`Sum`](crate::normalization::Normalize::normalize_sum) normalization method on $E$.
+    /// Then compute the weighted matrix $v_{ij}$ using
+    ///
+    /// $$ v_{ij} = w_j s_{ij} $$
+    ///
+    /// Next, determine the optimal criterion values only for the extended "best case" alternative
+    /// (remember, this is the first row of the extended matrix).
+    ///
+    /// $$ S_0 = \sum_{j=1}^m v_{0j} $$
+    ///
+    /// Likewise, determine the sum of each other alternative using
+    ///
+    /// $$ S_i = \sum_{j=1}^m v_{ij} $$
+    ///
+    /// Lastly, calculate the utility degree $K_i$ which determines the ranking of each alternative
+    ///
+    /// $$ K_i = \frac{S_i}{S_0} $$
     ///
     /// # Arguments
     ///
-    /// * `matrix` - A normalized decision matrix where each row represents an alternative and each
-    ///   column represents a criterion.
+    /// * `types` - A 1D array of criterion types.
     /// * `weights` - A 1D array of weights corresponding to the relative importance of each
     ///   criterion.
     ///
@@ -48,148 +100,525 @@ pub trait Rank {
     ///
     /// * `Result<DVector<f64>, RankingError>` - A 1D array of preference values, or an error if the
     ///   ranking process fails.
-    fn rank(matrix: &DMatrix<f64>, weights: &DVector<f64>) -> Result<DVector<f64>, RankingError>;
-}
-
-/// A trait for ranking alternatives in Multiple-Criteria Decision Making (MCDM).
-///
-/// The [`RankWithCriteriaType`] trait defines a method used to rank alternatives based on a
-/// decision matrix and a set of weights for the criteria. The ranking process evaluates how well
-/// each alternative performs across the criteria, considering the relative importance of each
-/// criterion as given by the `weights` array.
-///
-/// Higher preference values indicate better alternatives. The specific ranking method used (such as
-/// [`Aras`] or others) will depend on the implementation of this trait.
-///
-/// # Example
-///
-/// Here’s an example of ranking alternatives using the [`RankWithCriteriaType`] trait:
-///
-/// ```rust
-/// use mcdm::ranking::{Aras, RankWithCriteriaType};
-/// use nalgebra::{dmatrix, dvector};
-///
-/// let normalized_matrix = dmatrix![0.8, 0.6; 0.5, 0.9; 0.3, 0.7];
-/// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1]).unwrap();
-/// let weights = dvector![0.6, 0.4];
-/// let ranking = Aras::rank(&normalized_matrix, &criteria_types, &weights).unwrap();
-/// println!("Ranking: {:?}", ranking);
-/// ```
-pub trait RankWithCriteriaType {
-    /// Ranks the alternatives of a decision matrix based on the provided criteria types and
-    /// weights.
     ///
-    /// This method computes preference values for each alternative in the decision matrix by
-    /// applying the weights for each criterion and accounting for each criteria being a cost or
-    /// profit. The alternatives are ranked based on these preference values, with higher values
-    /// indicating better alternatives.
+    /// # Example
     ///
-    /// # Arguments
+    /// ```rust
+    /// use approx::assert_relative_eq;
+    /// use mcdm::ranking::Rank;
+    /// use nalgebra::{dmatrix, dvector};
     ///
-    /// * `matrix` - A normalized decision matrix where each row represents an alternative and each
-    ///   column represents a criterion.
-    /// * `types` - An array of criteria types indicating whether each criterion is a cost or profit.
-    /// * `weights` - A 1D array of weights corresponding to the relative importance of each
-    ///   criterion.
-    ///
-    /// # Returns
-    ///
-    /// * `Result<DVector<f64>, RankingError>` - A 1D array of preference values, or an error if the
-    ///   ranking process fails.
-    fn rank(
-        matrix: &DMatrix<f64>,
+    /// let matrix = dmatrix![
+    ///     2.9, 2.31, 0.56, 1.89;
+    ///     1.2, 1.34, 0.21, 2.48;
+    ///     0.3, 2.48, 1.75, 1.69
+    /// ];
+    /// let weights = dvector![0.25, 0.25, 0.25, 0.25];
+    /// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
+    /// let ranking = matrix.rank_aras(&criteria_types, &weights).unwrap();
+    /// assert_relative_eq!(ranking, dvector![0.49447117, 0.35767527, 1.0], epsilon = 1e-5);
+    /// ```
+    fn rank_aras(
+        &self,
         types: &[CriteriaType],
         weights: &DVector<f64>,
     ) -> Result<DVector<f64>, RankingError>;
+
+    /// Ranks the alternatives using the COmbined Compromise SOlution (COCOSO) method.
+    ///
+    /// The COCOSO method expects the decision matrix is normalized using the [`MinMax`](crate::normalization::Normalize::normalize_minmax)
+    /// method. Then calculates the weighted sum of the comparision sequence and the total power weight
+    /// of the comparison sequence for each alternative. The values of $S_i$ are based on the grey
+    /// relationship generation method and the values for $P_i$ are based on the multiplicative WASPAS
+    /// method.
+    ///
+    /// $$ S_i = \sum_{j=1}^m(w_j r_{ij}) $$
+    /// $$ P_i = \sum_{j=1}^m(r_{ij})^{w_j} $$
+    ///
+    /// where $S_i$ is the grey relationship, $P_i$ is the multiplicative `WASPAS`, $m$ is the number of
+    /// criteria, $r_{ij}$ is the $i$th element of the alternative, $j$th elements of the criterion of
+    /// the normalized decision matrix, and $w_j$ is the $j$th weight.
+    ///
+    /// We then compute the relative weights of alternatives using aggregation strategies.
+    ///
+    /// $$ k_{ia} = \frac{P_i + S_i}{\sum_{i=1}^n \left(P_i + S_i\right)} $$
+    /// $$ k_{ib} = \frac{S_i}{\min_i(S_i)} + \frac{P_i}{\min_i(P_i)} $$
+    /// $$ k_{ic} = \frac{\lambda(S_i) + (1 - \lambda)(P_i)}{\lambda \max_i(S_i) + (1 - \lambda) \max_i(P_i)} \quad 0 \leq \lambda \leq 1 $$
+    ///
+    /// where $k_{ia}$ represents the average of the sums of [`WeightedSum`](crate::ranking::Rank::rank_weightedsum)
+    /// and [`WeightedProduct`](crate::ranking::Rank::rank_weightedproduct) scores, $k_{ib}$
+    /// represents the [`WeightedSum`](crate::ranking::Rank::rank_weightedsum) and
+    /// [`WeightedProduct`](crate::ranking::Rank::rank_weightedproduct) scores over the best scores
+    /// for each each method respectfully, and $k_{ic}$ represents the [`WeightedSum`](crate::ranking::Rank::rank_weightedsum)
+    /// and [`WeightedProduct`](crate::ranking::Rank::rank_weightedproduct) scores using the
+    /// compromise strategy, and $n$ is the number of alternatives.
+    ///
+    /// Lastly, we rank the alternatives as follows:
+    ///
+    /// $$ k_i = (k_{ia}k_{ib}k_{ic})^{\frac{1}{3}} + \frac{1}{3}(k_{ia} + k_{ib} + k_{ic}) $$
+    ///
+    /// # Arguments
+    ///
+    /// * `weights` - A 1D array of weights corresponding to the relative importance of each
+    ///   criterion.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<DVector<f64>, RankingError>` - A 1D array of preference values, or an error if the
+    ///   ranking process fails.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use approx::assert_relative_eq;
+    /// use mcdm::ranking::Rank;
+    /// use mcdm::normalization::Normalize;
+    /// use nalgebra::{dmatrix, dvector};
+    ///
+    /// let matrix = dmatrix![
+    ///     2.9, 2.31, 0.56, 1.89;
+    ///     1.2, 1.34, 0.21, 2.48;
+    ///     0.3, 2.48, 1.75, 1.69
+    /// ];
+    /// let weights = dvector![0.25, 0.25, 0.25, 0.25];
+    /// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
+    /// let normalized_matrix = matrix.normalize_minmax(&criteria_types).unwrap();
+    /// let ranking = normalized_matrix.rank_cocoso(&weights).unwrap();
+    /// assert_relative_eq!(ranking, dvector![3.24754746, 1.14396494, 5.83576765], epsilon = 1e-5);
+    /// ```
+    fn rank_cocoso(&self, weights: &DVector<f64>) -> Result<DVector<f64>, RankingError>;
+
+    /// Ranks the alternatives using the COmbinative Distance-based ASessment (CODAS) method.
+    ///
+    /// The CODAS method expects the decision matrix is normalized using the [`Linear`](crate::normalization::Normalize::normalize_linear)
+    /// method. Then calculates an assessment matrix based on the euclidean distance and taxicab
+    /// distance from the negative ideal solution.
+    ///
+    /// Build a weighted matrix $v_{ij}$ using the normalized decision matrix, $r_{ij}$, and weights.
+    ///
+    /// $$ v_{ij} = r_{ij}{w_j} $$
+    ///
+    /// Next, determine the negative ideal solution (NIS) using the weighted matrix $v_{ij}$.
+    ///
+    /// $$ NIS_j = \min_{i=1}^n v_{ij} $$
+    ///
+    /// Calculate the euclidean distance and taxicab distance from the negative ideal solution
+    ///
+    /// $$ E_i = \sqrt{\sum_{i=1}^n(v_{ij} - NIS_j)^2} $$
+    /// $$ T_i = \sum_{i=1}^n \left|v_{ij} - NIS_j\right| $$
+    ///
+    /// Next, build the assessment matrix
+    ///
+    /// $$ h_{ik} = (E_i - E_k) + (\psi(E_i - E_k) \times (T_i - T_k)) $$
+    ///
+    /// where $k \in \{1, 2, \ldots, n\}$ and $\psi$ is the threshold function to recognize the equality
+    /// of the Euclidean distance of the two alternatives, defined as follows:
+    ///
+    /// $$ \psi(x) = \begin{cases} 1 & \text{if} & |x| \geq \tau \\\\ 0 & \text{if} & |x| \lt \tau \end{cases} $$
+    ///
+    /// where $\tau$ is the threshold value determined by the decisionmaker. Suggested values for $\tau$
+    /// are between 0.01 and 0.05.
+    ///
+    /// Lastly, calculate the assessment score of each alternative
+    ///
+    /// $$ H_i = \sum_{k=1}^n h_{ik} $$
+    ///
+    /// # Arguments
+    ///
+    /// * `weights` - A 1D array of weights corresponding to the relative importance of each
+    ///   criterion.
+    /// * `tau` - The threshold value for the threshold function. Default is 0.02.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<DVector<f64>, RankingError>` - A 1D array of preference values, or an error if the
+    ///   ranking process fails.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use approx::assert_relative_eq;
+    /// use mcdm::ranking::Rank;
+    /// use mcdm::normalization::Normalize;
+    /// use nalgebra::{dmatrix, dvector};
+    ///
+    /// let matrix = dmatrix![
+    ///     2.9, 2.31, 0.56, 1.89;
+    ///     1.2, 1.34, 0.21, 2.48;
+    ///     0.3, 2.48, 1.75, 1.69
+    /// ];
+    /// let weights = dvector![0.25, 0.25, 0.25, 0.25];
+    /// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
+    /// let normalized_matrix = matrix.normalize_linear(&criteria_types).unwrap();
+    /// let ranking = normalized_matrix.rank_codas(&weights, 0.02).unwrap();
+    /// assert_relative_eq!(ranking, dvector![-0.40977725, -1.15891275, 1.56869], epsilon = 1e-5);
+    /// ```
+    fn rank_codas(&self, weights: &DVector<f64>, tau: f64) -> Result<DVector<f64>, RankingError>;
+
+    /// Ranks the alternatives using the COmplex PRoportional ASsessment (COPRAS) method.
+    ///
+    /// The COPRAS method expects the decision matrix without normalization. This method evaluates
+    /// alternatives by separately considering the effects of maximizing (beneficial) and minimizing
+    /// (non-beneficial) index values of attributes. This approach allows COPRAS to assess the impact of
+    /// each type of crition independently, ensuring both positive contributions and cost factors are
+    /// accounted for in the final ranking. This separation provides a more balanced and accurate
+    /// assessment of each alternative.
+    ///
+    /// Start by calculating the normalized decision matrix, $r_{ij}$, using the [`Sum`](crate::normalization::Normalize::normalize_sum) method, but treat each
+    /// criterion as a profit. The normalization is caclculated as:
+    ///
+    /// $$ r_{ij} = \frac{x_{ij}}{\sum_{i=1}^m x_{ij}} $$
+    ///
+    /// Next, build a weighted matrix $v_{ij}$ using the normalized decision matrix, $r_{ij}$, and
+    /// weights.
+    ///
+    /// $$ v_{ij} = r_{ij}{w_j} $$
+    ///
+    /// Next, determine the sums of difficult normalized values of the weighted matrix $v_{ij}$.
+    ///
+    /// $$ S_{+i} = \sum_{j=1}^k v_{ij} $$
+    /// $$ S_{-i} = \sum_{j=k+1}^m v_{ij} $$
+    ///
+    /// where $k$ is the number of attributes to maximize. The rest of the attributes from $k+1$ to $m$
+    /// are minimized. $S_{+i}$ and $S_{-i}$ show the level of the goal achievement for alternatives.
+    /// Higher value of $S_{+i}$ indicates the alternative is better and a lower value of $S_{-i}$
+    /// indicate a better alternative.
+    ///
+    /// Next, calculate the relative significance of alternatives using:
+    ///
+    /// $$ Q_i = S_{+i} + \frac{S_{-\min} \sum_{i=1}^n S_{-i}}{S_{-i} \sum_{i=1}^n \left(\frac{S_{-\min}}{S_{-i}}\right)} $$
+    ///
+    /// Lastly, rank the alternatives using:
+    ///
+    /// $$ U_i = \frac{Q_i}{Q_i^{\max}} \times 100\\% $$
+    ///
+    /// where $Q_i^{\max}$ is the maximum value of the utility function. Better alternatives have higher
+    /// $U_i$ values.
+    ///
+    /// # Arguments
+    ///
+    /// * `types` - A 1D array of criterion types.
+    /// * `weights` - A 1D array of weights corresponding to the relative importance of each
+    ///   criterion.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<DVector<f64>, RankingError>` - A 1D array of preference values, or an error if the
+    ///   ranking process fails.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use approx::assert_relative_eq;
+    /// use mcdm::ranking::Rank;
+    /// use nalgebra::{dmatrix, dvector};
+    ///
+    /// let matrix = dmatrix![
+    ///     2.9, 2.31, 0.56, 1.89;
+    ///     1.2, 1.34, 0.21, 2.48;
+    ///     0.3, 2.48, 1.75, 1.69
+    /// ];
+    /// let weights = dvector![0.25, 0.25, 0.25, 0.25];
+    /// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
+    /// let ranking = matrix.rank_copras(&criteria_types, &weights).unwrap();
+    /// assert_relative_eq!(ranking, dvector![1.0, 0.6266752, 0.92104753], epsilon = 1e-5);
+    /// ```
+    fn rank_copras(
+        &self,
+        types: &[CriteriaType],
+        weights: &DVector<f64>,
+    ) -> Result<DVector<f64>, RankingError>;
+
+    /// Ranks the alternatives using the Evaluation based on Distance from Average Solution (EDAS) method.
+    ///
+    /// The EDAS method ranks the alternatives using the average distance from the average solution. The
+    /// method expects a decision matrix before normalization. We define the decision matrix as:
+    ///
+    /// $$ X_{ij} =
+    /// \begin{bmatrix}
+    ///     x_{11} & x_{12} & \ldots & x_{1m} \\\\
+    ///     x_{21} & x_{22} & \ldots & x_{2m} \\\\
+    ///     \vdots & \vdots & \ddots & \vdots \\\\
+    ///     x_{n1} & x_{n2} & \ldots & x_{nm}
+    /// \end{bmatrix}
+    /// $$
+    ///
+    /// Then calculate the average solution as:
+    ///
+    /// $$ \overline{X}\_{ij} = \frac{\sum_{i=1}^{n} x_{ij}}{n} $$
+    ///
+    /// Next, calculate the positive and negative distance from the mean solution for each alternative.
+    /// When the criteria type is profit, compute the positive and negative distance as:
+    ///
+    /// $$ PD_{i} = \frac{\max(0, (X_{ij} - \overline{X}\_{ij}))}{\overline{X}\_{ij}} $$
+    /// $$ ND_{i} = \frac{\max(0, (\overline{X}\_{ij})) - X_{ij}}{\overline{X}\_{ij}} $$
+    ///
+    /// When the criter type is cost, compute the positive and negative distance as:
+    ///
+    /// $$ PD_{i} = \frac{\max(0, (\overline{X}\_{ij})) - X_{ij}}{\overline{X}\_{ij}} $$
+    /// $$ ND_{i} = \frac{\max(0, (X_{ij} - \overline{X}\_{ij}))}{\overline{X}\_{ij}} $$
+    ///
+    /// Next, calculate the weighted sums for $PD$ and $ND$:
+    ///
+    /// $$ SP_i = \sum_{j=1}^{m} w_j PD_{ij} $$
+    /// $$ SN_i = \sum_{j=1}^{m} w_j ND_{ij} $$
+    ///
+    /// Next, normalize the weighted sums:
+    ///
+    /// $$ NSP_i = \frac{SP_i}{\max_i(SP_i)} $$
+    /// $$ NSN_i = 1 - \frac{SN_i}{\max_i(SN_i)} $$
+    ///
+    /// Finally, rank the alternatives by calculating their evaluation scores as:
+    ///
+    /// $$ E_i = \frac{NSP_i + NSN_i}{2} $$
+    ///
+    /// # Arguments
+    ///
+    /// * `types` - A 1D array of criterion types.
+    /// * `weights` - A 1D array of weights corresponding to the relative importance of each
+    ///   criterion.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<DVector<f64>, RankingError>` - A 1D array of preference values, or an error if the
+    ///   ranking process fails.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use approx::assert_relative_eq;
+    /// use mcdm::ranking::Rank;
+    /// use nalgebra::{dmatrix, dvector};
+    ///
+    /// let matrix = dmatrix![
+    ///     2.9, 2.31, 0.56, 1.89;
+    ///     1.2, 1.34, 0.21, 2.48;
+    ///     0.3, 2.48, 1.75, 1.69
+    /// ];
+    /// let weights = dvector![0.25, 0.25, 0.25, 0.25];
+    /// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
+    /// let ranking = matrix.rank_edas(&criteria_types, &weights).unwrap();
+    /// assert_relative_eq!(ranking, dvector![0.04747397, 0.04029913, 1.0], epsilon = 1e-5);
+    /// ```
+    fn rank_edas(
+        &self,
+        types: &[CriteriaType],
+        weights: &DVector<f64>,
+    ) -> Result<DVector<f64>, RankingError>;
+
+    /// Ranks the alternatives using the Multi-Attributive Border Approximation Area Comparison (MABAC)
+    /// method.
+    ///
+    /// The MABAC method expects the decision matrix is normalized using the [`MinMax`](crate::normalization::Normalize::normalize_minmax)
+    /// method. Then computes a weighted matrix $v_{ij}$ using
+    ///
+    /// $$ v_{ij} = {w_j}(x_{ij} + 1) $$
+    ///
+    /// where $x_{ij}$ is the $i$th element of the alternative (row), $j$th elements of the criterion
+    /// (column), and $w_j$ is the weight of the $j$th criterion.
+    ///
+    /// We then compute the boundary appromixation area for all criteria.
+    ///
+    /// $$ g_i = \left( \prod_{j=1}^m v_{ij} \right)^{1/m} $$
+    ///
+    /// where $g_i$ is the boundary approximation area for the $i$th alternative, $v_{ij}$ is the
+    /// weighted matrix for the $i$th alternative and $j$th criterion, and $m$ is the number of
+    /// criteria.
+    ///
+    /// Next we calculate the distance of the $i$th alternative and $j$th criterion from the boundary
+    /// approximation area
+    ///
+    /// $$ q_{ij} = v_{ij} - g_j $$
+    ///
+    /// Lastly, we rank the alternatives according to the sum of the distances of the alternatives from
+    /// the border approximation area.
+    ///
+    /// $$ S_i = \sum_{j=1}^{m} q_{ij} \quad \text{for} \quad i=1, \ldots, n \quad \text{and} \quad j=1, \ldots, m $$
+    ///
+    /// where $q_{ij}$ is the distance of the $i$th alternative and $j$th criterion of the weighted
+    /// matrix $v_{ij}$ to the boundary approximation $g_i$, $n$ is the number of alternatives and $m$
+    /// is the number of criteria.
+    ///
+    /// # Arguments
+    ///
+    /// * `weights` - A 1D array of weights corresponding to the relative importance of each
+    ///   criterion.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<DVector<f64>, RankingError>` - A 1D array of preference values, or an error if the
+    ///   ranking process fails.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use approx::assert_relative_eq;
+    /// use mcdm::ranking::Rank;
+    /// use mcdm::normalization::Normalize;
+    /// use nalgebra::{dmatrix, dvector};
+    ///
+    /// let matrix = dmatrix![
+    ///     2.9, 2.31, 0.56, 1.89;
+    ///     1.2, 1.34, 0.21, 2.48;
+    ///     0.3, 2.48, 1.75, 1.69
+    /// ];
+    /// let weights = dvector![0.25, 0.25, 0.25, 0.25];
+    /// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
+    /// let normalized_matrix = matrix.normalize_minmax(&criteria_types).unwrap();
+    /// let ranking = normalized_matrix.rank_mabac(&weights).unwrap();
+    /// assert_relative_eq!(ranking, dvector![-0.01955314, -0.31233795,  0.52420052], epsilon = 1e-5);
+    /// ```
+    fn rank_mabac(&self, weights: &DVector<f64>) -> Result<DVector<f64>, RankingError>;
+
+    /// Ranks the alternatives using the TOPSIS method.
+    ///
+    /// The TOPSIS method expects the decision matrix is normalized using the [`MinMax`](crate::normalization::Normalize::normalize_minmax)
+    /// method. Then computes a weighted matrix $v_{ij}$ using
+    ///
+    /// $$ v_{ij} = x_{ij}{w_j} $$
+    ///
+    /// where $x_{ij}$ is the $i$th element of the alternative (row), $j$th elements of the criterion
+    /// (column), and $w_j$ is the weight of the $j$th criterion.
+    ///
+    /// We then derive a positive ideal solution (PIS) and a negative ideal solution (NIS). The PIS is
+    /// calculated as the maximum value for each criterion, and the NIS is the minimum value for each
+    /// criterion.
+    ///
+    /// $$ v_j^+ = \left\\{v_1^+, v_2^+, \dots, v_n^+\right\\} = \max_j v_{ij} $$
+    /// $$ v_j^- = \left\\{v_1^-, v_2^-, \dots, v_n^-\right\\} = \min_j v_{ij} $$
+    ///
+    /// where $v_j^+$ is the positive ideal solution, $v_j^-$ is the negative ideal solution, $n$ is the
+    /// number of criteria, and $i$ is the alternative index
+    ///
+    /// Finally we determine the distance to the PIS ($D_i^+$) and NIS ($D_i^-$). The distance to the
+    /// PIS is calculated as the square root of the sum of the squares of the differences between the
+    /// weighted matrix row and the PIS. The distance to the NIS is calculated as the square root of the
+    /// sum of the squares of the differences between the weighted matrix row and the NIS as follows:
+    ///
+    /// $$ D_i^+ = \sqrt{ \sum_{j=1}^{n} (v_{ij} - v_j^+)^2 } $$
+    /// $$ D_i^- = \sqrt{ \sum_{j=1}^{n} (v_{ij} - v_j^-)^2 } $$
+    ///
+    /// # Arguments
+    ///
+    /// * `weights` - A 1D array of weights corresponding to the relative importance of each
+    ///   criterion.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<DVector<f64>, RankingError>` - A 1D array of preference values, or an error if the
+    ///   ranking process fails.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use approx::assert_relative_eq;
+    /// use mcdm::ranking::Rank;
+    /// use mcdm::normalization::Normalize;
+    /// use nalgebra::{dmatrix, dvector};
+    ///
+    /// let matrix = dmatrix![
+    ///     2.9, 2.31, 0.56, 1.89;
+    ///     1.2, 1.34, 0.21, 2.48;
+    ///     0.3, 2.48, 1.75, 1.69
+    /// ];
+    /// let weights = dvector![0.25, 0.25, 0.25, 0.25];
+    /// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
+    /// let normalized_matrix = matrix.normalize_minmax(&criteria_types).unwrap();
+    /// let ranking = normalized_matrix.rank_topsis(&weights).unwrap();
+    /// assert_relative_eq!(ranking, dvector![0.52910451, 0.72983217, 0.0], epsilon = 1e-5);
+    /// ```
+    fn rank_topsis(&self, weights: &DVector<f64>) -> Result<DVector<f64>, RankingError>;
+
+    /// Computes the Weighted Product Model (WPM) preference values for alternatives.
+    ///
+    /// The WPM model expects the decision matrix is normalized using the [`Sum`](crate::normalization::Normalize::normalize_sum) method. Then computes
+    /// the ranking using:
+    ///
+    /// $$ WPM = \prod_{j=1}^n(x_{ij})^{w_j} $$
+    ///
+    /// where $x_{ij}$ is the $i$th element of the alternative (row), $j$th elements of the criterion
+    /// (column) with $n$ total criteria, and $w_j$ is the weight of the $j$th criterion.
+    ///
+    /// # Arguments
+    ///
+    /// * `weights` - A 1D array of weights corresponding to the relative importance of each
+    ///   criterion.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<DVector<f64>, RankingError>` - A 1D array of preference values, or an error if the
+    ///   ranking process fails.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use approx::assert_relative_eq;
+    /// use mcdm::ranking::Rank;
+    /// use mcdm::normalization::Normalize;
+    /// use mcdm::CriteriaType;
+    /// use nalgebra::{dmatrix, dvector};
+    ///
+    /// let matrix = dmatrix![
+    ///     2.9, 2.31, 0.56, 1.89;
+    ///     1.2, 1.34, 0.21, 2.48;
+    ///     0.3, 2.48, 1.75, 1.69
+    /// ];
+    /// let weights = dvector![0.25, 0.25, 0.25, 0.25];
+    /// let criteria_type = CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
+    /// let normalized_matrix = matrix.normalize_sum(&criteria_type).unwrap();
+    /// let ranking = normalized_matrix.rank_weightedproduct(&weights).unwrap();
+    /// assert_relative_eq!(
+    ///     ranking,
+    ///     dvector![0.21711531, 0.17273414, 0.53281425],
+    ///     epsilon = 1e-5
+    /// );
+    /// ```
+    fn rank_weightedproduct(&self, weights: &DVector<f64>) -> Result<DVector<f64>, RankingError>;
+
+    /// Rank the alternatives using the Weighted Sum Model.
+    ///
+    /// The `WeightedSum` method ranks alternatives based on the weighted sum of their criteria values.
+    /// Each alternative's score is calculated by multiplying its criteria values by the corresponding
+    /// weights and summing the results. The decision matrix is expected to be normalized using the
+    /// [`Sum`](crate::normalization::Normalize::normalize_sum) method.
+    ///
+    /// $$ WSM = \sum_{j=1}^n x_{ij}{w_j} $$
+    ///
+    /// where $x_{ij}$ is the $i$th element of the alternative (row), $j$th elements of the criterion
+    /// (column) with $n$ total criteria, and $w_j$ is the weight of the $j$th criterion.
+    ///
+    /// # Arguments
+    ///
+    /// * `weights` - A 1D array of weights corresponding to the relative importance of each
+    ///   criterion.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<DVector<f64>, RankingError>` - A 1D array of preference values, or an error if the
+    ///   ranking process fails.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use approx::assert_relative_eq;
+    /// use mcdm::ranking::Rank;
+    /// use nalgebra::{dmatrix, dvector};
+    ///
+    /// let matrix = dmatrix![0.2, 0.8; 0.5, 0.5; 0.9, 0.1];
+    /// let weights = dvector![0.6, 0.4];
+    /// let ranking = matrix.rank_weightedsum(&weights).unwrap();
+    /// assert_relative_eq!(ranking, dvector![0.44, 0.5, 0.58], epsilon = 1e-5);
+    /// ```
+    fn rank_weightedsum(&self, weights: &DVector<f64>) -> Result<DVector<f64>, RankingError>;
 }
 
-/// Ranks decision matrix alternatives using the Additive Ratio ASsessment (ARAS) method.
-///
-/// The ARAS method expects the decision matrix before any normalization or manipulation. The method
-/// assesses alternatives by comparing their overall performance to the ideal (best) alternative. It
-/// calculates a utility degree for each alternative based on the ratio of the sum of weighted
-/// normalized values for each criterion relative to the ideal alternative, which has the maximum
-/// performance for each criterion.
-///
-/// This method takes an $n{\times}m$ decision matrix
-///
-/// $$ x_{ij} =
-/// \begin{bmatrix}
-/// x_{11} & x_{12} & \ldots & x_{1m} \\\\
-/// x_{21} & x_{22} & \ldots & x_{2m} \\\\
-/// \vdots & \vdots & \ddots & \vdots \\\\
-/// x_{n1} & x_{n2} & \ldots & x_{nm}
-/// \end{bmatrix}
-/// $$
-///
-/// then extends the matrix by adding an additional "best case" alternative row based on the
-/// minimum or maximum values of each criterion column. If that criterion is a profit, we use the
-/// maximum; if the criterion is a cost, we use the minimum.
-///
-/// $$ E =
-/// \begin{bmatrix}
-///     E_0(x_{i1}) & E_0(x_{i2}) & \ldots & E_0(x_{im}) \\\\
-///     x_{11} & x_{12} & \ldots & x_{1m} \\\\
-///     x_{21} & x_{22} & \ldots & x_{2m} \\\\
-///     \vdots & \vdots & \ddots & \vdots \\\\
-///     x_{(n+1)1} & x_{(n+1)2} & \ldots & x_{(n+1)m}
-/// \end{bmatrix}
-/// $$
-///
-/// where
-///
-/// $$
-/// E_0(x_{i1}) = \begin{cases}
-///     \max(x_{i1}) & \text{if } \text{criteria type} = \text{profit} \\\\
-///     \min(x_{i1}) & \text{if } \text{criteria type} = \text{cost}
-/// \end{cases}
-/// $$
-///
-/// Next, obtain the normalized matrix, $s_{ij}$ by using the [`Sum`] normalization method on $E$.
-/// Then compute the weighted matrix $v_{ij}$ using
-///
-/// $$ v_{ij} = w_j s_{ij} $$
-///
-/// Next, determine the optimal criterion values only for the extended "best case" alternative
-/// (remember, this is the first row of the extended matrix).
-///
-/// $$ S_0 = \sum_{j=1}^m v_{0j} $$
-///
-/// Likewise, determine the sum of each other alternative using
-///
-/// $$ S_i = \sum_{j=1}^m v_{ij} $$
-///
-/// Lastly, calculate the utility degree $K_i$ which determines the ranking of each alternative
-///
-/// $$ K_i = \frac{S_i}{S_0} $$
-///
-/// # Example
-///
-/// ```rust
-/// use approx::assert_relative_eq;
-/// use mcdm::ranking::{RankWithCriteriaType, Aras};
-/// use mcdm::normalization::{Sum, Normalize};
-/// use nalgebra::{dmatrix, dvector};
-///
-/// let matrix = dmatrix![
-///     2.9, 2.31, 0.56, 1.89;
-///     1.2, 1.34, 0.21, 2.48;
-///     0.3, 2.48, 1.75, 1.69
-/// ];
-/// let weights = dvector![0.25, 0.25, 0.25, 0.25];
-/// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
-/// let ranking = Aras::rank(&matrix, &criteria_types, &weights).unwrap();
-/// assert_relative_eq!(ranking, dvector![0.49447117, 0.35767527, 1.0], epsilon = 1e-5);
-/// ```
-pub struct Aras;
-
-impl RankWithCriteriaType for Aras {
-    fn rank(
-        decision_matrix: &DMatrix<f64>,
+impl Rank for DMatrix<f64> {
+    fn rank_aras(
+        &self,
         types: &[CriteriaType],
         weights: &DVector<f64>,
     ) -> Result<DVector<f64>, RankingError> {
-        let (num_alternatives, num_criteria) = decision_matrix.shape();
+        let (num_alternatives, num_criteria) = self.shape();
 
         if num_alternatives == 0 || num_criteria == 0 {
             return Err(RankingError::EmptyMatrix);
@@ -200,19 +629,17 @@ impl RankWithCriteriaType for Aras {
         }
 
         let mut exmatrix = DMatrix::zeros(num_alternatives + 1, num_criteria);
-        exmatrix
-            .rows_mut(1, num_alternatives)
-            .copy_from(decision_matrix);
+        exmatrix.rows_mut(1, num_alternatives).copy_from(self);
 
         for (i, criteria_type) in types.iter().enumerate() {
             if *criteria_type == CriteriaType::Profit {
-                exmatrix[(0, i)] = decision_matrix.column(i).max();
+                exmatrix[(0, i)] = self.column(i).max();
             } else if *criteria_type == CriteriaType::Cost {
-                exmatrix[(0, i)] = decision_matrix.column(i).min();
+                exmatrix[(0, i)] = self.column(i).min();
             }
         }
 
-        let normalized_matrix = Sum::normalize(&exmatrix, types)?;
+        let normalized_matrix = exmatrix.normalize_sum(types)?;
         let weighted_matrix = normalized_matrix.weight_criteria(weights);
 
         let s = weighted_matrix.column_sum();
@@ -223,79 +650,23 @@ impl RankWithCriteriaType for Aras {
 
         Ok(k)
     }
-}
 
-/// Ranks the alternatives using the COmbined Compromise SOlution (COCOSO) method.
-///
-/// The COCOSO method expects the decision matrix is normalized using the [`MinMax`](crate::normalization::MinMax)
-/// method. Then calculates the weighted sum of the comparision sequence and the total power weight
-/// of the comparison sequence for each alternative. The values of $S_i$ are based on the grey
-/// relationship generation method and the values for $P_i$ are based on the multiplicative WASPAS
-/// method.
-///
-/// $$ S_i = \sum_{j=1}^m(w_j r_{ij}) $$
-/// $$ P_i = \sum_{j=1}^m(r_{ij})^{w_j} $$
-///
-/// where $S_i$ is the grey relationship, $P_i$ is the multiplicative `WASPAS`, $m$ is the number of
-/// criteria, $r_{ij}$ is the $i$th element of the alternative, $j$th elements of the criterion of
-/// the normalized decision matrix, and $w_j$ is the $j$th weight.
-///
-/// We then compute the relative weights of alternatives using aggregation strategies.
-///
-/// $$ k_{ia} = \frac{P_i + S_i}{\sum_{i=1}^n \left(P_i + S_i\right)} $$
-/// $$ k_{ib} = \frac{S_i}{\min_i(S_i)} + \frac{P_i}{\min_i(P_i)} $$
-/// $$ k_{ic} = \frac{\lambda(S_i) + (1 - \lambda)(P_i)}{\lambda \max_i(S_i) + (1 - \lambda) \max_i(P_i)} \quad 0 \leq \lambda \leq 1 $$
-///
-/// where $k_{ia}$ represents the average of the sums of [`WeightedSum`] and [`WeightedProduct`]
-/// scores, $k_{ib}$ represents the [`WeightedSum`] and [`WeightedProduct`] scores over the best
-/// scores for each each method respectfully, and $k_{ic}$ represents the [`WeightedSum`],
-/// [`WeightedProduct`] scores using the compromise strategy, and $n$ is the number of alternatives.
-///
-/// Lastly, we rank the alternatives as follows:
-///
-/// $$ k_i = (k_{ia}k_{ib}k_{ic})^{\frac{1}{3}} + \frac{1}{3}(k_{ia} + k_{ib} + k_{ic}) $$
-///
-/// # Example
-///
-/// ```rust
-/// use approx::assert_relative_eq;
-/// use mcdm::ranking::{Rank, Cocoso};
-/// use mcdm::normalization::{MinMax, Normalize};
-/// use nalgebra::{dmatrix, dvector};
-///
-/// let matrix = dmatrix![
-///     2.9, 2.31, 0.56, 1.89;
-///     1.2, 1.34, 0.21, 2.48;
-///     0.3, 2.48, 1.75, 1.69
-/// ];
-/// let weights = dvector![0.25, 0.25, 0.25, 0.25];
-/// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
-/// let normalized_matrix = MinMax::normalize(&matrix, &criteria_types).unwrap();
-/// let ranking = Cocoso::rank(&normalized_matrix, &weights).unwrap();
-/// assert_relative_eq!(ranking, dvector![3.24754746, 1.14396494, 5.83576765], epsilon = 1e-5);
-/// ```
-pub struct Cocoso;
-
-impl Rank for Cocoso {
-    fn rank(
-        normalized_matrix: &DMatrix<f64>,
-        weights: &DVector<f64>,
-    ) -> Result<DVector<f64>, RankingError> {
-        if weights.len() != normalized_matrix.ncols() {
+    fn rank_cocoso(&self, weights: &DVector<f64>) -> Result<DVector<f64>, RankingError> {
+        if weights.len() != self.ncols() {
             return Err(RankingError::DimensionMismatch);
         }
 
         let l = 0.5;
 
         // Vector of S: sum of weighted rows
-        let s = normalized_matrix
+        let s = self
             .row_iter()
             .map(|row| row.dot(&weights.transpose()))
             .collect::<Vec<f64>>();
         let s = DVector::from_vec(s);
 
         // Vector of P: product of rows raised to the power of weights
-        let p = normalized_matrix
+        let p = self
             .row_iter()
             .map(|row| {
                 row.iter()
@@ -322,76 +693,15 @@ impl Rank for Cocoso {
 
         Ok(ksi)
     }
-}
 
-/// Ranks the alternatives using the COmbinative Distance-based ASessment (CODAS) method.
-///
-/// The CODAS method expects the decision matrix is normalized using the [`Linear`](crate::normalization::Linear)
-/// method. Then calculates an assessment matrix based on the euclidean distance and taxicab
-/// distance from the negative ideal solution.
-///
-/// Build a weighted matrix $v_{ij}$ using the normalized decision matrix, $r_{ij}$, and weights.
-///
-/// $$ v_{ij} = r_{ij}{w_j} $$
-///
-/// Next, determine the negative ideal solution (NIS) using the weighted matrix $v_{ij}$.
-///
-/// $$ NIS_j = \min_{i=1}^n v_{ij} $$
-///
-/// Calculate the euclidean distance and taxicab distance from the negative ideal solution
-///
-/// $$ E_i = \sqrt{\sum_{i=1}^n(v_{ij} - NIS_j)^2} $$
-/// $$ T_i = \sum_{i=1}^n \left|v_{ij} - NIS_j\right| $$
-///
-/// Next, build the assessment matrix
-///
-/// $$ h_{ik} = (E_i - E_k) + (\psi(E_i - E_k) \times (T_i - T_k)) $$
-///
-/// where $k \in \{1, 2, \ldots, n\}$ and $\psi$ is the threshold function to recognize the equality
-/// of the Euclidean distance of the two alternatives, defined as follows:
-///
-/// $$ \psi(x) = \begin{cases} 1 & \text{if} & |x| \geq \tau \\\\ 0 & \text{if} & |x| \lt \tau \end{cases} $$
-///
-/// where $\tau$ is the threshold value determined by the decisionmaker. Suggested values for $\tau$
-/// are between 0.01 and 0.05.
-///
-/// Lastly, calculate the assessment score of each alternative
-///
-/// $$ H_i = \sum_{k=1}^n h_{ik} $$
-///
-/// # Example
-///
-/// ```rust
-/// use approx::assert_relative_eq;
-/// use mcdm::ranking::{Rank, Codas};
-/// use mcdm::normalization::{Linear, Normalize};
-/// use nalgebra::{dmatrix, dvector};
-///
-/// let matrix = dmatrix![
-///     2.9, 2.31, 0.56, 1.89;
-///     1.2, 1.34, 0.21, 2.48;
-///     0.3, 2.48, 1.75, 1.69
-/// ];
-/// let weights = dvector![0.25, 0.25, 0.25, 0.25];
-/// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
-/// let normalized_matrix = Linear::normalize(&matrix, &criteria_types).unwrap();
-/// let ranking = Codas::rank(&normalized_matrix, &weights).unwrap();
-/// assert_relative_eq!(ranking, dvector![-0.40977725, -1.15891275, 1.56869], epsilon = 1e-5);
-/// ```
-pub struct Codas;
-
-impl Rank for Codas {
-    fn rank(
-        normalized_matrix: &DMatrix<f64>,
-        weights: &DVector<f64>,
-    ) -> Result<DVector<f64>, RankingError> {
-        if weights.len() != normalized_matrix.ncols() {
+    fn rank_codas(&self, weights: &DVector<f64>, tau: f64) -> Result<DVector<f64>, RankingError> {
+        if weights.len() != self.ncols() {
             return Err(RankingError::DimensionMismatch);
         }
 
-        let weighted_matrix = normalized_matrix.weight_criteria(weights);
+        let weighted_matrix = self.weight_criteria(weights);
 
-        let nrows = normalized_matrix.nrows();
+        let nrows = self.nrows();
 
         // Compute the Negative Ideal Solution (NIS)
         let nis = weighted_matrix
@@ -429,92 +739,19 @@ impl Rank for Codas {
             for j in 0..nrows {
                 let e_diff = euclidean_distances[i] - euclidean_distances[j];
                 let t_diff = taxicab_distances[i] - taxicab_distances[j];
-                assessment_matrix[(i, j)] = (e_diff) + (psi_with_default_tau(e_diff) * t_diff);
+                assessment_matrix[(i, j)] = (e_diff) + (psi(e_diff, tau) * t_diff);
             }
         }
 
         Ok(assessment_matrix.column_sum())
     }
-}
 
-fn psi(x: f64, tau: f64) -> f64 {
-    if x.abs() >= tau {
-        1.0
-    } else {
-        0.0
-    }
-}
-
-fn psi_with_default_tau(x: f64) -> f64 {
-    psi(x, 0.02)
-}
-
-/// Ranks the alternatives using the COmplex PRoportional ASsessment (COPRAS) method.
-///
-/// The COPRAS method expects the decision matrix without normalization. This method evaluates
-/// alternatives by separately considering the effects of maximizing (beneficial) and minimizing
-/// (non-beneficial) index values of attributes. This approach allows COPRAS to assess the impact of
-/// each type of crition independently, ensuring both positive contributions and cost factors are
-/// accounted for in the final ranking. This separation provides a more balanced and accurate
-/// assessment of each alternative.
-///
-/// Start by calculating the normalized decision matrix, $r_{ij}$, using the [`Sum`] method, but treat each
-/// criterion as a profit. The normalization is caclculated as:
-///
-/// $$ r_{ij} = \frac{x_{ij}}{\sum_{i=1}^m x_{ij}} $$
-///
-/// Next, build a weighted matrix $v_{ij}$ using the normalized decision matrix, $r_{ij}$, and
-/// weights.
-///
-/// $$ v_{ij} = r_{ij}{w_j} $$
-///
-/// Next, determine the sums of difficult normalized values of the weighted matrix $v_{ij}$.
-///
-/// $$ S_{+i} = \sum_{j=1}^k v_{ij} $$
-/// $$ S_{-i} = \sum_{j=k+1}^m v_{ij} $$
-///
-/// where $k$ is the number of attributes to maximize. The rest of the attributes from $k+1$ to $m$
-/// are minimized. $S_{+i}$ and $S_{-i}$ show the level of the goal achievement for alternatives.
-/// Higher value of $S_{+i}$ indicates the alternative is better and a lower value of $S_{-i}$
-/// indicate a better alternative.
-///
-/// Next, calculate the relative significance of alternatives using:
-///
-/// $$ Q_i = S_{+i} + \frac{S_{-\min} \sum_{i=1}^n S_{-i}}{S_{-i} \sum_{i=1}^n \left(\frac{S_{-\min}}{S_{-i}}\right)} $$
-///
-/// Lastly, rank the alternatives using:
-///
-/// $$ U_i = \frac{Q_i}{Q_i^{\max}} \times 100\\% $$
-///
-/// where $Q_i^{\max}$ is the maximum value of the utility function. Better alternatives have higher
-/// $U_i$ values.
-///
-/// # Example
-///
-/// ```rust
-/// use approx::assert_relative_eq;
-/// use mcdm::ranking::{RankWithCriteriaType, Copras};
-/// use nalgebra::{dmatrix, dvector};
-///
-/// let matrix = dmatrix![
-///     2.9, 2.31, 0.56, 1.89;
-///     1.2, 1.34, 0.21, 2.48;
-///     0.3, 2.48, 1.75, 1.69
-/// ];
-/// let weights = dvector![0.25, 0.25, 0.25, 0.25];
-/// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
-/// let ranking = Copras::rank(&matrix, &criteria_types, &weights).unwrap();
-/// assert_relative_eq!(ranking, dvector![1.0, 0.6266752, 0.92104753], epsilon = 1e-5);
-/// ```
-pub struct Copras;
-
-impl RankWithCriteriaType for Copras {
-    fn rank(
-        decision_matrix: &DMatrix<f64>,
+    fn rank_copras(
+        &self,
         types: &[CriteriaType],
         weights: &DVector<f64>,
     ) -> Result<DVector<f64>, RankingError> {
-        let (num_alternatives, num_criteria) = decision_matrix.shape();
+        let (num_alternatives, num_criteria) = self.shape();
 
         if num_alternatives == 0 || num_criteria == 0 {
             return Err(RankingError::EmptyMatrix);
@@ -524,8 +761,7 @@ impl RankWithCriteriaType for Copras {
             return Err(RankingError::DimensionMismatch);
         }
 
-        let normalized_matrix =
-            Sum::normalize(decision_matrix, &CriteriaType::profits(types.len()))?;
+        let normalized_matrix = self.normalize_sum(&CriteriaType::profits(types.len()))?;
 
         let weighted_matrix = normalized_matrix.weight_criteria(weights);
 
@@ -569,77 +805,13 @@ impl RankWithCriteriaType for Copras {
 
         Ok(&q / max_q)
     }
-}
 
-/// Ranks the alternatives using the Evaluation based on Distance from Average Solution (EDAS) method.
-///
-/// The EDAS method ranks the alternatives using the average distance from the average solution. The
-/// method expects a decision matrix before normalization. We define the decision matrix as:
-///
-/// $$ X_{ij} =
-/// \begin{bmatrix}
-///     x_{11} & x_{12} & \ldots & x_{1m} \\\\
-///     x_{21} & x_{22} & \ldots & x_{2m} \\\\
-///     \vdots & \vdots & \ddots & \vdots \\\\
-///     x_{n1} & x_{n2} & \ldots & x_{nm}
-/// \end{bmatrix}
-/// $$
-///
-/// Then calculate the average solution as:
-///
-/// $$ \overline{X}\_{ij} = \frac{\sum_{i=1}^{n} x_{ij}}{n} $$
-///
-/// Next, calculate the positive and negative distance from the mean solution for each alternative.
-/// When the criteria type is profit, compute the positive and negative distance as:
-///
-/// $$ PD_{i} = \frac{\max(0, (X_{ij} - \overline{X}\_{ij}))}{\overline{X}\_{ij}} $$
-/// $$ ND_{i} = \frac{\max(0, (\overline{X}\_{ij})) - X_{ij}}{\overline{X}\_{ij}} $$
-///
-/// When the criter type is cost, compute the positive and negative distance as:
-///
-/// $$ PD_{i} = \frac{\max(0, (\overline{X}\_{ij})) - X_{ij}}{\overline{X}\_{ij}} $$
-/// $$ ND_{i} = \frac{\max(0, (X_{ij} - \overline{X}\_{ij}))}{\overline{X}\_{ij}} $$
-///
-/// Next, calculate the weighted sums for $PD$ and $ND$:
-///
-/// $$ SP_i = \sum_{j=1}^{m} w_j PD_{ij} $$
-/// $$ SN_i = \sum_{j=1}^{m} w_j ND_{ij} $$
-///
-/// Next, normalize the weighted sums:
-///
-/// $$ NSP_i = \frac{SP_i}{\max_i(SP_i)} $$
-/// $$ NSN_i = 1 - \frac{SN_i}{\max_i(SN_i)} $$
-///
-/// Finally, rank the alternatives by calculating their evaluation scores as:
-///
-/// $$ E_i = \frac{NSP_i + NSN_i}{2} $$
-///
-/// # Example
-///
-/// ```rust
-/// use approx::assert_relative_eq;
-/// use mcdm::ranking::{RankWithCriteriaType, Edas};
-/// use nalgebra::{dmatrix, dvector};
-///
-/// let matrix = dmatrix![
-///     2.9, 2.31, 0.56, 1.89;
-///     1.2, 1.34, 0.21, 2.48;
-///     0.3, 2.48, 1.75, 1.69
-/// ];
-/// let weights = dvector![0.25, 0.25, 0.25, 0.25];
-/// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
-/// let ranking = Edas::rank(&matrix, &criteria_types, &weights).unwrap();
-/// assert_relative_eq!(ranking, dvector![0.04747397, 0.04029913, 1.0], epsilon = 1e-5);
-/// ```
-pub struct Edas;
-
-impl RankWithCriteriaType for Edas {
-    fn rank(
-        decision_matrix: &DMatrix<f64>,
+    fn rank_edas(
+        &self,
         types: &[CriteriaType],
         weights: &DVector<f64>,
     ) -> Result<DVector<f64>, RankingError> {
-        let (num_alternatives, num_criteria) = decision_matrix.shape();
+        let (num_alternatives, num_criteria) = self.shape();
 
         if num_alternatives == 0 || num_criteria == 0 {
             return Err(RankingError::EmptyMatrix);
@@ -649,14 +821,14 @@ impl RankWithCriteriaType for Edas {
             return Err(RankingError::DimensionMismatch);
         }
 
-        let average_criteria = decision_matrix.row_mean();
+        let average_criteria = self.row_mean();
 
         let mut positive_distance_matrix = DMatrix::zeros(num_alternatives, num_criteria);
         let mut negative_distance_matrix = DMatrix::zeros(num_alternatives, num_criteria);
 
         for j in 0..num_criteria {
             for i in 0..num_alternatives {
-                let val = decision_matrix[(i, j)];
+                let val = self[(i, j)];
                 let avg = average_criteria[j];
 
                 match types[j] {
@@ -695,84 +867,21 @@ impl RankWithCriteriaType for Edas {
 
         Ok((nsp + nsn) / 2.0)
     }
-}
 
-/// Ranks the alternatives using the Multi-Attributive Border Approximation Area Comparison (MABAC)
-/// method.
-///
-/// The MABAC method expects the decision matrix is normalized using the [`MinMax`](crate::normalization::MinMax)
-/// method. Then computes a weighted matrix $v_{ij}$ using
-///
-/// $$ v_{ij} = {w_j}(x_{ij} + 1) $$
-///
-/// where $x_{ij}$ is the $i$th element of the alternative (row), $j$th elements of the criterion
-/// (column), and $w_j$ is the weight of the $j$th criterion.
-///
-/// We then compute the boundary appromixation area for all criteria.
-///
-/// $$ g_i = \left( \prod_{j=1}^m v_{ij} \right)^{1/m} $$
-///
-/// where $g_i$ is the boundary approximation area for the $i$th alternative, $v_{ij}$ is the
-/// weighted matrix for the $i$th alternative and $j$th criterion, and $m$ is the number of
-/// criteria.
-///
-/// Next we calculate the distance of the $i$th alternative and $j$th criterion from the boundary
-/// approximation area
-///
-/// $$ q_{ij} = v_{ij} - g_j $$
-///
-/// Lastly, we rank the alternatives according to the sum of the distances of the alternatives from
-/// the border approximation area.
-///
-/// $$ S_i = \sum_{j=1}^{m} q_{ij} \quad \text{for} \quad i=1, \ldots, n \quad \text{and} \quad j=1, \ldots, m $$
-///
-/// where $q_{ij}$ is the distance of the $i$th alternative and $j$th criterion of the weighted
-/// matrix $v_{ij}$ to the boundary approximation $g_i$, $n$ is the number of alternatives and $m$
-/// is the number of criteria.
-///
-/// # Example
-///
-/// ```rust
-/// use approx::assert_relative_eq;
-/// use mcdm::ranking::{Rank, Mabac};
-/// use mcdm::normalization::{MinMax, Normalize};
-/// use nalgebra::{dmatrix, dvector};
-///
-/// let matrix = dmatrix![
-///     2.9, 2.31, 0.56, 1.89;
-///     1.2, 1.34, 0.21, 2.48;
-///     0.3, 2.48, 1.75, 1.69
-/// ];
-/// let weights = dvector![0.25, 0.25, 0.25, 0.25];
-/// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
-/// let normalized_matrix = MinMax::normalize(&matrix, &criteria_types).unwrap();
-/// let ranking = Mabac::rank(&normalized_matrix, &weights).unwrap();
-/// assert_relative_eq!(ranking, dvector![-0.01955314, -0.31233795,  0.52420052], epsilon = 1e-5);
-/// ```
-pub struct Mabac;
-
-impl Rank for Mabac {
-    fn rank(
-        normalized_matrix: &DMatrix<f64>,
-        weights: &DVector<f64>,
-    ) -> Result<DVector<f64>, RankingError> {
-        let (num_alternatives, num_criteria) = normalized_matrix.shape();
+    fn rank_mabac(&self, weights: &DVector<f64>) -> Result<DVector<f64>, RankingError> {
+        let (num_alternatives, num_criteria) = self.shape();
 
         if weights.len() != num_criteria {
             return Err(RankingError::DimensionMismatch);
         }
 
         // Calculation of the elements from the weighted matrix
-        let weighted_matrix = normalized_matrix.map(|x| x + 1.0).weight_criteria(weights);
+        let weighted_matrix = self.map(|x| x + 1.0).weight_criteria(weights);
 
         // Border approximation area matrix
         let g = weighted_matrix
             .column_iter()
-            .map(|col| {
-                col.iter()
-                    .product::<f64>()
-                    .powf(1.0 / normalized_matrix.nrows() as f64)
-            })
+            .map(|col| col.iter().product::<f64>().powf(1.0 / self.nrows() as f64))
             .collect::<Vec<f64>>();
 
         let g = DVector::from_column_slice(&g).transpose();
@@ -789,63 +898,9 @@ impl Rank for Mabac {
 
         Ok(DVector::from(ranking))
     }
-}
 
-/// Ranks the alternatives using the TOPSIS method.
-///
-/// The TOPSIS method expects the decision matrix is normalized using the [`MinMax`](crate::normalization::MinMax)
-/// method. Then computes a weighted matrix $v_{ij}$ using
-///
-/// $$ v_{ij} = x_{ij}{w_j} $$
-///
-/// where $x_{ij}$ is the $i$th element of the alternative (row), $j$th elements of the criterion
-/// (column), and $w_j$ is the weight of the $j$th criterion.
-///
-/// We then derive a positive ideal solution (PIS) and a negative ideal solution (NIS). The PIS is
-/// calculated as the maximum value for each criterion, and the NIS is the minimum value for each
-/// criterion.
-///
-/// $$ v_j^+ = \left\\{v_1^+, v_2^+, \dots, v_n^+\right\\} = \max_j v_{ij} $$
-/// $$ v_j^- = \left\\{v_1^-, v_2^-, \dots, v_n^-\right\\} = \min_j v_{ij} $$
-///
-/// where $v_j^+$ is the positive ideal solution, $v_j^-$ is the negative ideal solution, $n$ is the
-/// number of criteria, and $i$ is the alternative index
-///
-/// Finally we determine the distance to the PIS ($D_i^+$) and NIS ($D_i^-$). The distance to the
-/// PIS is calculated as the square root of the sum of the squares of the differences between the
-/// weighted matrix row and the PIS. The distance to the NIS is calculated as the square root of the
-/// sum of the squares of the differences between the weighted matrix row and the NIS as follows:
-///
-/// $$ D_i^+ = \sqrt{ \sum_{j=1}^{n} (v_{ij} - v_j^+)^2 } $$
-/// $$ D_i^- = \sqrt{ \sum_{j=1}^{n} (v_{ij} - v_j^-)^2 } $$
-///
-/// # Example
-///
-/// ```rust
-/// use approx::assert_relative_eq;
-/// use mcdm::ranking::{Rank, Topsis};
-/// use mcdm::normalization::{MinMax, Normalize};
-/// use nalgebra::{dmatrix, dvector};
-///
-/// let matrix = dmatrix![
-///     2.9, 2.31, 0.56, 1.89;
-///     1.2, 1.34, 0.21, 2.48;
-///     0.3, 2.48, 1.75, 1.69
-/// ];
-/// let weights = dvector![0.25, 0.25, 0.25, 0.25];
-/// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
-/// let normalized_matrix = MinMax::normalize(&matrix, &criteria_types).unwrap();
-/// let ranking = Topsis::rank(&normalized_matrix, &weights).unwrap();
-/// assert_relative_eq!(ranking, dvector![0.52910451, 0.72983217, 0.0], epsilon = 1e-5);
-/// ```
-pub struct Topsis;
-
-impl Rank for Topsis {
-    fn rank(
-        normalized_matrix: &DMatrix<f64>,
-        weights: &DVector<f64>,
-    ) -> Result<DVector<f64>, RankingError> {
-        if weights.len() != normalized_matrix.ncols() {
+    fn rank_topsis(&self, weights: &DVector<f64>) -> Result<DVector<f64>, RankingError> {
+        if weights.len() != self.ncols() {
             return Err(RankingError::DimensionMismatch);
         }
 
@@ -853,10 +908,10 @@ impl Rank for Topsis {
             return Err(RankingError::InvalidValue);
         }
 
-        let (num_rows, num_cols) = normalized_matrix.shape();
+        let (num_rows, num_cols) = self.shape();
 
         let broadcasted_weights = DMatrix::from_fn(num_rows, num_cols, |_, col| weights[col]);
-        let weighted_matrix = normalized_matrix.component_mul(&broadcasted_weights);
+        let weighted_matrix = self.component_mul(&broadcasted_weights);
 
         // Compute the Positive Ideal Solution (PIS) and Negative Ideal Solution (NIS)
         let pis = weighted_matrix
@@ -893,60 +948,18 @@ impl Rank for Topsis {
 
         Ok(closeness_to_ideal)
     }
-}
 
-/// Computes the Weighted Product Model (WPM) preference values for alternatives.
-///
-/// The WPM model expects the decision matrix is normalized using the [`Sum`] method. Then computes
-/// the ranking using:
-///
-/// $$ WPM = \prod_{j=1}^n(x_{ij})^{w_j} $$
-///
-/// where $x_{ij}$ is the $i$th element of the alternative (row), $j$th elements of the criterion
-/// (column) with $n$ total criteria, and $w_j$ is the weight of the $j$th criterion.
-///
-/// # Example
-///
-/// ```rust
-/// use approx::assert_relative_eq;
-/// use mcdm::ranking::{Rank, WeightedProduct};
-/// use mcdm::normalization::{Normalize, Sum};
-/// use mcdm::CriteriaType;
-/// use nalgebra::{dmatrix, dvector};
-///
-/// let matrix = dmatrix![
-///     2.9, 2.31, 0.56, 1.89;
-///     1.2, 1.34, 0.21, 2.48;
-///     0.3, 2.48, 1.75, 1.69
-/// ];
-/// let weights = dvector![0.25, 0.25, 0.25, 0.25];
-/// let criteria_type = CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
-/// let normalized_matrix = Sum::normalize(&matrix, &criteria_type).unwrap();
-/// let ranking = WeightedProduct::rank(&normalized_matrix, &weights).unwrap();
-/// assert_relative_eq!(
-///     ranking,
-///     dvector![0.21711531, 0.17273414, 0.53281425],
-///     epsilon = 1e-5
-/// );
-/// ```
-pub struct WeightedProduct;
-
-impl Rank for WeightedProduct {
-    fn rank(
-        normalized_matrix: &DMatrix<f64>,
-        weights: &DVector<f64>,
-    ) -> Result<DVector<f64>, RankingError> {
-        if weights.len() != normalized_matrix.ncols() {
+    fn rank_weightedproduct(&self, weights: &DVector<f64>) -> Result<DVector<f64>, RankingError> {
+        if weights.len() != self.ncols() {
             return Err(RankingError::DimensionMismatch);
         }
 
         // Compute the weighted matrix by raising each element of the decision matrix to the power
         // of the corresponding weight.
-        let mut weighted_matrix =
-            DMatrix::zeros(normalized_matrix.nrows(), normalized_matrix.ncols());
+        let mut weighted_matrix = DMatrix::zeros(self.nrows(), self.ncols());
 
         // NOTE: I'm sure there is an idiomatic way to do this, but I can't seem to figure it out.
-        for (i, row) in normalized_matrix.row_iter().enumerate() {
+        for (i, row) in self.row_iter().enumerate() {
             for (j, &value) in row.iter().enumerate() {
                 weighted_matrix[(i, j)] = value.powf(weights[j]);
             }
@@ -955,44 +968,21 @@ impl Rank for WeightedProduct {
         // Compute the product of each row
         Ok(weighted_matrix.column_product())
     }
-}
 
-/// Rank the alternatives using the Weighted Sum Model.
-///
-/// The `WeightedSum` method ranks alternatives based on the weighted sum of their criteria values.
-/// Each alternative's score is calculated by multiplying its criteria values by the corresponding
-/// weights and summing the results. The decision matrix is expected to be normalized using the
-/// [`Sum`] method.
-///
-/// $$ WSM = \sum_{j=1}^n x_{ij}{w_j} $$
-///
-/// where $x_{ij}$ is the $i$th element of the alternative (row), $j$th elements of the criterion
-/// (column) with $n$ total criteria, and $w_j$ is the weight of the $j$th criterion.
-///
-/// # Example
-///
-/// ```rust
-/// use approx::assert_relative_eq;
-/// use mcdm::ranking::{WeightedSum, Rank};
-/// use nalgebra::{dmatrix, dvector};
-///
-/// let matrix = dmatrix![0.2, 0.8; 0.5, 0.5; 0.9, 0.1];
-/// let weights = dvector![0.6, 0.4];
-/// let ranking = WeightedSum::rank(&matrix, &weights).unwrap();
-/// assert_relative_eq!(ranking, dvector![0.44, 0.5, 0.58], epsilon = 1e-5);
-/// ```
-pub struct WeightedSum;
-
-impl Rank for WeightedSum {
-    fn rank(
-        normalized_matrix: &DMatrix<f64>,
-        weights: &DVector<f64>,
-    ) -> Result<DVector<f64>, RankingError> {
-        if weights.len() != normalized_matrix.ncols() {
+    fn rank_weightedsum(&self, weights: &DVector<f64>) -> Result<DVector<f64>, RankingError> {
+        if weights.len() != self.ncols() {
             return Err(RankingError::DimensionMismatch);
         }
 
-        let weighted_matrix = normalized_matrix.weight_criteria(weights);
+        let weighted_matrix = self.weight_criteria(weights);
         Ok(weighted_matrix.column_sum())
+    }
+}
+
+fn psi(x: f64, tau: f64) -> f64 {
+    if x.abs() >= tau {
+        1.0
+    } else {
+        0.0
     }
 }
