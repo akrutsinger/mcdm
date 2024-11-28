@@ -640,7 +640,7 @@ impl Rank for DMatrix<f64> {
         }
 
         let normalized_matrix = exmatrix.normalize_sum(types)?;
-        let weighted_matrix = normalized_matrix.weight_criteria(weights);
+        let weighted_matrix = normalized_matrix.scale_columns(weights);
 
         let s = weighted_matrix.column_sum();
 
@@ -699,7 +699,7 @@ impl Rank for DMatrix<f64> {
             return Err(RankingError::DimensionMismatch);
         }
 
-        let weighted_matrix = self.weight_criteria(weights);
+        let weighted_matrix = self.scale_columns(weights);
 
         let nrows = self.nrows();
 
@@ -763,7 +763,7 @@ impl Rank for DMatrix<f64> {
 
         let normalized_matrix = self.normalize_sum(&CriteriaType::profits(types.len()))?;
 
-        let weighted_matrix = normalized_matrix.weight_criteria(weights);
+        let weighted_matrix = normalized_matrix.scale_columns(weights);
 
         let sum_normalized_profit = DVector::from_iterator(
             num_alternatives,
@@ -852,12 +852,8 @@ impl Rank for DMatrix<f64> {
             .iter_mut()
             .for_each(|x| *x = x.max(0.0));
 
-        let sp = positive_distance_matrix
-            .weight_criteria(weights)
-            .column_sum();
-        let sn = negative_distance_matrix
-            .weight_criteria(weights)
-            .column_sum();
+        let sp = positive_distance_matrix.scale_columns(weights).column_sum();
+        let sn = negative_distance_matrix.scale_columns(weights).column_sum();
 
         let max_sp = sp.max();
         let max_sn = sn.max();
@@ -876,7 +872,7 @@ impl Rank for DMatrix<f64> {
         }
 
         // Calculation of the elements from the weighted matrix
-        let weighted_matrix = self.map(|x| x + 1.0).weight_criteria(weights);
+        let weighted_matrix = self.map(|x| x + 1.0).scale_columns(weights);
 
         // Border approximation area matrix
         let g = weighted_matrix
@@ -974,7 +970,7 @@ impl Rank for DMatrix<f64> {
             return Err(RankingError::DimensionMismatch);
         }
 
-        let weighted_matrix = self.weight_criteria(weights);
+        let weighted_matrix = self.scale_columns(weights);
         Ok(weighted_matrix.column_sum())
     }
 }

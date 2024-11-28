@@ -4,17 +4,16 @@ pub trait DMatrixExt {
     /// Weights each criteria of the matrix by the corresponding element in the vector.
     ///
     /// # Arguments
-    /// * `self` - The input matrix.
     /// * `weights` - A vector whose elements will be used to weight the corresponding criteria of
     ///   the matrix.
     ///
     /// # Panics
     /// This method panics if the number of columns in the matrix does not match the length of the vector.
-    fn weight_criteria(&self, vector: &DVector<f64>) -> DMatrix<f64>;
+    fn scale_columns(&self, vector: &DVector<f64>) -> DMatrix<f64>;
 }
 
 impl DMatrixExt for DMatrix<f64> {
-    fn weight_criteria(&self, weights: &DVector<f64>) -> DMatrix<f64> {
+    fn scale_columns(&self, weights: &DVector<f64>) -> DMatrix<f64> {
         assert_eq!(
             self.ncols(),
             weights.len(),
