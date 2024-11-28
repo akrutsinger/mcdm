@@ -1,2 +1,2 @@
 [build]
-rustdocflags = [ "--html-in-header", "./src/docs_header.html" ]
+rustdocflags = [ "--html-in-header", "./src/katex-header.html" ]

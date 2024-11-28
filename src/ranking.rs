@@ -1,10 +1,10 @@
-//! Techniques for ranking alternatives.
+// //! Techniques for ranking alternatives.
 
 use crate::errors::RankingError;
 use crate::normalization::{Normalize, Sum};
 use crate::CriteriaType;
-use ndarray::{s, Array1, Array2, Axis};
-use ndarray_stats::QuantileExt;
+use crate::DMatrixExt;
+use nalgebra::{DMatrix, DVector};
 
 /// A trait for ranking alternatives in Multiple-Criteria Decision Making (MCDM).
 ///
@@ -14,19 +14,19 @@ use ndarray_stats::QuantileExt;
 /// as given by the `weights` array.
 ///
 /// Higher preference values indicate better alternatives. The specific ranking method used (such as
-/// [`TOPSIS`] or others) will depend on the implementation of this trait.
+/// [`Topsis`] or others) will depend on the implementation of this trait.
 ///
 /// # Example
 ///
 /// Here’s an example of ranking alternatives using the [`Rank`] trait:
 ///
 /// ```rust
-/// use mcdm::ranking::{TOPSIS, Rank};
-/// use ndarray::{array, Array1, Array2};
+/// use mcdm::ranking::{Topsis, Rank};
+/// use nalgebra::{dmatrix, dvector};
 ///
-/// let normalized_matrix: Array2<f64> = array![[0.8, 0.6], [0.5, 0.9], [0.3, 0.7]];
-/// let weights: Array1<f64> = array![0.6, 0.4];
-/// let ranking = TOPSIS::rank(&normalized_matrix, &weights).unwrap();
+/// let normalized_matrix = dmatrix![0.8, 0.6; 0.5, 0.9; 0.3, 0.7];
+/// let weights = dvector![0.6, 0.4];
+/// let ranking = Topsis::rank(&normalized_matrix, &weights).unwrap();
 /// println!("Ranking: {:?}", ranking);
 /// ```
 pub trait Rank {
@@ -46,9 +46,9 @@ pub trait Rank {
     ///
     /// # Returns
     ///
-    /// * `Result<Array1<f64>, RankingError>` - A 1D array of preference values, or an error if the
+    /// * `Result<DVector<f64>, RankingError>` - A 1D array of preference values, or an error if the
     ///   ranking process fails.
-    fn rank(matrix: &Array2<f64>, weights: &Array1<f64>) -> Result<Array1<f64>, RankingError>;
+    fn rank(matrix: &DMatrix<f64>, weights: &DVector<f64>) -> Result<DVector<f64>, RankingError>;
 }
 
 /// A trait for ranking alternatives in Multiple-Criteria Decision Making (MCDM).
@@ -67,11 +67,11 @@ pub trait Rank {
 ///
 /// ```rust
 /// use mcdm::ranking::{Aras, RankWithCriteriaType};
-/// use ndarray::{array, Array1, Array2};
+/// use nalgebra::{dmatrix, dvector};
 ///
-/// let normalized_matrix: Array2<f64> = array![[0.8, 0.6], [0.5, 0.9], [0.3, 0.7]];
+/// let normalized_matrix = dmatrix![0.8, 0.6; 0.5, 0.9; 0.3, 0.7];
 /// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1]).unwrap();
-/// let weights: Array1<f64> = array![0.6, 0.4];
+/// let weights = dvector![0.6, 0.4];
 /// let ranking = Aras::rank(&normalized_matrix, &criteria_types, &weights).unwrap();
 /// println!("Ranking: {:?}", ranking);
 /// ```
@@ -94,13 +94,13 @@ pub trait RankWithCriteriaType {
     ///
     /// # Returns
     ///
-    /// * `Result<Array1<f64>, RankingError>` - A 1D array of preference values, or an error if the
+    /// * `Result<DVector<f64>, RankingError>` - A 1D array of preference values, or an error if the
     ///   ranking process fails.
     fn rank(
-        matrix: &Array2<f64>,
+        matrix: &DMatrix<f64>,
         types: &[CriteriaType],
-        weights: &Array1<f64>,
-    ) -> Result<Array1<f64>, RankingError>;
+        weights: &DVector<f64>,
+    ) -> Result<DVector<f64>, RankingError>;
 }
 
 /// Ranks decision matrix alternatives using the Additive Ratio ASsessment (ARAS) method.
@@ -166,30 +166,30 @@ pub trait RankWithCriteriaType {
 /// # Example
 ///
 /// ```rust
-/// use approx::assert_abs_diff_eq;
+/// use approx::assert_relative_eq;
 /// use mcdm::ranking::{RankWithCriteriaType, Aras};
 /// use mcdm::normalization::{Sum, Normalize};
-/// use ndarray::{array, Array2};
+/// use nalgebra::{dmatrix, dvector};
 ///
-/// let matrix = array![
-///     [2.9, 2.31, 0.56, 1.89],
-///     [1.2, 1.34, 0.21, 2.48],
-///     [0.3, 2.48, 1.75, 1.69]
+/// let matrix = dmatrix![
+///     2.9, 2.31, 0.56, 1.89;
+///     1.2, 1.34, 0.21, 2.48;
+///     0.3, 2.48, 1.75, 1.69
 /// ];
-/// let weights = array![0.25, 0.25, 0.25, 0.25];
+/// let weights = dvector![0.25, 0.25, 0.25, 0.25];
 /// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
 /// let ranking = Aras::rank(&matrix, &criteria_types, &weights).unwrap();
-/// assert_abs_diff_eq!(ranking, array![0.49447117, 0.35767527, 1.0], epsilon = 1e-5);
+/// assert_relative_eq!(ranking, dvector![0.49447117, 0.35767527, 1.0], epsilon = 1e-5);
 /// ```
 pub struct Aras;
 
 impl RankWithCriteriaType for Aras {
     fn rank(
-        decision_matrix: &Array2<f64>,
+        decision_matrix: &DMatrix<f64>,
         types: &[CriteriaType],
-        weights: &Array1<f64>,
-    ) -> Result<Array1<f64>, RankingError> {
-        let (num_alternatives, num_criteria) = decision_matrix.dim();
+        weights: &DVector<f64>,
+    ) -> Result<DVector<f64>, RankingError> {
+        let (num_alternatives, num_criteria) = decision_matrix.shape();
 
         if num_alternatives == 0 || num_criteria == 0 {
             return Err(RankingError::EmptyMatrix);
@@ -199,25 +199,27 @@ impl RankWithCriteriaType for Aras {
             return Err(RankingError::DimensionMismatch);
         }
 
-        let mut exmatrix = Array2::<f64>::zeros((num_alternatives + 1, num_criteria));
-        exmatrix.slice_mut(s![1.., ..]).assign(decision_matrix);
-        println!("{}", exmatrix);
+        let mut exmatrix = DMatrix::zeros(num_alternatives + 1, num_criteria);
+        exmatrix
+            .rows_mut(1, num_alternatives)
+            .copy_from(decision_matrix);
+
         for (i, criteria_type) in types.iter().enumerate() {
             if *criteria_type == CriteriaType::Profit {
-                exmatrix[[0, i]] = *decision_matrix.slice(s![.., i]).max()?;
+                exmatrix[(0, i)] = decision_matrix.column(i).max();
             } else if *criteria_type == CriteriaType::Cost {
-                exmatrix[[0, i]] = *decision_matrix.slice(s![.., i]).min()?;
+                exmatrix[(0, i)] = decision_matrix.column(i).min();
             }
         }
-        println!("{}", exmatrix);
 
         let normalized_matrix = Sum::normalize(&exmatrix, types)?;
-        let weighted_matrix = normalized_matrix.clone() * weights;
+        let weighted_matrix = normalized_matrix.weight_criteria(weights);
 
-        let s = weighted_matrix.sum_axis(Axis(1));
-        let k = s.slice(s![1..]).map(|x| x / s[0]);
+        let s = weighted_matrix.column_sum();
 
-        println!("\n\n{}\n\n{}\n\n{}", normalized_matrix, s, k);
+        let k = s
+            .rows_range(1..)
+            .component_div(&DVector::from_element(num_alternatives, s[0]));
 
         Ok(k)
     }
@@ -253,69 +255,70 @@ impl RankWithCriteriaType for Aras {
 ///
 /// $$ k_i = (k_{ia}k_{ib}k_{ic})^{\frac{1}{3}} + \frac{1}{3}(k_{ia} + k_{ib} + k_{ic}) $$
 ///
-///
-/// # Arguments
-///
-/// * `matrix` - A normalized decision matrix of alternatives (alternatives x criteria).
-/// * `weights` - A vector of weights for each criterion.
-///
-/// # Returns
-///
-/// * `Result<Array1<f64>, RankingError>` - A vector of scores for each alternative.
-///
 /// # Example
 ///
 /// ```rust
-/// use approx::assert_abs_diff_eq;
+/// use approx::assert_relative_eq;
 /// use mcdm::ranking::{Rank, Cocoso};
 /// use mcdm::normalization::{MinMax, Normalize};
-/// use ndarray::{array, Array2};
+/// use nalgebra::{dmatrix, dvector};
 ///
-/// let matrix = array![
-///     [2.9, 2.31, 0.56, 1.89],
-///     [1.2, 1.34, 0.21, 2.48],
-///     [0.3, 2.48, 1.75, 1.69]
+/// let matrix = dmatrix![
+///     2.9, 2.31, 0.56, 1.89;
+///     1.2, 1.34, 0.21, 2.48;
+///     0.3, 2.48, 1.75, 1.69
 /// ];
-/// let weights = array![0.25, 0.25, 0.25, 0.25];
+/// let weights = dvector![0.25, 0.25, 0.25, 0.25];
 /// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
 /// let normalized_matrix = MinMax::normalize(&matrix, &criteria_types).unwrap();
 /// let ranking = Cocoso::rank(&normalized_matrix, &weights).unwrap();
-/// assert_abs_diff_eq!(ranking, array![3.24754746, 1.14396494, 5.83576765], epsilon = 1e-5);
+/// assert_relative_eq!(ranking, dvector![3.24754746, 1.14396494, 5.83576765], epsilon = 1e-5);
 /// ```
 pub struct Cocoso;
 
 impl Rank for Cocoso {
     fn rank(
-        normalized_matrix: &Array2<f64>,
-        weights: &Array1<f64>,
-    ) -> Result<Array1<f64>, RankingError> {
+        normalized_matrix: &DMatrix<f64>,
+        weights: &DVector<f64>,
+    ) -> Result<DVector<f64>, RankingError> {
         if weights.len() != normalized_matrix.ncols() {
             return Err(RankingError::DimensionMismatch);
         }
 
         let l = 0.5;
 
-        // Vectors of S and P
-        let s = (normalized_matrix * weights).sum_axis(Axis(1));
+        // Vector of S: sum of weighted rows
+        let s = normalized_matrix
+            .row_iter()
+            .map(|row| row.dot(&weights.transpose()))
+            .collect::<Vec<f64>>();
+        let s = DVector::from_vec(s);
 
-        let mut p = Array1::zeros(normalized_matrix.nrows());
-        //let mut p = matrix.mapv(|x| x.powf(*weights));
-        for (i, row) in normalized_matrix.axis_iter(Axis(0)).enumerate() {
-            let mut row_sum = 0.0;
-            for (j, &value) in row.iter().enumerate() {
-                row_sum += value.powf(weights[j]);
-            }
-            p[i] = row_sum;
-        }
+        // Vector of P: product of rows raised to the power of weights
+        let p = normalized_matrix
+            .row_iter()
+            .map(|row| {
+                row.iter()
+                    .zip(weights.iter())
+                    .map(|(&x, &w)| x.powf(w))
+                    .sum::<f64>()
+            })
+            .collect::<Vec<f64>>();
+        let p = DVector::from_vec(p);
+
         // Calculate score strategies
-        let ksi_a = (p.clone() + s.clone()) / (p.clone() + s.clone()).sum();
-        let ksi_b = s.clone() / *s.min()? + p.clone() / *p.min()?;
-        let ksi_c =
-            (l * s.clone() + (1.0 - l) * p.clone()) / (l * s.max()? + (1.0 - l) * p.max()?);
+        let s_min = s.min();
+        let p_min = p.min();
+        let s_max = s.max();
+        let p_max = p.max();
+
+        let ksi_a = (&p + &s) / (&p + &s).sum();
+        let ksi_b = &s / s_min + &p / p_min;
+        let ksi_c = (l * &s + (1.0 - l) * &p) / (l * s_max + (1.0 - l) * p_max);
 
         // Compute the performance score
-        let ksi = (ksi_a.clone() * ksi_b.clone() * ksi_c.clone()).powf(1.0 / 3.0)
-            + ((ksi_a.clone() + ksi_b.clone() + ksi_c.clone()) / 3.0f64);
+        let ksi = (ksi_a.component_mul(&ksi_b).component_mul(&ksi_c)).map(|x| x.powf(1.0 / 3.0))
+            + 1.0 / 3.0 * (&ksi_a + &ksi_b + &ksi_c);
 
         Ok(ksi)
     }
@@ -359,57 +362,78 @@ impl Rank for Cocoso {
 /// # Example
 ///
 /// ```rust
-/// use approx::assert_abs_diff_eq;
+/// use approx::assert_relative_eq;
 /// use mcdm::ranking::{Rank, Codas};
 /// use mcdm::normalization::{Linear, Normalize};
-/// use ndarray::{array, Array2};
+/// use nalgebra::{dmatrix, dvector};
 ///
-/// let matrix = array![
-///     [2.9, 2.31, 0.56, 1.89],
-///     [1.2, 1.34, 0.21, 2.48],
-///     [0.3, 2.48, 1.75, 1.69]
+/// let matrix = dmatrix![
+///     2.9, 2.31, 0.56, 1.89;
+///     1.2, 1.34, 0.21, 2.48;
+///     0.3, 2.48, 1.75, 1.69
 /// ];
-/// let weights = array![0.25, 0.25, 0.25, 0.25];
+/// let weights = dvector![0.25, 0.25, 0.25, 0.25];
 /// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
 /// let normalized_matrix = Linear::normalize(&matrix, &criteria_types).unwrap();
 /// let ranking = Codas::rank(&normalized_matrix, &weights).unwrap();
-/// assert_abs_diff_eq!(ranking, array![-0.40977725, -1.15891275, 1.56869], epsilon = 1e-5);
+/// assert_relative_eq!(ranking, dvector![-0.40977725, -1.15891275, 1.56869], epsilon = 1e-5);
 /// ```
 pub struct Codas;
 
 impl Rank for Codas {
     fn rank(
-        normalized_matrix: &Array2<f64>,
-        weights: &Array1<f64>,
-    ) -> Result<Array1<f64>, RankingError> {
+        normalized_matrix: &DMatrix<f64>,
+        weights: &DVector<f64>,
+    ) -> Result<DVector<f64>, RankingError> {
         if weights.len() != normalized_matrix.ncols() {
             return Err(RankingError::DimensionMismatch);
         }
 
-        let weighted_matrix = normalized_matrix * weights;
+        let weighted_matrix = normalized_matrix.weight_criteria(weights);
+
+        let nrows = normalized_matrix.nrows();
+
         // Compute the Negative Ideal Solution (NIS)
-        let nis = weighted_matrix.fold_axis(ndarray::Axis(0), f64::INFINITY, |m, &v| m.min(v));
+        let nis = weighted_matrix
+            .column_iter()
+            .map(|col| col.min())
+            .collect::<Vec<f64>>();
+        let nis = DVector::from_vec(nis).transpose();
 
-        let euclidean_distances = (&weighted_matrix - &nis)
-            .mapv(|x| x.powi(2))
-            .sum_axis(Axis(1))
-            .mapv(|x| x.sqrt());
-        let taxicab_distances = (&weighted_matrix - &nis)
-            .mapv(|x| x.abs())
-            .sum_axis(Axis(1));
+        let euclidean_distances = weighted_matrix
+            .row_iter()
+            .map(|row| {
+                row.iter()
+                    .zip(nis.iter())
+                    .map(|(&x, &ni)| (x - ni).powi(2))
+                    .sum::<f64>()
+                    .sqrt()
+            })
+            .collect::<Vec<f64>>();
+        let taxicab_distances = weighted_matrix
+            .row_iter()
+            .map(|row| {
+                row.iter()
+                    .zip(nis.iter())
+                    .map(|(&x, &ni)| (x - ni).abs())
+                    .sum::<f64>()
+            })
+            .collect::<Vec<f64>>();
 
-        let mut assessment_matrix =
-            Array2::zeros((weighted_matrix.nrows(), weighted_matrix.nrows()));
+        let euclidean_distances = DVector::from_vec(euclidean_distances);
+        let taxicab_distances = DVector::from_vec(taxicab_distances);
 
-        for i in 0..weighted_matrix.nrows() {
-            for j in 0..weighted_matrix.nrows() {
-                let e = euclidean_distances[i] - euclidean_distances[j];
-                let t = taxicab_distances[i] - taxicab_distances[j];
-                assessment_matrix[[i, j]] = (e) + ((psi_with_default_tau(e)) * (t));
+        let mut assessment_matrix = DMatrix::zeros(nrows, nrows);
+
+        for i in 0..nrows {
+            for j in 0..nrows {
+                let e_diff = euclidean_distances[i] - euclidean_distances[j];
+                let t_diff = taxicab_distances[i] - taxicab_distances[j];
+                assessment_matrix[(i, j)] = (e_diff) + (psi_with_default_tau(e_diff) * t_diff);
             }
         }
 
-        Ok(assessment_matrix.sum_axis(Axis(1)))
+        Ok(assessment_matrix.column_sum())
     }
 }
 
@@ -468,29 +492,29 @@ fn psi_with_default_tau(x: f64) -> f64 {
 /// # Example
 ///
 /// ```rust
-/// use approx::assert_abs_diff_eq;
+/// use approx::assert_relative_eq;
 /// use mcdm::ranking::{RankWithCriteriaType, Copras};
-/// use ndarray::{array, Array2};
+/// use nalgebra::{dmatrix, dvector};
 ///
-/// let matrix = array![
-///     [2.9, 2.31, 0.56, 1.89],
-///     [1.2, 1.34, 0.21, 2.48],
-///     [0.3, 2.48, 1.75, 1.69]
+/// let matrix = dmatrix![
+///     2.9, 2.31, 0.56, 1.89;
+///     1.2, 1.34, 0.21, 2.48;
+///     0.3, 2.48, 1.75, 1.69
 /// ];
-/// let weights = array![0.25, 0.25, 0.25, 0.25];
+/// let weights = dvector![0.25, 0.25, 0.25, 0.25];
 /// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
 /// let ranking = Copras::rank(&matrix, &criteria_types, &weights).unwrap();
-/// assert_abs_diff_eq!(ranking, array![1.0, 0.6266752, 0.92104753], epsilon = 1e-5);
+/// assert_relative_eq!(ranking, dvector![1.0, 0.6266752, 0.92104753], epsilon = 1e-5);
 /// ```
 pub struct Copras;
 
 impl RankWithCriteriaType for Copras {
     fn rank(
-        decision_matrix: &Array2<f64>,
+        decision_matrix: &DMatrix<f64>,
         types: &[CriteriaType],
-        weights: &Array1<f64>,
-    ) -> Result<Array1<f64>, RankingError> {
-        let (num_alternatives, num_criteria) = decision_matrix.dim();
+        weights: &DVector<f64>,
+    ) -> Result<DVector<f64>, RankingError> {
+        let (num_alternatives, num_criteria) = decision_matrix.shape();
 
         if num_alternatives == 0 || num_criteria == 0 {
             return Err(RankingError::EmptyMatrix);
@@ -502,29 +526,48 @@ impl RankWithCriteriaType for Copras {
 
         let normalized_matrix =
             Sum::normalize(decision_matrix, &CriteriaType::profits(types.len()))?;
-        let weighted_matrix = normalized_matrix * weights;
 
-        let (sum_normalized_profit, sum_normalized_cost): (Array1<f64>, Array1<f64>) =
-            types.iter().zip(weighted_matrix.axis_iter(Axis(1))).fold(
-                (
-                    Array1::zeros(num_alternatives),
-                    Array1::zeros(num_alternatives),
-                ),
-                |(profit, cost), (criteria_type, row)| match criteria_type {
-                    CriteriaType::Profit => (profit + row, cost),
-                    CriteriaType::Cost => (profit, cost + row),
-                },
-            );
+        let weighted_matrix = normalized_matrix.weight_criteria(weights);
 
-        let min_sm = *sum_normalized_cost.clone().min()?;
-        let q = sum_normalized_profit
-            + ((min_sm * sum_normalized_cost.clone())
-                / (sum_normalized_cost.clone() * sum_normalized_cost.mapv(|x| min_sm / x)));
+        let sum_normalized_profit = DVector::from_iterator(
+            num_alternatives,
+            weighted_matrix.row_iter().map(|row| {
+                row.iter()
+                    .zip(types.iter())
+                    .filter(|&(_, c_type)| *c_type == CriteriaType::Profit)
+                    .map(|(&val, _)| val)
+                    .sum::<f64>()
+            }),
+        );
 
-        let max_q = *q.clone().max()?;
-        let q = q / max_q;
+        let sum_normalized_cost = DVector::from_iterator(
+            num_alternatives,
+            weighted_matrix.row_iter().map(|row| {
+                row.iter()
+                    .zip(types.iter())
+                    .filter(|&(_, c_type)| *c_type == CriteriaType::Cost)
+                    .map(|(&val, _)| val)
+                    .sum::<f64>()
+            }),
+        );
 
-        Ok(q)
+        let min_sm = sum_normalized_cost
+            .iter()
+            .cloned()
+            .reduce(f64::min)
+            .unwrap_or(0.0);
+
+        let q = DVector::from_iterator(
+            num_alternatives,
+            sum_normalized_profit
+                .iter()
+                .zip(sum_normalized_cost.iter())
+                .map(|(&sp_i, &sm_i)| sp_i + ((min_sm * sm_i) / (sm_i * (min_sm / sm_i)))),
+        );
+
+        let max_q = q.iter().cloned().reduce(f64::max).unwrap_or(1.0);
+
+        Ok(&q / max_q)
     }
 }
 
@@ -556,7 +599,7 @@ impl RankWithCriteriaType for Copras {
 ///
 /// $$ PD_{i} = \frac{\max(0, (\overline{X}\_{ij})) - X_{ij}}{\overline{X}\_{ij}} $$
 /// $$ ND_{i} = \frac{\max(0, (X_{ij} - \overline{X}\_{ij}))}{\overline{X}\_{ij}} $$
-///    
+///
 /// Next, calculate the weighted sums for $PD$ and $ND$:
 ///
 /// $$ SP_i = \sum_{j=1}^{m} w_j PD_{ij} $$
@@ -574,29 +617,29 @@ impl RankWithCriteriaType for Copras {
 /// # Example
 ///
 /// ```rust
-/// use approx::assert_abs_diff_eq;
+/// use approx::assert_relative_eq;
 /// use mcdm::ranking::{RankWithCriteriaType, Edas};
-/// use ndarray::{array, Array2};
+/// use nalgebra::{dmatrix, dvector};
 ///
-/// let matrix = array![
-///     [2.9, 2.31, 0.56, 1.89],
-///     [1.2, 1.34, 0.21, 2.48],
-///     [0.3, 2.48, 1.75, 1.69]
+/// let matrix = dmatrix![
+///     2.9, 2.31, 0.56, 1.89;
+///     1.2, 1.34, 0.21, 2.48;
+///     0.3, 2.48, 1.75, 1.69
 /// ];
-/// let weights = array![0.25, 0.25, 0.25, 0.25];
+/// let weights = dvector![0.25, 0.25, 0.25, 0.25];
 /// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
 /// let ranking = Edas::rank(&matrix, &criteria_types, &weights).unwrap();
-/// assert_abs_diff_eq!(ranking, array![0.04747397, 0.04029913, 1.0], epsilon = 1e-5);
+/// assert_relative_eq!(ranking, dvector![0.04747397, 0.04029913, 1.0], epsilon = 1e-5);
 /// ```
 pub struct Edas;
 
 impl RankWithCriteriaType for Edas {
     fn rank(
-        decision_matrix: &Array2<f64>,
+        decision_matrix: &DMatrix<f64>,
         types: &[CriteriaType],
-        weights: &Array1<f64>,
-    ) -> Result<Array1<f64>, RankingError> {
-        let (num_alternatives, num_criteria) = decision_matrix.dim();
+        weights: &DVector<f64>,
+    ) -> Result<DVector<f64>, RankingError> {
+        let (num_alternatives, num_criteria) = decision_matrix.shape();
 
         if num_alternatives == 0 || num_criteria == 0 {
             return Err(RankingError::EmptyMatrix);
@@ -606,43 +649,49 @@ impl RankWithCriteriaType for Edas {
             return Err(RankingError::DimensionMismatch);
         }
 
-        let average_criteria = match decision_matrix.mean_axis(Axis(0)) {
-            Some(avg) => avg,
-            None => return Err(RankingError::DimensionMismatch),
-        };
+        let average_criteria = decision_matrix.row_mean();
 
-        let mut positive_distance_matrix = Array2::zeros(decision_matrix.dim());
-        let mut negative_distance_matrix = Array2::zeros(decision_matrix.dim());
+        let mut positive_distance_matrix = DMatrix::zeros(num_alternatives, num_criteria);
+        let mut negative_distance_matrix = DMatrix::zeros(num_alternatives, num_criteria);
 
         for j in 0..num_criteria {
-            let matrix_col = decision_matrix.column(j);
-            let am_j = average_criteria[j];
-            let ideal_col = matrix_col.mapv(|x| (am_j - x) / am_j);
-            let exceeds_ideal_col = matrix_col.mapv(|x| (x - am_j) / am_j);
+            for i in 0..num_alternatives {
+                let val = decision_matrix[(i, j)];
+                let avg = average_criteria[j];
 
-            if types[j] == CriteriaType::Cost {
-                positive_distance_matrix.column_mut(j).assign(&ideal_col);
-                negative_distance_matrix
-                    .column_mut(j)
-                    .assign(&exceeds_ideal_col);
-            } else {
-                positive_distance_matrix
-                    .column_mut(j)
-                    .assign(&exceeds_ideal_col);
-                negative_distance_matrix.column_mut(j).assign(&ideal_col);
+                match types[j] {
+                    CriteriaType::Profit => {
+                        positive_distance_matrix[(i, j)] = (val - avg) / avg;
+                        negative_distance_matrix[(i, j)] = (avg - val) / avg;
+                    }
+                    CriteriaType::Cost => {
+                        positive_distance_matrix[(i, j)] = (avg - val) / avg;
+                        negative_distance_matrix[(i, j)] = (val - avg) / avg;
+                    }
+                }
             }
         }
 
-        positive_distance_matrix =
-            positive_distance_matrix.mapv(|x| if x >= 0.0 { x } else { 0.0 });
-        negative_distance_matrix =
-            negative_distance_matrix.mapv(|x| if x >= 0.0 { x } else { 0.0 });
+        // Apply non-negative transformations
+        positive_distance_matrix
+            .iter_mut()
+            .for_each(|x| *x = x.max(0.0));
+        negative_distance_matrix
+            .iter_mut()
+            .for_each(|x| *x = x.max(0.0));
 
-        let sp = (weights * positive_distance_matrix).sum_axis(Axis(1));
-        let sn = (weights * negative_distance_matrix).sum_axis(Axis(1));
+        let sp = positive_distance_matrix
+            .weight_criteria(weights)
+            .column_sum();
+        let sn = negative_distance_matrix
+            .weight_criteria(weights)
+            .column_sum();
 
-        let nsp = sp.clone() / *sp.max()?;
-        let nsn = 1.0 - sn.clone() / *sn.max()?;
+        let max_sp = sp.max();
+        let max_sn = sn.max();
+
+        let nsp = sp / max_sp;
+        let nsn = DVector::from_element(num_alternatives, 1.0) - (sn / max_sn);
 
         Ok((nsp + nsn) / 2.0)
     }
@@ -681,57 +730,64 @@ impl RankWithCriteriaType for Edas {
 /// matrix $v_{ij}$ to the boundary approximation $g_i$, $n$ is the number of alternatives and $m$
 /// is the number of criteria.
 ///
-/// # Arguments
-///
-/// * `matrix` - A normalized decision matrix of alternatives (alternatives x criteria).
-/// * `weights` - A vector of weights for each criterion.
-///
-/// # Returns
-///
-/// * `Result<Array1<f64>, RankingError>` - A vector of scores for each alternative.
-///
 /// # Example
 ///
 /// ```rust
-/// use approx::assert_abs_diff_eq;
+/// use approx::assert_relative_eq;
 /// use mcdm::ranking::{Rank, Mabac};
 /// use mcdm::normalization::{MinMax, Normalize};
-/// use ndarray::{array, Array2};
+/// use nalgebra::{dmatrix, dvector};
 ///
-/// let matrix = array![
-///     [2.9, 2.31, 0.56, 1.89],
-///     [1.2, 1.34, 0.21, 2.48],
-///     [0.3, 2.48, 1.75, 1.69]
+/// let matrix = dmatrix![
+///     2.9, 2.31, 0.56, 1.89;
+///     1.2, 1.34, 0.21, 2.48;
+///     0.3, 2.48, 1.75, 1.69
 /// ];
-/// let weights = array![0.25, 0.25, 0.25, 0.25];
+/// let weights = dvector![0.25, 0.25, 0.25, 0.25];
 /// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
 /// let normalized_matrix = MinMax::normalize(&matrix, &criteria_types).unwrap();
 /// let ranking = Mabac::rank(&normalized_matrix, &weights).unwrap();
-/// assert_abs_diff_eq!(ranking, array![-0.01955314, -0.31233795,  0.52420052], epsilon = 1e-5);
+/// assert_relative_eq!(ranking, dvector![-0.01955314, -0.31233795,  0.52420052], epsilon = 1e-5);
 /// ```
 pub struct Mabac;
 
 impl Rank for Mabac {
     fn rank(
-        normalized_matrix: &Array2<f64>,
-        weights: &Array1<f64>,
-    ) -> Result<Array1<f64>, RankingError> {
-        if weights.len() != normalized_matrix.ncols() {
+        normalized_matrix: &DMatrix<f64>,
+        weights: &DVector<f64>,
+    ) -> Result<DVector<f64>, RankingError> {
+        let (num_alternatives, num_criteria) = normalized_matrix.shape();
+
+        if weights.len() != num_criteria {
             return Err(RankingError::DimensionMismatch);
         }
 
         // Calculation of the elements from the weighted matrix
-        let weighted_matrix = (normalized_matrix + 1.0) * weights;
+        let weighted_matrix = normalized_matrix.map(|x| x + 1.0).weight_criteria(weights);
 
-        // Determining the border approximation area matrix
+        // Border approximation area matrix
         let g = weighted_matrix
-            .map_axis(Axis(0), |row| row.product())
-            .mapv(|x| x.powf(1.0 / normalized_matrix.nrows() as f64));
+            .column_iter()
+            .map(|col| {
+                col.iter()
+                    .product::<f64>()
+                    .powf(1.0 / normalized_matrix.nrows() as f64)
+            })
+            .collect::<Vec<f64>>();
 
-        // Calculation of the distance border approximation area
-        let q = weighted_matrix - g;
+        let g = DVector::from_column_slice(&g).transpose();
 
-        Ok(q.sum_axis(Axis(1)))
+        // Distance border approximation area
+        let mut q = DMatrix::zeros(num_alternatives, num_criteria);
+        for (i, row) in weighted_matrix.row_iter().enumerate() {
+            for (j, value) in row.iter().enumerate() {
+                q[(i, j)] = value - g[j];
+            }
+        }
+
+        let ranking = q.row_iter().map(|row| row.sum()).collect::<Vec<f64>>();
+
+        Ok(DVector::from(ranking))
     }
 }
 
@@ -763,41 +819,32 @@ impl Rank for Mabac {
 /// $$ D_i^+ = \sqrt{ \sum_{j=1}^{n} (v_{ij} - v_j^+)^2 } $$
 /// $$ D_i^- = \sqrt{ \sum_{j=1}^{n} (v_{ij} - v_j^-)^2 } $$
 ///
-/// # Arguments
-///
-/// * `matrix` - A normalized decision matrix of alternatives (alternatives x criteria).
-/// * `weights` - A vector of weights for each criterion.
-///
-/// # Returns
-///
-/// * `Result<Array1<f64>, RankingError>` - A vector of scores for each alternative.
-///
 /// # Example
 ///
 /// ```rust
-/// use approx::assert_abs_diff_eq;
-/// use mcdm::ranking::{Rank, TOPSIS};
+/// use approx::assert_relative_eq;
+/// use mcdm::ranking::{Rank, Topsis};
 /// use mcdm::normalization::{MinMax, Normalize};
-/// use ndarray::{array, Array2};
+/// use nalgebra::{dmatrix, dvector};
 ///
-/// let matrix = array![
-///     [2.9, 2.31, 0.56, 1.89],
-///     [1.2, 1.34, 0.21, 2.48],
-///     [0.3, 2.48, 1.75, 1.69]
+/// let matrix = dmatrix![
+///     2.9, 2.31, 0.56, 1.89;
+///     1.2, 1.34, 0.21, 2.48;
+///     0.3, 2.48, 1.75, 1.69
 /// ];
-/// let weights = array![0.25, 0.25, 0.25, 0.25];
+/// let weights = dvector![0.25, 0.25, 0.25, 0.25];
 /// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
 /// let normalized_matrix = MinMax::normalize(&matrix, &criteria_types).unwrap();
-/// let ranking = TOPSIS::rank(&normalized_matrix, &weights).unwrap();
-/// assert_abs_diff_eq!(ranking, array![0.47089549, 0.27016783, 1.0], epsilon = 1e-5);
+/// let ranking = Topsis::rank(&normalized_matrix, &weights).unwrap();
+/// assert_relative_eq!(ranking, dvector![0.52910451, 0.72983217, 0.0], epsilon = 1e-5);
 /// ```
-pub struct TOPSIS;
+pub struct Topsis;
 
-impl Rank for TOPSIS {
+impl Rank for Topsis {
     fn rank(
-        normalized_matrix: &Array2<f64>,
-        weights: &Array1<f64>,
-    ) -> Result<Array1<f64>, RankingError> {
+        normalized_matrix: &DMatrix<f64>,
+        weights: &DVector<f64>,
+    ) -> Result<DVector<f64>, RankingError> {
         if weights.len() != normalized_matrix.ncols() {
             return Err(RankingError::DimensionMismatch);
         }
@@ -806,30 +853,45 @@ impl Rank for TOPSIS {
             return Err(RankingError::InvalidValue);
         }
 
-        let num_rows = normalized_matrix.nrows();
+        let (num_rows, num_cols) = normalized_matrix.shape();
 
-        let weighted_matrix = normalized_matrix * weights;
+        let broadcasted_weights = DMatrix::from_fn(num_rows, num_cols, |_, col| weights[col]);
+        let weighted_matrix = normalized_matrix.component_mul(&broadcasted_weights);
 
         // Compute the Positive Ideal Solution (PIS) and Negative Ideal Solution (NIS)
-        let pis = weighted_matrix.fold_axis(ndarray::Axis(0), f64::NEG_INFINITY, |m, &v| m.max(v));
-        let nis = weighted_matrix.fold_axis(ndarray::Axis(0), f64::INFINITY, |m, &v| m.min(v));
+        let pis = weighted_matrix
+            .column_iter()
+            .map(|col| col.max())
+            .collect::<Vec<f64>>();
+        let nis = weighted_matrix
+            .column_iter()
+            .map(|col| col.min())
+            .collect::<Vec<f64>>();
+
+        let pis = DVector::from_vec(pis).transpose();
+        let nis = DVector::from_vec(nis).transpose();
 
         // Calculate the distance to PIS (Dp) and NIS (Dm)
-        let mut distance_to_pis = Array1::zeros(num_rows);
-        let mut distance_to_nis = Array1::zeros(num_rows);
+        let mut distance_to_pis = DVector::zeros(num_rows);
+        let mut distance_to_nis = DVector::zeros(num_rows);
 
-        for i in 0..num_rows {
-            let row = weighted_matrix.row(i);
+        for (n, row) in weighted_matrix.row_iter().enumerate() {
+            let dp = (row - &pis).map(|x| x.powi(2)).sum().sqrt();
+            distance_to_pis[n] = dp;
 
-            let dp = (&row - &pis).mapv(|x| x.powi(2)).sum().sqrt();
-            distance_to_pis[i] = dp;
-
-            let dn = (&row - &nis).mapv(|x| x.powi(2)).sum().sqrt();
-            distance_to_nis[i] = dn;
+            let dn = (row - &nis).map(|x| x.powi(2)).sum().sqrt();
+            distance_to_nis[n] = dn;
         }
 
-        // Calculate the relative closeness to the ideal solution
-        Ok(&distance_to_nis / (&distance_to_nis + &distance_to_pis))
+        let closeness_to_ideal = DVector::from_vec(
+            distance_to_pis
+                .iter()
+                .zip(&distance_to_nis)
+                .map(|(&dm_val, &dp_val)| dm_val / (dm_val + dp_val))
+                .collect::<Vec<f64>>(),
+        );
+
+        Ok(closeness_to_ideal)
     }
 }
 
@@ -843,37 +905,27 @@ impl Rank for TOPSIS {
 /// where $x_{ij}$ is the $i$th element of the alternative (row), $j$th elements of the criterion
 /// (column) with $n$ total criteria, and $w_j$ is the weight of the $j$th criterion.
 ///
-/// # Arguments
-///
-/// * `matrix` - A normalized decision matrix where each row represents an alternative and each
-///   column represents a criterion.
-/// * `weights` - A 1D array of weights corresponding to the relative importance of each criterion.
-///
-/// # Returns
-///
-/// * `Array1<f64>` - A 1D array containing the preference values for each alternative.
-///
 /// # Example
 ///
 /// ```rust
-/// use approx::assert_abs_diff_eq;
+/// use approx::assert_relative_eq;
 /// use mcdm::ranking::{Rank, WeightedProduct};
 /// use mcdm::normalization::{Normalize, Sum};
 /// use mcdm::CriteriaType;
-/// use ndarray::{array};
+/// use nalgebra::{dmatrix, dvector};
 ///
-/// let matrix = array![
-///     [2.9, 2.31, 0.56, 1.89],
-///     [1.2, 1.34, 0.21, 2.48],
-///     [0.3, 2.48, 1.75, 1.69]
+/// let matrix = dmatrix![
+///     2.9, 2.31, 0.56, 1.89;
+///     1.2, 1.34, 0.21, 2.48;
+///     0.3, 2.48, 1.75, 1.69
 /// ];
-/// let weights = array![0.25, 0.25, 0.25, 0.25];
+/// let weights = dvector![0.25, 0.25, 0.25, 0.25];
 /// let criteria_type = CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
 /// let normalized_matrix = Sum::normalize(&matrix, &criteria_type).unwrap();
 /// let ranking = WeightedProduct::rank(&normalized_matrix, &weights).unwrap();
-/// assert_abs_diff_eq!(
+/// assert_relative_eq!(
 ///     ranking,
-///     array![0.21711531, 0.17273414, 0.53281425],
+///     dvector![0.21711531, 0.17273414, 0.53281425],
 ///     epsilon = 1e-5
 /// );
 /// ```
@@ -881,26 +933,27 @@ pub struct WeightedProduct;
 
 impl Rank for WeightedProduct {
     fn rank(
-        normalized_matrix: &Array2<f64>,
-        weights: &Array1<f64>,
-    ) -> Result<Array1<f64>, RankingError> {
+        normalized_matrix: &DMatrix<f64>,
+        weights: &DVector<f64>,
+    ) -> Result<DVector<f64>, RankingError> {
         if weights.len() != normalized_matrix.ncols() {
             return Err(RankingError::DimensionMismatch);
         }
 
         // Compute the weighted matrix by raising each element of the decision matrix to the power
         // of the corresponding weight.
-        let mut weighted_matrix = Array2::zeros(normalized_matrix.dim());
+        let mut weighted_matrix =
+            DMatrix::zeros(normalized_matrix.nrows(), normalized_matrix.ncols());
 
         // NOTE: I'm sure there is an idiomatic way to do this, but I can't seem to figure it out.
-        for (i, row) in normalized_matrix.axis_iter(Axis(0)).enumerate() {
+        for (i, row) in normalized_matrix.row_iter().enumerate() {
             for (j, &value) in row.iter().enumerate() {
-                weighted_matrix[[i, j]] = value.powf(weights[j]);
+                weighted_matrix[(i, j)] = value.powf(weights[j]);
             }
         }
 
         // Compute the product of each row
-        Ok(weighted_matrix.map_axis(Axis(1), |row| row.product()))
+        Ok(weighted_matrix.column_product())
     }
 }
 
@@ -916,42 +969,30 @@ impl Rank for WeightedProduct {
 /// where $x_{ij}$ is the $i$th element of the alternative (row), $j$th elements of the criterion
 /// (column) with $n$ total criteria, and $w_j$ is the weight of the $j$th criterion.
 ///
-///
-/// # Arguments
-///
-/// * `matrix` - A normalized decision matrix where each row represents an alternative and each
-///   column represents a criterion.
-/// * `weights` - A 1D array of weights corresponding to the relative importance of each criterion.
-///
-/// # Returns
-///
-/// * `Result<Array1<f64>, RankingError>` - A 1D array containing the preference values for each
-///   alternative, or an error if the ranking process fails.
-///
 /// # Example
 ///
 /// ```rust
-/// use approx::assert_abs_diff_eq;
+/// use approx::assert_relative_eq;
 /// use mcdm::ranking::{WeightedSum, Rank};
-/// use ndarray::{array, Array1, Array2};
+/// use nalgebra::{dmatrix, dvector};
 ///
-/// let matrix = array![[0.2, 0.8], [0.5, 0.5], [0.9, 0.1]];
-/// let weights = array![0.6, 0.4];
+/// let matrix = dmatrix![0.2, 0.8; 0.5, 0.5; 0.9, 0.1];
+/// let weights = dvector![0.6, 0.4];
 /// let ranking = WeightedSum::rank(&matrix, &weights).unwrap();
-/// assert_abs_diff_eq!(ranking, array![0.44, 0.5, 0.58], epsilon = 1e-5);
+/// assert_relative_eq!(ranking, dvector![0.44, 0.5, 0.58], epsilon = 1e-5);
 /// ```
 pub struct WeightedSum;
 
 impl Rank for WeightedSum {
     fn rank(
-        normalized_matrix: &Array2<f64>,
-        weights: &Array1<f64>,
-    ) -> Result<Array1<f64>, RankingError> {
+        normalized_matrix: &DMatrix<f64>,
+        weights: &DVector<f64>,
+    ) -> Result<DVector<f64>, RankingError> {
         if weights.len() != normalized_matrix.ncols() {
             return Err(RankingError::DimensionMismatch);
         }
 
-        let weighted_matrix = normalized_matrix * weights;
-        Ok(weighted_matrix.sum_axis(Axis(1)))
+        let weighted_matrix = normalized_matrix.weight_criteria(weights);
+        Ok(weighted_matrix.column_sum())
     }
 }

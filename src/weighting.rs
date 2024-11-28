@@ -1,6 +1,7 @@
+//! Methods for weighting a decision matrix.
+
 use crate::errors::WeightingError;
-use ndarray::{Array1, Array2, Axis};
-use ndarray_stats::CorrelationExt;
+use nalgebra::{DMatrix, DVector};
 
 /// A trait for calculating weights in Multiple-Criteria Decision Making (MCDM) problems.
 ///
@@ -23,9 +24,9 @@ use ndarray_stats::CorrelationExt;
 ///
 /// ```rust
 /// use mcdm::weighting::{Equal, Weight};
-/// use ndarray::array;
+/// use nalgebra::dmatrix;
 ///
-/// let decision_matrix = array![[3.0, 4.0, 2.0], [1.0, 5.0, 3.0]];
+/// let decision_matrix = dmatrix![3.0, 4.0, 2.0; 1.0, 5.0, 3.0];
 /// let weights = Equal::weight(&decision_matrix).unwrap();
 /// println!("{:?}", weights);
 /// ```
@@ -38,14 +39,14 @@ pub trait Weight {
     ///
     /// # Arguments
     ///
-    /// * `matrix` - A 2d decision matrix (`Array2<f64>`) where rows represent alternative and
-    ///   columns represent criteria.
+    /// * `matrix` - A 2d decision matrix where rows represent alternatives and columns represent
+    ///   criteria.
     ///
     /// # Returns
     ///
-    /// * `Result<Array1<f64>, WeightingError>` - A vector of weights for each criterion, or error
+    /// * `Result<DVector<f64>, WeightingError>` - A vector of weights for each criterion, or error
     ///   if the weighting calculation fails.
-    fn weight(matrix: &Array2<f64>) -> Result<Array1<f64>, WeightingError>;
+    fn weight(matrix: &DMatrix<f64>) -> Result<DVector<f64>, WeightingError>;
 }
 
 /// Calculates the weights for the given decision matrix using angular distance.
@@ -68,40 +69,30 @@ pub trait Weight {
 ///
 /// where $x_{ij}$ is the $i$th element of the alternative (row) and $j$th elements of the criterion
 /// (column) with $m$ total criteria.
-///
-/// # Arguments
-///
-/// * `matrix` - A 2D normalized decision matrix where rows represent alternatives and columns
-///   represent criteria.
-///
-/// # Returns
-///
-/// This method returns a `Result` containing an array of angular-based weights for each criterion.
-/// On an error, this method returns [`WeightingError`].
 pub struct Angular;
 
 impl Weight for Angular {
-    fn weight(matrix: &Array2<f64>) -> Result<Array1<f64>, WeightingError> {
-        let (n, m) = matrix.dim();
+    fn weight(matrix: &DMatrix<f64>) -> Result<DVector<f64>, WeightingError> {
+        let (n, m) = matrix.shape();
 
         if n == 0 || m == 0 {
             return Err(WeightingError::EmptyMatrix);
         }
 
-        let mut weights: Vec<f64> = vec![0.0; m];
-        let add_col = Array2::ones((n, 1)) / m as f64;
+        let mut weights = DVector::zeros(m);
+        let add_col = DVector::from_element(n, 1.0 / m as f64);
 
-        for (i, col) in matrix.axis_iter(Axis(1)).enumerate() {
-            let dot_product = col.sum() / m as f64;
-            let norm_vec = col.mapv(|x| x.powi(2)).sum().sqrt();
-            let norm_add_col = add_col.mapv(|x: f64| x.powi(2)).sum().sqrt();
-            weights[i] = dot_product / (norm_vec * norm_add_col);
-            weights[i] = weights[i].acos();
+        for (i, vec) in matrix.column_iter().enumerate() {
+            let numerator = vec.sum() / m as f64;
+            let norm_vec = vec.dot(&vec).sqrt();
+            let add_col_norm = add_col.dot(&add_col).sqrt();
+            weights[i] = (numerator / (norm_vec * add_col_norm)).acos();
         }
 
-        let sum_weights = weights.iter().sum::<f64>();
-        weights.iter_mut().for_each(|x| *x /= sum_weights);
-        Ok(weights.into())
+        let weights_sum = weights.sum();
+        let weights = weights / weights_sum;
+
+        Ok(weights)
     }
 }
 
@@ -143,33 +134,37 @@ impl Weight for Angular {
 /// Finally, determine the objective weights
 ///
 /// $$ w_j = \frac{C_j}{\sum_{k=1}^m C_k} $$
-///
-/// # Arguments
-///
-/// * `matrix` - A 2D normalized decision matrix where rows represent alternatives and columns
-///   represent criteria.
-///
-/// # Returns
-///
-/// This method returns a `Result` containing an array of angular-based weights for each criterion.
-/// On an error, this method returns [`WeightingError`].
 pub struct Critic;
 
 impl Weight for Critic {
-    fn weight(matrix: &Array2<f64>) -> Result<Array1<f64>, WeightingError> {
-        let (n, m) = matrix.dim();
+    fn weight(matrix: &DMatrix<f64>) -> Result<DVector<f64>, WeightingError> {
+        let (n, m) = matrix.shape();
 
         if n == 0 || m == 0 {
             return Err(WeightingError::EmptyMatrix);
         }
 
-        let std = matrix.std_axis(Axis(0), 1.0);
-        // NOTE: ndarray-stat's pearson correlation works on the rows of the matrix, but we want to
-        // work on the columns (criteria), so we transpose the matrix.
-        let corr = matrix.t().pearson_correlation()?;
-        let correlation_information = &std * corr.map(|x| 1.0 - x).sum_axis(Axis(0));
-        let sum_correlation_information = correlation_information.sum();
-        let weights = &correlation_information / sum_correlation_information;
+        let column_means = matrix.row_mean();
+        let column_stds = matrix.row_variance().map(|v| v.sqrt());
+
+        let pearson_correlation = {
+            let mut normalized_matrix = matrix.clone();
+            for j in 0..m {
+                let mut col = normalized_matrix.column_mut(j);
+                for x in col.iter_mut() {
+                    *x = (*x - column_means[j]) / column_stds[j];
+                }
+            }
+            normalized_matrix.transpose() * &normalized_matrix / n as f64
+        };
+
+        let correlation_information =
+            &column_stds.component_mul(&pearson_correlation.map(|x| 1.0 - x).row_sum());
+        let correlation_information_sum = correlation_information.sum();
+        let weights = DVector::from_column_slice(
+            (correlation_information / correlation_information_sum).as_slice(),
+        );
+
         Ok(weights)
     }
 }
@@ -189,20 +184,10 @@ impl Weight for Critic {
 ///
 /// where $w_i$ is the weight assigned to criterion $i$, and $n$ is the total number of
 /// criteria in the decision matrix.
-///
-/// # Arguments
-///
-/// * `matrix` - A 2D normalized decision matrix where rows represent alternatives and columns
-///   represent criteria.
-///
-/// # Returns
-///
-/// This method returns an array of equal weights for each criterion. If the matrix has no criteria
-/// (i.e., zero columns), it returns a [`WeightingError`] error.
 pub struct Equal;
 
 impl Weight for Equal {
-    fn weight(matrix: &Array2<f64>) -> Result<Array1<f64>, WeightingError> {
+    fn weight(matrix: &DMatrix<f64>) -> Result<DVector<f64>, WeightingError> {
         let num_criteria = matrix.ncols();
 
         if num_criteria == 0 {
@@ -210,7 +195,7 @@ impl Weight for Equal {
         }
 
         let weight = 1.0 / num_criteria as f64;
-        let weights = Array1::from_elem(num_criteria, weight);
+        let weights = DVector::repeat(num_criteria, weight);
 
         Ok(weights)
     }
@@ -235,35 +220,26 @@ impl Weight for Equal {
 /// After calculating entropy measure $E_j$ for each criterion, derive the weights for each criterion:
 ///
 /// $$ w_j = \frac{1 - E_j}{\sum_{i=1}^n (1 - E_i)} \quad \text{for} \quad j=1, \ldots, n $$
-///
-/// # Arguments
-///
-/// * `matrix` - A 2D normalized decision matrix where rows represent alternatives and columns
-///   represent criteria.
-///
-/// # Returns
-///
-/// This method returns a `Result` containing an array of entropy-based weights for each
-/// criterion. On an error, this method returns [`WeightingError`].
 pub struct Entropy;
 
 impl Weight for Entropy {
-    fn weight(matrix: &Array2<f64>) -> Result<Array1<f64>, WeightingError> {
-        let (num_alternatives, num_criteria) = matrix.dim();
+    fn weight(matrix: &DMatrix<f64>) -> Result<DVector<f64>, WeightingError> {
+        let (num_alternatives, num_criteria) = matrix.shape();
 
-        let mut entropies = Array1::zeros(num_criteria);
+        let mut entropies = DVector::zeros(num_criteria);
 
         // Iterate over all criteria in the normalized matrix
-        for (i, col) in matrix.axis_iter(Axis(1)).enumerate() {
+        for (j, col) in matrix.column_iter().enumerate() {
             if col.iter().all(|&x| x != 0.0) {
                 let col_entropy = col.iter().map(|&x| x * x.ln()).sum();
 
-                entropies[i] = col_entropy;
+                entropies[j] = col_entropy;
             }
         }
 
-        entropies /= -(num_alternatives as f64).ln();
-        entropies = 1.0 - entropies;
+        let scale_factor = 1.0 / -(num_alternatives as f64).ln();
+        entropies *= scale_factor;
+        entropies.iter_mut().for_each(|x| *x = 1.0 - *x);
 
         Ok(entropies.clone() / entropies.sum())
     }
@@ -287,42 +263,30 @@ impl Weight for Entropy {
 /// $$ w_j = \frac{G_j}{\sum_{i=1}^m G_i} \quad \text{for} \quad j=1, \ldots, m $$
 ///
 /// where $m$ is the number of criteria.
-///
-/// # Arguments
-///
-/// * `matrix` - A 2D normalized decision matrix where rows represent alternatives and columns
-///   represent criteria.
-///
-/// # Returns
-///
-/// This method returns a `Result` containing an array of Gini-based weights for each criterion.
-/// On an error, this method returns [`WeightingError`].
 pub struct Gini;
 
 impl Weight for Gini {
-    fn weight(matrix: &Array2<f64>) -> Result<Array1<f64>, WeightingError> {
-        let (n, m) = matrix.dim();
-        let mut weights = Array1::zeros(m);
-        for j in 0..m {
-            let mut values = Array1::zeros(n);
+    fn weight(matrix: &DMatrix<f64>) -> Result<DVector<f64>, WeightingError> {
+        let (n, m) = matrix.shape();
+
+        // Initialize weights as a zero vector
+        let mut weights = DVector::zeros(m);
+
+        for (j, column) in matrix.column_iter().enumerate() {
+            let mut values = DVector::zeros(n);
+            let column_mean = column.sum() / n as f64;
+
             for i in 0..n {
-                let sum_abs_diff = matrix
-                    .column(j)
-                    .iter()
-                    .fold(0.0, |acc, &x| acc + (x - matrix[[i, j]]).abs());
-                values[i] = sum_abs_diff
-                    / (2.0
-                        * n as f64
-                        * n as f64
-                        * matrix.column(j).mean().ok_or(WeightingError::EmptyInput(
-                            ndarray_stats::errors::EmptyInput,
-                        ))?);
+                let numerator: f64 = column.iter().map(|&x| (matrix[(i, j)] - x).abs()).sum();
+                let denominator = 2.0 * (n as f64).powi(2) * column_mean;
+                values[i] = numerator / denominator;
             }
+
             weights[j] = values.sum();
         }
 
+        // Normalize weights: weights / sum(weights)
         let weights_sum = weights.sum();
-
         Ok(weights / weights_sum)
     }
 }
@@ -354,25 +318,15 @@ impl Weight for Gini {
 ///
 /// $$ w_j = \frac{E_j}{\sum_k E_k} $$
 ///
-/// # Arguments
-///
-/// * `matrix` - A 2D normalized decision matrix where rows represent alternatives and columns
-///   represent criteria.
-///
-/// # Returns
-///
-/// * `Result<Array1<f64>, WeightingError>` - A vector of weights for each criterion, or a
-///   [`WeightingError`] if the computation fails.
-///
 /// # Example
 ///
 /// ```rust
 /// use mcdm::normalization::{Linear, Normalize};
 /// use mcdm::weighting::{Merec, Weight};
 /// use mcdm::CriteriaType;
-/// use ndarray::array;
+/// use nalgebra::dmatrix;
 ///
-/// let matrix = array![[0.2, 0.8], [0.5, 0.5], [0.9, 0.1]];
+/// let matrix = dmatrix![0.2, 0.8; 0.5, 0.5; 0.9, 0.1];
 /// let criteria_types = CriteriaType::from(vec![-1, 1]).unwrap();
 /// let normalized_matrix = Linear::normalize(&matrix, &criteria_types).unwrap();
 /// let weights = Merec::weight(&normalized_matrix).unwrap();
@@ -380,57 +334,42 @@ impl Weight for Gini {
 pub struct Merec;
 
 impl Weight for Merec {
-    fn weight(matrix: &Array2<f64>) -> Result<Array1<f64>, WeightingError> {
-        let (n, m) = matrix.dim();
+    fn weight(matrix: &DMatrix<f64>) -> Result<DVector<f64>, WeightingError> {
+        let (n, m) = matrix.shape();
 
-        if n == 0 || m == 0 {
-            return Err(WeightingError::EmptyMatrix);
+        let s = DVector::from_iterator(
+            n,
+            matrix.row_iter().map(|row| {
+                let log_values = row.iter().map(|&x| x.ln().abs()).sum::<f64>();
+                (1.0 + log_values / m as f64).ln()
+            }),
+        );
+
+        let mut s_prim = DMatrix::zeros(n, m);
+
+        for (j, _) in matrix.column_iter().enumerate() {
+            let ex_nmatrix = matrix.clone().remove_column(j); // Remove column `j`
+
+            for (i, row) in ex_nmatrix.row_iter().enumerate() {
+                let log_values = row.iter().map(|&x| x.ln().abs()).sum::<f64>();
+                s_prim[(i, j)] = (1.0 + log_values / m as f64).ln();
+            }
         }
 
-        // Step 1: Calculate S
-        let log_matrix = matrix.mapv(|x| (x + f64::EPSILON).ln().abs()); // Add a small value (EPSILON) to avoid log(0)
-        let mean_reference_entropy =
-            (log_matrix.sum_axis(Axis(1)) / m as f64).mapv(|x| (1.0 + x).ln());
+        let e = DVector::from_iterator(
+            m,
+            (0..m).map(|j| {
+                s_prim
+                    .column(j)
+                    .iter()
+                    .zip(s.iter())
+                    .map(|(&s_prim_val, &s_val)| (s_prim_val - s_val).abs())
+                    .sum::<f64>()
+            }),
+        );
 
-        // Step 2: Calculate S_prim by excluding each column in turn
-        let mut modified_entropy = Array2::<f64>::zeros((n, m));
-
-        for j in 0..m {
-            // Create ex_matrix by removing the j-th column from the original matrix
-            let ex_matrix = {
-                let mut ex_matrix = Array2::zeros((n, m - 1));
-                for (i, row) in matrix.axis_iter(Axis(0)).enumerate() {
-                    let mut ex_row = ex_matrix.row_mut(i);
-                    ex_row.assign(
-                        &row.iter()
-                            .enumerate()
-                            .filter(|&(idx, _)| idx != j)
-                            .map(|(_, &v)| v)
-                            .collect::<Array1<f64>>(),
-                    );
-                }
-                ex_matrix
-            };
-
-            let ex_log_matrix = ex_matrix.mapv(|x| (x + f64::EPSILON).ln().abs());
-            let sum_ex_matrix =
-                (ex_log_matrix.sum_axis(Axis(1)) / m as f64).mapv(|x| (1.0 + x).ln());
-
-            modified_entropy.column_mut(j).assign(&sum_ex_matrix);
-        }
-
-        // Step 3: Calculate E as the absolute difference between modified_entropy and mean_reference_entropy
-        let mut criterion_information_loss = Array1::<f64>::zeros(m);
-        for j in 0..m {
-            let diff = modified_entropy.column(j).to_owned() - &mean_reference_entropy;
-            criterion_information_loss[j] = diff.mapv(f64::abs).sum();
-        }
-
-        // Step 4: Normalize the E vector to get the final weights
-        let sum_e = criterion_information_loss.sum();
-        let weights = criterion_information_loss.mapv(|e| e / sum_e);
-
-        Ok(weights)
+        let e_sum = e.sum();
+        Ok(e / e_sum)
     }
 }
 
@@ -448,31 +387,11 @@ impl Weight for Merec {
 /// Next, derive the weights based on the standard deviation of the criteria:
 ///
 /// $$ w_j = \frac{\sigma_j}{\sum_{j=1}^n \sigma_j} \quad \text{for} \quad j=1, \ldots, n $$
-///
-/// # Arguments
-///
-/// * `matrix` - A 2D normalized decision matrix where rows represent alternatives and columns
-///   represent criteria.
-///
-/// # Returns
-///
-/// This method returns a `Result` containing an array of entropy-based weights for each
-/// criterion. On an error, this method returns [`WeightingError`].
 pub struct StandardDeviation;
 
 impl Weight for StandardDeviation {
-    fn weight(matrix: &Array2<f64>) -> Result<Array1<f64>, WeightingError> {
-        // Compute the standard deviation across columns (criteria).
-        // NOTE: The Axis(0) here confused me for a long time, so I'm adding this note in hopes that
-        // future me doesn't have to re-research what's going on here. Unlike `ndarray`'s
-        // `axis_iter()`, where the axis refers to the dimension being iterated over, (e.g.,
-        // `axis_iter(Axis(0))` means you're iterating over the rows of the matrix),
-        // `std_axis(Axis(0))` means you're building an output array with the same number of columns
-        // as the input because you're computing the standard deviation across the first element of
-        // every row, then the second elemtn of each row, and so on. So, the output array will have
-        // the same number of columns as the input. I don't know if this will really help future me;
-        // thanks a lot for not really understanding past me...
-        let std = matrix.std_axis(Axis(0), 1.0);
+    fn weight(matrix: &DMatrix<f64>) -> Result<DVector<f64>, WeightingError> {
+        let std = matrix.row_variance().map(|v| v.sqrt()).transpose();
 
         // Sum of the standard deviations
         let std_sum = std.sum();
@@ -510,21 +429,11 @@ impl Weight for StandardDeviation {
 /// $$ w_j = \frac{V_j}{\sum_{k=1}^m V_k} \quad \text{for} \quad j=1, \ldots, m $$
 ///
 /// where $m$ is the number of criteria.
-///
-/// # Arguments
-///
-/// * `matrix` - A 2D normalized decision matrix where rows represent alternatives and columns
-///   represent criteria.
-///
-/// # Returns
-///
-/// This method returns a `Result` containing an array of variance-based weights for each
-/// criterion. On an error, this method returns [`WeightingError`].
 pub struct Variance;
 
 impl Weight for Variance {
-    fn weight(matrix: &Array2<f64>) -> Result<Array1<f64>, WeightingError> {
-        let var = matrix.var_axis(Axis(0), 1.0);
+    fn weight(matrix: &DMatrix<f64>) -> Result<DVector<f64>, WeightingError> {
+        let var = matrix.row_variance().transpose();
         let weights = var.clone() / var.sum();
 
         Ok(weights)
