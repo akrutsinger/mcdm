@@ -9,15 +9,22 @@ license = "MIT"
 documentation = "https://docs.rs/mcdm"
 repository = "https://github.com/akrutsinger/mcdm"
 
+[lib]
+name = "mcdm"
+path = "src/lib.rs"
+
+[features]
+default = ["std"]
+std = []
+alloc = []
+
 [dependencies]
-error_set = "0.6.0"
-ndarray = "0.16.0"
-ndarray-stats = "0.6.0"
+error_set = "0.6"
+nalgebra = { version = "0.33", default-features = false, features = ["alloc", "libm", "macros"]  }
 
 [dev-dependencies]
-ndarray = { version = "0.16.0", features = ["approx"] }
 approx = "0.5"
 
 [package.metadata.docs.rs]
 all-features = true
-rustdoc-args = ["--cfg", "docsrs", "--html-in-header", "./src/docs_header.html"]
+rustdoc-args = ["--cfg", "docsrs", "--html-in-header", "./src/katex-header.html"]

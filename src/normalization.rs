@@ -1,8 +1,8 @@
-//! Normalization techniques for normalizing a decision matrix.
+//! Normalization methods for normalizing a decision matrix.
 
 use crate::errors::NormalizationError;
 use crate::CriteriaType;
-use ndarray::{Array2, Axis};
+use nalgebra::DMatrix;
 
 /// A trait for normalizing decision matrices in Multiple-Criteria Decision Making (MCDM) problems.
 ///
@@ -24,212 +24,347 @@ use ndarray::{Array2, Axis};
 /// Here's an example of normalizing a decision matrix:
 ///
 /// ```rust
+/// use approx::assert_relative_eq;
 /// use mcdm::CriteriaType;
-/// use mcdm::normalization::{MinMax, Normalize};
-/// use ndarray::{array, Array1};
+/// use mcdm::normalization::Normalize;
+/// use nalgebra::dmatrix;
 ///
-/// let decision_matrix = array![[4.0, 7.0, 8.0], [2.0, 9.0, 6.0], [3.0, 6.0, 9.0]];
-/// let criteria_types = CriteriaType::from(vec![-1, 1, 1]).unwrap();
-/// let normalized_matrix = MinMax::normalize(&decision_matrix, &criteria_types).unwrap();
-/// println!("{:?}", normalized_matrix);
+/// let decision_matrix = dmatrix![
+///     2.9, 2.31, 0.56, 1.89;
+///     1.2, 1.34, 0.21, 2.48;
+///     0.3, 2.48, 1.75, 1.69
+/// ];
+/// let criteria_types = CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
+/// let normalized_matrix = decision_matrix.normalize_min_max(&criteria_types).unwrap();
+/// let expected_matrix = dmatrix![
+///     0.0, 0.85087719, 0.22727273, 0.74683544;
+///     0.65384615, 0.0, 0.0, 0.0;
+///     1.0, 1.0, 1.0, 1.0
+/// ];
+/// assert_relative_eq!(normalized_matrix, expected_matrix, epsilon = 1e-5);
 /// ```
 pub trait Normalize {
-    /// Normalizes the decision matrix incorporating the specified criteria types.
+    /// Considers the maximum and minimum values of the given criteria for normalization.
     ///
-    /// This method transforms the decision matrix by scaling its values according to the type
-    /// of each criterion (profit or cost). The goal is to make the criteria comparable by
-    /// removing the impact of different units, ranges, or orientations.
+    /// For profit:
+    /// $$r_{ij} = 1- \frac{\max_j(x_{ij}) - x_{ij}}{\sum_{i=1}^m(\max_j(x_{ij}) - x_{ij})}$$
+    ///
+    /// For cost:
+    /// $$r_{ij} = 1- \frac{x_{ij} - \min_j(x_{ij})}{\sum_{i=1}^m(x_{ij} - \min_j(x_{ij})}$$
+    ///
+    /// where $x_{ij}$ is the $i$th element of the alternative (row) and $j$th elements of the criterion
+    /// (column), $\max_j$ is the maximum criterion value, and $\min_j$ is the minimum criterion value
+    /// in the decision matrix with $m$ total criteria.
     ///
     /// # Arguments
     ///
-    /// * `matrix` - The decision matrix to normalize. This should be a 2D array where rows
-    ///   represent alternatives, and columns represent criteria.
     /// * `types` - An array slice indicating if each criterion is a profit or cost.
     ///
     /// # Returns
     ///
-    /// * `Result<Array2<f64>, NormalizationError>` - A normalized decision matrix, or an error
+    /// * `Result<DMatrix<f64>, NormalizationError>` - A normalized decision matrix, or an error
     ///   if the normalization fails (e.g., due to mismatched dimensions or invalid types).
-    fn normalize(
-        matrix: &Array2<f64>,
+    fn normalize_enhanced_accuracy(
+        &self,
         types: &[CriteriaType],
-    ) -> Result<Array2<f64>, NormalizationError>;
+    ) -> Result<DMatrix<f64>, NormalizationError>;
+
+    /// Profit criteria depend on the critions maximum value and cost criteria depend on criterion
+    /// minimum value.
+    ///
+    /// For profit:
+    /// $$r_{ij} = \frac{x_{ij}}{\max_j(x_{ij})}$$
+    ///
+    /// For cost:
+    /// $$r_{ij} = \frac{\min_j(x_{ij})}{x_{ij}}$$
+    ///
+    /// where $x_{ij}$ is the $i$th element of the alternative (row), $j$th elements of the criterion
+    /// (column), $\max_j$ is the maximum criterion value, and $\min_j$ is the minimum criterion value
+    /// in the decision matrix.
+    ///
+    /// # Arguments
+    ///
+    /// * `types` - An array slice indicating if each criterion is a profit or cost.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<DMatrix<f64>, NormalizationError>` - A normalized decision matrix, or an error
+    ///   if the normalization fails.
+    fn normalize_linear(&self, types: &[CriteriaType]) -> Result<DMatrix<f64>, NormalizationError>;
+
+    /// Considers the natural logarithm of the product of the criterion values.
+    ///
+    /// For profit:
+    /// $$r_{ij} = \frac{\ln(x_{ij})}{\ln(\prod_{i=1}^m x_{ij})}$$
+    ///
+    /// For cost:
+    /// $$r_{ij} = \frac{1 - \frac{\ln(x_{ij})}{\ln(\prod_{i=1}^m x_{ij})}}{m - 1}$$
+    ///
+    /// where $x_{ij}$ is the $i$th element of the alternative (row) and $j$th elements of the criterion
+    /// (column) with $m$ total alternatives.
+    ///
+    /// # Arguments
+    ///
+    /// * `types` - An array slice indicating if each criterion is a profit or cost.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<DMatrix<f64>, NormalizationError>` - A normalized decision matrix, or an error
+    ///   if the normalization fails.
+    fn normalize_logarithmic(
+        &self,
+        types: &[CriteriaType],
+    ) -> Result<DMatrix<f64>, NormalizationError>;
+
+    /// Consider maximum rating of criterion for a given criteria.
+    ///
+    /// For profit:
+    /// $$r_{ij} = \frac{x_{ij}}{\max_j(x_{ij})}$$
+    ///
+    /// For cost:
+    /// $$r_{ij} = 1 - \frac{x_{ij}}{\max_j(x_{ij})}$$
+    ///
+    /// where $x_{ij}$ is the $i$th element of the alternative (row), $j$th elements of the criterion
+    /// (column), and $\max_j$ is the maximum criterion value in the decision matrix.
+    ///
+    /// # Arguments
+    ///
+    /// * `types` - An array slice indicating if each criterion is a profit or cost.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<DMatrix<f64>, NormalizationError>` - A normalized decision matrix, or an error
+    ///   if the normalization fails.
+    fn normalize_max(&self, types: &[CriteriaType]) -> Result<DMatrix<f64>, NormalizationError>;
+
+    /// Considers the criterion's minimum and maximum value for normalization.
+    ///
+    /// For profit:
+    /// $$r_{ij} = \frac{x_{ij} - \min_j(x_{ij})}{\max_j(x_{ij}) - \min_j(x_{ij})}$$
+    ///
+    /// For cost:
+    /// $$r_{ij} = \frac{\max_j(x_{ij}) - x_{ij}}{\max_j(x_{ij}) - \min_j(x_{ij})}$$
+    ///
+    /// where $x_{ij}$ is the $i$th element of the alternative (row), $j$th elements of the criterion
+    /// (column), $\max_j$ is the maximum criterion value, and $\min_j$ is the minimum value in the
+    /// decision matrix.
+    ///
+    /// # Arguments
+    ///
+    /// * `types` - An array slice indicating if each criterion is a profit or cost.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<DMatrix<f64>, NormalizationError>` - A normalized decision matrix, or an error
+    ///   if the normalization fails.
+    fn normalize_min_max(&self, types: &[CriteriaType])
+        -> Result<DMatrix<f64>, NormalizationError>;
+
+    /// Considers exponentiation of criterion's minimum and maximum value for normalization.
+    ///
+    /// For profit:
+    /// $$r_{ij} = \left(\frac{x_{ij}}{\max_j(x_{ij})}\right)^2$$
+    ///
+    /// For cost:
+    /// $$r_{ij} = \left(\frac{\min_j(x_{ij})}{x_{ij}}\right)^3$$
+    ///
+    /// where $x_{ij}$ is the $i$th element of the alternative (row), $j$th elements of the criterion
+    /// (column), $\max_j$ is the maximum criterion value, and $\min_j$ is the minimum value in the
+    /// decision matrix.
+    ///
+    /// # Arguments
+    ///
+    /// * `types` - An array slice indicating if each criterion is a profit or cost.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<DMatrix<f64>, NormalizationError>` - A normalized decision matrix, or an error
+    ///   if the normalization fails.
+    fn normalize_nonlinear(
+        &self,
+        types: &[CriteriaType],
+    ) -> Result<DMatrix<f64>, NormalizationError>;
+
+    /// Considers the sum of the criteria values for normalization.
+    ///
+    /// For profit:
+    /// $$r_{ij} = \frac{x_{ij}}{\sum_{i=1}^m x_{ij}}$$
+    ///
+    /// For cost:
+    /// $$r_{ij} = \frac{\frac{1}{x_{ij}}}{\sum_{i=1}^m \frac{1}{x_{ij}}}$$
+    ///
+    /// where $x_{ij}$ is the $i$th element of the alternative (row) and $j$th elements of the criterion
+    /// (column) with $m$ total criteria.
+    ///
+    /// # Arguments
+    ///
+    /// * `types` - An array slice indicating if each criterion is a profit or cost.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<DMatrix<f64>, NormalizationError>` - A normalized decision matrix, or an error
+    ///   if the normalization fails.
+    fn normalize_sum(&self, types: &[CriteriaType]) -> Result<DMatrix<f64>, NormalizationError>;
+
+    /// Considers the root of the sum of the squares of the criteria values for normalization.
+    ///
+    /// For profit:
+    /// $$r_{ij} = \frac{x_{ij}}{\sqrt{\sum_{i=1}^m x^2_{ij}}}$$
+    ///
+    /// For cost:
+    /// $$r_{ij} = 1 - \frac{x_{ij}}{\sqrt{\sum_{i=1}^m x^2_{ij}}}$$
+    ///
+    /// where $x_{ij}$ is the $i$th element of the alternative (row) and $j$th elements of the criterion
+    /// (column) with $m$ total criteria.
+    ///
+    /// # Arguments
+    ///
+    /// * `types` - An array slice indicating if each criterion is a profit or cost.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<DMatrix<f64>, NormalizationError>` - A normalized decision matrix, or an error
+    ///   if the normalization fails.
+    fn normalize_vector(&self, types: &[CriteriaType]) -> Result<DMatrix<f64>, NormalizationError>;
+
+    /// Normalization method proposed by Zavadskas and Turskis in 2008.
+    ///
+    /// For profit:
+    /// $$r_{ij} = 1 - \frac{\left|\max_j(x_{ij}) - x_{ij}\right|}{\max_j(x_{ij})}$$
+    ///
+    /// For cost:
+    /// $$r_{ij} = 1 - \frac{\left|\min_j(x_{ij}) - x_{ij}\right|}{\min_j(x_{ij})}$$
+    ///
+    /// where $x_{ij}$ is the $i$th element of the alternative (row), $j$th elements of the criterion
+    /// (column), $\max_j$ is the maximum criterion value, and $\min_j$ is the minimum value in the
+    /// decision matrix.
+    ///
+    /// # Arguments
+    ///
+    /// * `types` - An array slice indicating if each criterion is a profit or cost.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<DMatrix<f64>, NormalizationError>` - A normalized decision matrix, or an error
+    ///   if the normalization fails.
+    fn normalize_zavadskas_turskis(
+        &self,
+        types: &[CriteriaType],
+    ) -> Result<DMatrix<f64>, NormalizationError>;
 }
 
-/// Considers the maximum and minimum values of the given criteria for normalization.
-///
-/// For profit:
-/// $$r_{ij} = 1- \frac{\max_j(x_{ij}) - x_{ij}}{\sum_{i=1}^m(\max_j(x_{ij}) - x_{ij})}$$
-///
-/// For cost:
-/// $$r_{ij} = 1- \frac{x_{ij} - \min_j(x_{ij})}{\sum_{i=1}^m(x_{ij} - \min_j(x_{ij})}$$
-///
-/// where $x_{ij}$ is the $i$th element of the alternative (row) and $j$th elements of the criterion
-/// (column), $\max_j$ is the maximum criterion value, and $\min_j$ is the minimum criterion value
-/// in the decision matrix with $m$ total criteria.
-pub struct EnhancedAccuracy;
-
-impl Normalize for EnhancedAccuracy {
-    fn normalize(
-        matrix: &Array2<f64>,
+impl Normalize for DMatrix<f64> {
+    fn normalize_enhanced_accuracy(
+        &self,
         types: &[CriteriaType],
-    ) -> Result<Array2<f64>, NormalizationError> {
+    ) -> Result<DMatrix<f64>, NormalizationError> {
         // Check if the matrix is not empty
-        if matrix.is_empty() {
+        if self.is_empty() {
             return Err(NormalizationError::EmptyMatrix);
         }
 
         // Ensure enough criteria types for all criteria
-        if types.len() != matrix.ncols() {
+        if types.len() != self.ncols() {
             return Err(NormalizationError::NormalizationCriteraTypeMismatch);
         }
 
         // Initialize a matrix to store the normalized values
-        let mut normalized_matrix = Array2::<f64>::zeros(matrix.raw_dim());
+        let mut normalized_matrix = DMatrix::<f64>::zeros(self.nrows(), self.ncols());
 
         // Iterate over each column (criterion)
-        for (i, col) in matrix.axis_iter(Axis(1)).enumerate() {
-            let min_value = col
-                .into_iter()
-                .copied()
-                .reduce(f64::min)
-                .ok_or(NormalizationError::NoMinimum)?;
-            let max_value = col
-                .into_iter()
-                .copied()
-                .reduce(f64::max)
-                .ok_or(NormalizationError::NoMaximum)?;
+        for (j, col) in self.column_iter().enumerate() {
+            let min_value = col.min();
+            let max_value = col.max();
 
-            let col_sum = match types[i] {
-                CriteriaType::Cost => col.mapv(|x| x - min_value).sum(),
-                CriteriaType::Profit => col.mapv(|x| max_value - x).sum(),
+            let col_sum = match types[j] {
+                CriteriaType::Cost => col.map(|x| x - min_value).sum(),
+                CriteriaType::Profit => col.map(|x| max_value - x).sum(),
             };
 
-            for (j, value) in col.iter().enumerate() {
-                if (*value).abs() < f64::EPSILON {
+            for (i, value) in col.iter().enumerate() {
+                if value.abs() < f64::EPSILON {
                     return Err(NormalizationError::ZeroRange);
                 }
 
-                normalized_matrix[[j, i]] = match types[i] {
-                    CriteriaType::Cost => 1.0 - ((*value - min_value) / col_sum),
-                    CriteriaType::Profit => 1.0 - ((max_value - *value) / col_sum),
+                normalized_matrix[(i, j)] = match types[j] {
+                    CriteriaType::Cost => 1.0 - ((value - min_value) / col_sum),
+                    CriteriaType::Profit => 1.0 - ((max_value - value) / col_sum),
                 };
             }
         }
 
         Ok(normalized_matrix)
     }
-}
 
-/// Profit criteria depend on the critions maximum value and cost criteria depend on criterion
-/// minimum value.
-///
-/// For profit:
-/// $$r_{ij} = \frac{x_{ij}}{\max_j(x_{ij})}$$
-///
-/// For cost:
-/// $$r_{ij} = \frac{\min_j(x_{ij})}{x_{ij}}$$
-///
-/// where $x_{ij}$ is the $i$th element of the alternative (row), $j$th elements of the criterion
-/// (column), $\max_j$ is the maximum criterion value, and $\min_j$ is the minimum criterion value
-/// in the decision matrix.
-pub struct Linear;
-
-impl Normalize for Linear {
-    fn normalize(
-        matrix: &Array2<f64>,
-        types: &[CriteriaType],
-    ) -> Result<Array2<f64>, NormalizationError> {
+    fn normalize_linear(&self, types: &[CriteriaType]) -> Result<DMatrix<f64>, NormalizationError> {
         // Check if the matrix is not empty
-        if matrix.is_empty() {
+        if self.is_empty() {
             return Err(NormalizationError::EmptyMatrix);
         }
 
         // Ensure enough criteria types for all criteria
-        if types.len() != matrix.ncols() {
+        if types.len() != self.ncols() {
             return Err(NormalizationError::NormalizationCriteraTypeMismatch);
         }
 
         // Initialize a matrix to store the normalized values
-        let mut normalized_matrix = Array2::<f64>::zeros(matrix.raw_dim());
+        let mut normalized_matrix = DMatrix::<f64>::zeros(self.nrows(), self.ncols());
 
         // Iterate over each column (criterion)
-        for (i, col) in matrix.axis_iter(Axis(1)).enumerate() {
-            let min_value = col
-                .into_iter()
-                .copied()
-                .reduce(f64::min)
-                .ok_or(NormalizationError::NoMinimum)?;
-            let max_value = col
-                .into_iter()
-                .copied()
-                .reduce(f64::max)
-                .ok_or(NormalizationError::NoMaximum)?;
+        for (j, col) in self.column_iter().enumerate() {
+            let min_value = col.min();
+            let max_value = col.max();
 
             // Avoid division by zero
-            if (max_value).abs() < f64::EPSILON {
+            if max_value.abs() < f64::EPSILON {
                 return Err(NormalizationError::ZeroRange);
             }
 
-            for (j, value) in col.iter().enumerate() {
-                if (*value).abs() < f64::EPSILON {
+            for (i, value) in col.iter().enumerate() {
+                if value.abs() < f64::EPSILON {
                     return Err(NormalizationError::ZeroRange);
                 }
 
-                normalized_matrix[[j, i]] = match types[i] {
-                    CriteriaType::Cost => min_value / *value,
-                    CriteriaType::Profit => *value / max_value,
+                normalized_matrix[(i, j)] = match types[j] {
+                    CriteriaType::Cost => min_value / value,
+                    CriteriaType::Profit => value / max_value,
                 };
             }
         }
 
         Ok(normalized_matrix)
     }
-}
 
-/// Considers the natural logarithm of the product of the criterion values.
-///
-/// For profit:
-/// $$r_{ij} = \frac{\ln(x_{ij})}{\ln(\prod_{i=1}^m x_{ij})}$$
-///
-/// For cost:
-/// $$r_{ij} = \frac{1 - \frac{\ln(x_{ij})}{\ln(\prod_{i=1}^m x_{ij})}}{m - 1}$$
-///
-/// where $x_{ij}$ is the $i$th element of the alternative (row) and $j$th elements of the criterion
-/// (column) with $m$ total alternatives.
-pub struct Logarithmic;
-
-impl Normalize for Logarithmic {
-    fn normalize(
-        matrix: &Array2<f64>,
+    fn normalize_logarithmic(
+        &self,
         types: &[CriteriaType],
-    ) -> Result<Array2<f64>, NormalizationError> {
+    ) -> Result<DMatrix<f64>, NormalizationError> {
         // Check if the matrix is not empty
-        if matrix.is_empty() {
+        if self.is_empty() {
             return Err(NormalizationError::EmptyMatrix);
         }
 
         // Ensure enough criteria types for all criteria
-        if types.len() != matrix.ncols() {
+        if types.len() != self.ncols() {
             return Err(NormalizationError::NormalizationCriteraTypeMismatch);
         }
 
         // Initialize a matrix to store the normalized values
-        let mut normalized_matrix = Array2::<f64>::zeros(matrix.raw_dim());
+        let mut normalized_matrix = DMatrix::<f64>::zeros(self.nrows(), self.ncols());
 
         // Iterate over each column (criterion)
-        for (i, col) in matrix.axis_iter(Axis(1)).enumerate() {
+        for (j, col) in self.column_iter().enumerate() {
             let col_prod = col.product();
 
-            for (j, value) in col.iter().enumerate() {
-                if (*value).abs() < f64::EPSILON {
+            for (i, value) in col.iter().enumerate() {
+                if value.abs() < f64::EPSILON {
                     return Err(NormalizationError::ZeroRange);
                 }
 
-                let ln_ratio = (*value).ln() / col_prod.ln();
+                let ln_ratio = (value).ln() / col_prod.ln();
 
-                normalized_matrix[[j, i]] = match types[i] {
-                    CriteriaType::Cost => (1.0 - ln_ratio) / (matrix.nrows() as f64 - 1.0),
+                normalized_matrix[(i, j)] = match types[j] {
+                    CriteriaType::Cost => (1.0 - ln_ratio) / (self.nrows() as f64 - 1.0),
                     CriteriaType::Profit => ln_ratio,
                 };
             }
@@ -237,345 +372,221 @@ impl Normalize for Logarithmic {
 
         Ok(normalized_matrix)
     }
-}
 
-/// Consider maximum rating of criterion for a given criteria.
-///
-/// For profit:
-/// $$r_{ij} = \frac{x_{ij}}{\max_j(x_{ij})}$$
-///
-/// For cost:
-/// $$r_{ij} = 1 - \frac{x_{ij}}{\max_j(x_{ij})}$$
-///
-/// where $x_{ij}$ is the $i$th element of the alternative (row), $j$th elements of the criterion
-/// (column), and $\max_j$ is the maximum criterion value in the decision matrix.
-pub struct Max;
-
-impl Normalize for Max {
-    fn normalize(
-        matrix: &Array2<f64>,
-        types: &[CriteriaType],
-    ) -> Result<Array2<f64>, NormalizationError> {
+    fn normalize_max(&self, types: &[CriteriaType]) -> Result<DMatrix<f64>, NormalizationError> {
         // Check if the matrix is not empty
-        if matrix.is_empty() {
+        if self.is_empty() {
             return Err(NormalizationError::EmptyMatrix);
         }
 
         // Ensure enough criteria types for all criteria
-        if types.len() != matrix.ncols() {
+        if types.len() != self.ncols() {
             return Err(NormalizationError::NormalizationCriteraTypeMismatch);
         }
 
         // Initialize a matrix to store the normalized values
-        let mut normalized_matrix = Array2::<f64>::zeros(matrix.raw_dim());
+        let mut normalized_matrix = DMatrix::<f64>::zeros(self.nrows(), self.ncols());
 
         // Iterate over each column (criterion)
-        for (i, col) in matrix.axis_iter(Axis(1)).enumerate() {
-            let max_value = col
-                .into_iter()
-                .copied()
-                .reduce(f64::max)
-                .ok_or(NormalizationError::NoMaximum)?;
+        for (j, col) in self.column_iter().enumerate() {
+            let max_value = col.max();
 
             // Avoid division by zero
-            if (max_value).abs() < f64::EPSILON {
+            if max_value.abs() < f64::EPSILON {
                 return Err(NormalizationError::ZeroRange);
             }
 
-            for (j, value) in col.iter().enumerate() {
-                normalized_matrix[[j, i]] = match types[i] {
-                    CriteriaType::Cost => 1.0 - (*value / max_value),
-                    CriteriaType::Profit => *value / max_value,
+            for (i, value) in col.iter().enumerate() {
+                normalized_matrix[(i, j)] = match types[j] {
+                    CriteriaType::Cost => 1.0 - (value / max_value),
+                    CriteriaType::Profit => value / max_value,
                 };
             }
         }
 
         Ok(normalized_matrix)
     }
-}
 
-/// Considers the criterion's minimum and maximum value for normalization.
-///
-/// For profit:
-/// $$r_{ij} = \frac{x_{ij} - \min_j(x_{ij})}{\max_j(x_{ij}) - \min_j(x_{ij})}$$
-///
-/// For cost:
-/// $$r_{ij} = \frac{\max_j(x_{ij}) - x_{ij}}{\max_j(x_{ij}) - \min_j(x_{ij})}$$
-///
-/// where $x_{ij}$ is the $i$th element of the alternative (row), $j$th elements of the criterion
-/// (column), $\max_j$ is the maximum criterion value, and $\min_j$ is the minimum value in the
-/// decision matrix.
-pub struct MinMax;
-
-impl Normalize for MinMax {
-    fn normalize(
-        matrix: &Array2<f64>,
+    fn normalize_min_max(
+        &self,
         types: &[CriteriaType],
-    ) -> Result<Array2<f64>, NormalizationError> {
+    ) -> Result<DMatrix<f64>, NormalizationError> {
         // Check if the matrix is not empty
-        if matrix.is_empty() {
+        if self.is_empty() {
             return Err(NormalizationError::EmptyMatrix);
         }
 
         // Ensure enough criteria types for all criteria
-        if types.len() != matrix.ncols() {
+        if types.len() != self.ncols() {
             return Err(NormalizationError::NormalizationCriteraTypeMismatch);
         }
 
         // Initialize a matrix to store the normalized values
-        let mut normalized_matrix = Array2::<f64>::zeros(matrix.raw_dim());
+        let mut normalized_matrix = DMatrix::<f64>::zeros(self.nrows(), self.ncols());
 
         // Iterate over each column (criterion)
-        for (i, col) in matrix.axis_iter(Axis(1)).enumerate() {
-            let min_value = col
-                .into_iter()
-                .copied()
-                .reduce(f64::min)
-                .ok_or(NormalizationError::NoMinimum)?;
-            let max_value = col
-                .into_iter()
-                .copied()
-                .reduce(f64::max)
-                .ok_or(NormalizationError::NoMaximum)?;
+        for (j, col) in self.column_iter().enumerate() {
+            let min_value = col.min();
+            let max_value = col.max();
 
             // Avoid division by zero
             if (max_value - min_value).abs() < f64::EPSILON {
                 return Err(NormalizationError::ZeroRange);
             }
 
-            for (j, value) in col.iter().enumerate() {
-                normalized_matrix[[j, i]] = match types[i] {
-                    CriteriaType::Cost => (max_value - *value) / (max_value - min_value),
-                    CriteriaType::Profit => (*value - min_value) / (max_value - min_value),
+            for (i, value) in col.iter().enumerate() {
+                normalized_matrix[(i, j)] = match types[j] {
+                    CriteriaType::Cost => (max_value - value) / (max_value - min_value),
+                    CriteriaType::Profit => (value - min_value) / (max_value - min_value),
                 };
             }
         }
 
         Ok(normalized_matrix)
     }
-}
 
-/// Considers exponentiation of criterion's minimum and maximum value for normalization.
-///
-/// For profit:
-/// $$r_{ij} = \left(\frac{x_{ij}}{\max_j(x_{ij})}\right)^2$$
-///
-/// For cost:
-/// $$r_{ij} = \left(\frac{\min_j(x_{ij})}{x_{ij}}\right)^3$$
-///
-/// where $x_{ij}$ is the $i$th element of the alternative (row), $j$th elements of the criterion
-/// (column), $\max_j$ is the maximum criterion value, and $\min_j$ is the minimum value in the
-/// decision matrix.
-pub struct NonLinear;
-
-impl NonLinear {
-    pub fn normalize(
-        matrix: &Array2<f64>,
+    fn normalize_nonlinear(
+        &self,
         types: &[CriteriaType],
-    ) -> Result<Array2<f64>, NormalizationError> {
+    ) -> Result<DMatrix<f64>, NormalizationError> {
         // Check if the matrix is not empty
-        if matrix.is_empty() {
+        if self.is_empty() {
             return Err(NormalizationError::EmptyMatrix);
         }
 
         // Ensure enough criteria types for all criteria
-        if types.len() != matrix.ncols() {
+        if types.len() != self.ncols() {
             return Err(NormalizationError::NormalizationCriteraTypeMismatch);
         }
 
         // Initialize a matrix to store the normalized values
-        let mut normalized_matrix = Array2::<f64>::zeros(matrix.raw_dim());
+        let mut normalized_matrix = DMatrix::<f64>::zeros(self.nrows(), self.ncols());
 
         // Iterate over each column (criterion)
-        for (i, col) in matrix.axis_iter(Axis(1)).enumerate() {
-            let min_value = col
-                .into_iter()
-                .copied()
-                .reduce(f64::min)
-                .ok_or(NormalizationError::NoMinimum)?;
-            let max_value = col
-                .into_iter()
-                .copied()
-                .reduce(f64::max)
-                .ok_or(NormalizationError::NoMaximum)?;
+        for (j, col) in self.column_iter().enumerate() {
+            let min_value = col.min();
+            let max_value = col.max();
 
             // Avoid division by zero
             if (max_value - min_value).abs() < f64::EPSILON {
                 return Err(NormalizationError::ZeroRange);
             }
 
-            for (j, value) in col.iter().enumerate() {
-                if (*value).abs() < f64::EPSILON {
+            for (i, value) in col.iter().enumerate() {
+                if value.abs() < f64::EPSILON {
                     return Err(NormalizationError::ZeroRange);
                 }
 
-                normalized_matrix[[j, i]] = match types[i] {
-                    CriteriaType::Cost => (min_value / *value).powi(3),
-                    CriteriaType::Profit => (*value / max_value).powi(2),
+                normalized_matrix[(i, j)] = match types[j] {
+                    CriteriaType::Cost => (min_value / value).powi(3),
+                    CriteriaType::Profit => (value / max_value).powi(2),
                 };
             }
         }
 
         Ok(normalized_matrix)
     }
-}
 
-/// Considers the sum of the criteria values for normalization.
-///
-/// For profit:
-/// $$r_{ij} = \frac{x_{ij}}{\sum_{i=1}^m x_{ij}}$$
-///
-/// For cost:
-/// $$r_{ij} = \frac{\frac{1}{x_{ij}}}{\sum_{i=1}^m \frac{1}{x_{ij}}}$$
-///
-/// where $x_{ij}$ is the $i$th element of the alternative (row) and $j$th elements of the criterion
-/// (column) with $m$ total criteria.
-pub struct Sum;
-
-impl Normalize for Sum {
-    fn normalize(
-        matrix: &Array2<f64>,
-        types: &[CriteriaType],
-    ) -> Result<Array2<f64>, NormalizationError> {
+    fn normalize_sum(&self, types: &[CriteriaType]) -> Result<DMatrix<f64>, NormalizationError> {
         // Check if the matrix is not empty
-        if matrix.is_empty() {
+        if self.is_empty() {
             return Err(NormalizationError::EmptyMatrix);
         }
 
         // Ensure enough criteria types for all criteria
-        if types.len() != matrix.ncols() {
+        if types.len() != self.ncols() {
             return Err(NormalizationError::NormalizationCriteraTypeMismatch);
         }
 
         // Initialize a matrix to store the normalized values
-        let mut normalized_matrix = Array2::<f64>::zeros(matrix.raw_dim());
+        let mut normalized_matrix = DMatrix::<f64>::zeros(self.nrows(), self.ncols());
 
         // Iterate over each column (criterion)
-        for (i, col) in matrix.axis_iter(Axis(1)).enumerate() {
-            let col_sum = match types[i] {
-                CriteriaType::Cost => col.mapv(|x| 1.0 / x).sum(),
+        for (j, col) in self.column_iter().enumerate() {
+            let col_sum = match types[j] {
+                CriteriaType::Cost => col.map(|x| 1.0 / x).sum(),
                 CriteriaType::Profit => col.sum(),
             };
 
-            for (j, value) in col.iter().enumerate() {
-                if (*value).abs() < f64::EPSILON {
+            for (i, value) in col.iter().enumerate() {
+                if value.abs() < f64::EPSILON {
                     return Err(NormalizationError::ZeroRange);
                 }
 
-                normalized_matrix[[j, i]] = match types[i] {
-                    CriteriaType::Cost => (1.0 / *value) / col_sum,
-                    CriteriaType::Profit => *value / col_sum,
+                normalized_matrix[(i, j)] = match types[j] {
+                    CriteriaType::Cost => (1.0 / value) / col_sum,
+                    CriteriaType::Profit => value / col_sum,
                 };
             }
         }
 
         Ok(normalized_matrix)
     }
-}
 
-/// Considers the root of the sum of the squares of the criteria values for normalization.
-///
-/// For profit:
-/// $$r_{ij} = \frac{x_{ij}}{\sqrt{\sum_{i=1}^m x^2_{ij}}}$$
-///
-/// For cost:
-/// $$r_{ij} = 1 - \frac{x_{ij}}{\sqrt{\sum_{i=1}^m x^2_{ij}}}$$
-///
-/// where $x_{ij}$ is the $i$th element of the alternative (row) and $j$th elements of the criterion
-/// (column) with $m$ total criteria.
-pub struct Vector;
-
-impl Normalize for Vector {
-    fn normalize(
-        matrix: &Array2<f64>,
-        types: &[CriteriaType],
-    ) -> Result<Array2<f64>, NormalizationError> {
+    fn normalize_vector(&self, types: &[CriteriaType]) -> Result<DMatrix<f64>, NormalizationError> {
         // Check if the matrix is not empty
-        if matrix.is_empty() {
+        if self.is_empty() {
             return Err(NormalizationError::EmptyMatrix);
         }
 
         // Ensure enough criteria types for all criteria
-        if types.len() != matrix.ncols() {
+        if types.len() != self.ncols() {
             return Err(NormalizationError::NormalizationCriteraTypeMismatch);
         }
 
         // Initialize a matrix to store the normalized values
-        let mut normalized_matrix = Array2::<f64>::zeros(matrix.raw_dim());
+        let mut normalized_matrix = DMatrix::<f64>::zeros(self.nrows(), self.ncols());
 
         // Iterate over each column (criterion)
-        for (i, col) in matrix.axis_iter(Axis(1)).enumerate() {
-            let sqrt_col_sum = col.mapv(|x| x * x).sum().sqrt();
+        for (j, col) in self.column_iter().enumerate() {
+            let sqrt_col_sum = col.map(|x| x * x).sum().sqrt();
 
-            for (j, value) in col.iter().enumerate() {
-                if (*value).abs() < f64::EPSILON {
+            for (i, value) in col.iter().enumerate() {
+                if value.abs() < f64::EPSILON {
                     return Err(NormalizationError::ZeroRange);
                 }
 
-                normalized_matrix[[j, i]] = match types[i] {
-                    CriteriaType::Cost => 1.0 - (*value / sqrt_col_sum),
-                    CriteriaType::Profit => *value / sqrt_col_sum,
+                normalized_matrix[(i, j)] = match types[j] {
+                    CriteriaType::Cost => 1.0 - (value / sqrt_col_sum),
+                    CriteriaType::Profit => value / sqrt_col_sum,
                 };
             }
         }
 
         Ok(normalized_matrix)
     }
-}
 
-/// Normalization method proposed by Zavadskas and Turskis in 2008.
-///
-/// For profit:
-/// $$r_{ij} = 1 - \frac{\left|\max_j(x_{ij}) - x_{ij}\right|}{\max_j(x_{ij})}$$
-///
-/// For cost:
-/// $$r_{ij} = 1 - \frac{\left|\min_j(x_{ij}) - x_{ij}\right|}{\min_j(x_{ij})}$$
-///
-/// where $x_{ij}$ is the $i$th element of the alternative (row), $j$th elements of the criterion
-/// (column), $\max_j$ is the maximum criterion value, and $\min_j$ is the minimum value in the
-/// decision matrix.
-pub struct ZavadskasTurskis;
-
-impl ZavadskasTurskis {
-    pub fn normalize(
-        matrix: &Array2<f64>,
+    fn normalize_zavadskas_turskis(
+        &self,
         types: &[CriteriaType],
-    ) -> Result<Array2<f64>, NormalizationError> {
+    ) -> Result<DMatrix<f64>, NormalizationError> {
         // Check if the matrix is not empty
-        if matrix.is_empty() {
+        if self.is_empty() {
             return Err(NormalizationError::EmptyMatrix);
         }
 
         // Ensure enough criteria types for all criteria
-        if types.len() != matrix.ncols() {
+        if types.len() != self.ncols() {
             return Err(NormalizationError::NormalizationCriteraTypeMismatch);
         }
 
         // Initialize a matrix to store the normalized values
-        let mut normalized_matrix = Array2::<f64>::zeros(matrix.raw_dim());
+        let mut normalized_matrix = DMatrix::<f64>::zeros(self.nrows(), self.ncols());
 
         // Iterate over each column (criterion)
-        for (i, col) in matrix.axis_iter(Axis(1)).enumerate() {
-            let min_value = col
-                .into_iter()
-                .copied()
-                .reduce(f64::min)
-                .ok_or(NormalizationError::NoMinimum)?;
-            let max_value = col
-                .into_iter()
-                .copied()
-                .reduce(f64::max)
-                .ok_or(NormalizationError::NoMaximum)?;
+        for (j, col) in self.column_iter().enumerate() {
+            let min_value = col.min();
+            let max_value = col.max();
 
             // Avoid division by zero
-            if (max_value).abs() < f64::EPSILON || (min_value).abs() < f64::EPSILON {
+            if max_value.abs() < f64::EPSILON || min_value.abs() < f64::EPSILON {
                 return Err(NormalizationError::ZeroRange);
             }
 
-            for (j, value) in col.iter().enumerate() {
-                normalized_matrix[[j, i]] = match types[i] {
-                    CriteriaType::Cost => 1.0 - ((min_value - *value).abs() / min_value),
-                    CriteriaType::Profit => 1.0 - ((max_value - *value).abs() / max_value),
+            for (i, value) in col.iter().enumerate() {
+                normalized_matrix[(i, j)] = match types[j] {
+                    CriteriaType::Cost => 1.0 - ((min_value - value).abs() / min_value),
+                    CriteriaType::Profit => 1.0 - ((max_value - value).abs() / max_value),
                 };
             }
         }

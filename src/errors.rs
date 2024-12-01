@@ -16,7 +16,7 @@ error_set! {
     /// extended to provide more precise errors as method implementations evolve.
     RankingError = {
         /// An error computing a minimum/maximum value.
-        MinMaxError(ndarray_stats::errors::MinMaxError),
+        MinMaxError,
     } || NormalizationError ||ValidationError;
 
     /// Normalization related errors.
@@ -37,7 +37,7 @@ error_set! {
     /// values, or incorrect weight ranges.
     WeightingError = {
         /// Indicates that the input array was empty.
-        EmptyInput(ndarray_stats::errors::EmptyInput),
+        EmptyInput,
         /// No null spaces identified in the matrix.
         NoNullSpace,
     } || ValidationError;
