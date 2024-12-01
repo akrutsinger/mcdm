@@ -16,7 +16,7 @@
 //!     let criteria_types = CriteriaType::from(vec![-1, 1, 1])?;
 //!
 //!     // Apply normalization using Min-Max
-//!     let normalized_matrix = alternatives.normalize_minmax(&criteria_types)?;
+//!     let normalized_matrix = alternatives.normalize_min_max(&criteria_types)?;
 //!
 //!     // Alternatively, use equal weights
 //!     let equal_weights = normalized_matrix.weight_equal()?;

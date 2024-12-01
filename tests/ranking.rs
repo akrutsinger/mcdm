@@ -39,7 +39,7 @@ mod cocoso_tests {
         ];
         let weights = dvector![0.25, 0.25, 0.25, 0.25];
         let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1])?;
-        let normalized_matrix = matrix.normalize_minmax(&criteria_types)?;
+        let normalized_matrix = matrix.normalize_min_max(&criteria_types)?;
         let ranking = normalized_matrix.rank_cocoso(&weights)?;
         assert_relative_eq!(
             ranking,
@@ -154,7 +154,7 @@ mod mabac_tests {
         ];
         let weights = dvector![0.25, 0.25, 0.25, 0.25];
         let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1])?;
-        let normalized_matrix = matrix.normalize_minmax(&criteria_types)?;
+        let normalized_matrix = matrix.normalize_min_max(&criteria_types)?;
         let ranking = normalized_matrix.rank_mabac(&weights)?;
         assert_relative_eq!(
             ranking,
@@ -198,7 +198,7 @@ mod topsis_tests {
         ];
         let weights = dvector![0.25, 0.25, 0.25, 0.25];
         let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1])?;
-        let normalized_matrix = matrix.normalize_minmax(&criteria_types)?;
+        let normalized_matrix = matrix.normalize_min_max(&criteria_types)?;
         let ranking = normalized_matrix.rank_topsis(&weights)?;
         assert_relative_eq!(
             ranking,
@@ -244,7 +244,7 @@ mod weighted_product_tests {
         let weights = dvector![0.25, 0.25, 0.25, 0.25];
         let criteria_type = CriteriaType::from(vec![-1, 1, 1, -1])?;
         let normalized_matrix = matrix.normalize_sum(&criteria_type)?;
-        let ranking = normalized_matrix.rank_weightedproduct(&weights)?;
+        let ranking = normalized_matrix.rank_weighted_product(&weights)?;
         assert_relative_eq!(
             ranking,
             dvector![0.21711531, 0.17273414, 0.53281425],
@@ -258,7 +258,7 @@ mod weighted_product_tests {
     fn test_rank_with_invalid_dimensions() -> Result<(), McdmError> {
         let matrix = dmatrix![0.2, 0.8; 0.5, 0.5; 0.9, 0.1];
         let weights = dvector![0.6];
-        let ranking = matrix.rank_weightedproduct(&weights);
+        let ranking = matrix.rank_weighted_product(&weights);
         assert!(ranking.is_err());
 
         Ok(())
@@ -270,7 +270,7 @@ mod weighted_product_tests {
         let weights = dvector![0.0, 0.0];
         let criteria_type = CriteriaType::from(vec![1, -1])?;
         let normalized_matrix = matrix.normalize_sum(&criteria_type)?;
-        let ranking = normalized_matrix.rank_weightedproduct(&weights)?;
+        let ranking = normalized_matrix.rank_weighted_product(&weights)?;
         assert_eq!(ranking, dvector![1.0, 1.0, 1.0]);
 
         Ok(())
@@ -283,7 +283,7 @@ mod weighted_sum_tests {
     fn test_rank() -> Result<(), McdmError> {
         let matrix = dmatrix![0.2, 0.8; 0.5, 0.5; 0.9, 0.1];
         let weights = dvector![0.6, 0.4];
-        let ranking = matrix.rank_weightedsum(&weights)?;
+        let ranking = matrix.rank_weighted_sum(&weights)?;
         assert_relative_eq!(ranking, dvector![0.44, 0.5, 0.58], epsilon = 1e-5);
 
         Ok(())
@@ -293,7 +293,7 @@ mod weighted_sum_tests {
     fn test_with_zero_weights() -> Result<(), McdmError> {
         let matrix = dmatrix![0.2, 0.8; 0.5, 0.5; 0.9, 0.1];
         let weights = dvector![0.0, 0.0];
-        let ranking = matrix.rank_weightedsum(&weights)?;
+        let ranking = matrix.rank_weighted_sum(&weights)?;
         assert_eq!(ranking, dvector![0.0, 0.0, 0.0]);
 
         Ok(())
@@ -303,7 +303,7 @@ mod weighted_sum_tests {
     fn test_rank_with_invalid_dimensions() -> Result<(), McdmError> {
         let matrix = dmatrix![0.2, 0.8; 0.5, 0.5; 0.9, 0.1];
         let weights = dvector![0.6];
-        let ranking = matrix.rank_weightedsum(&weights);
+        let ranking = matrix.rank_weighted_sum(&weights);
         assert!(ranking.is_err());
 
         Ok(())

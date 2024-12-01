@@ -13,7 +13,7 @@ mod enhanced_accuracy_tests {
             0.3, 2.48, 1.75, 1.69
         ];
         let criteria_types = CriteriaType::from(vec![-1, 1, 1, -1])?;
-        let normalized_matrix = matrix.normalize_enhancedaccuracy(&criteria_types)?;
+        let normalized_matrix = matrix.normalize_enhanced_accuracy(&criteria_types)?;
         let expected_matrix = dmatrix![
             0.25714286, 0.87022901, 0.56410256, 0.7979798;
             0.74285714, 0.12977099, 0.43589744, 0.2020202;
@@ -128,7 +128,7 @@ mod minmax_tests {
             0.3, 2.48, 1.75, 1.69
         ];
         let criteria_types = CriteriaType::from(vec![-1, 1, 1, -1])?;
-        let normalized_matrix = matrix.normalize_minmax(&criteria_types)?;
+        let normalized_matrix = matrix.normalize_min_max(&criteria_types)?;
         let expected_matrix = dmatrix![
             0.0, 0.85087719, 0.22727273, 0.74683544;
             0.65384615, 0.0, 0.0, 0.0;
@@ -197,7 +197,7 @@ mod zavadskas_turskis_tests {
             0.3, 2.48, 1.75, 1.69
         ];
         let criteria_types = CriteriaType::from(vec![-1, 1, 1, -1])?;
-        let normalized_matrix = matrix.normalize_zavadskasturskis(&criteria_types)?;
+        let normalized_matrix = matrix.normalize_zavadskas_turskis(&criteria_types)?;
         let expected_matrix = dmatrix![
             -7.66666667, 0.93145161, 0.32, 0.8816568;
             -2.0, 0.54032258, 0.12, 0.53254438;

@@ -126,7 +126,7 @@ pub trait Rank {
 
     /// Ranks the alternatives using the COmbined Compromise SOlution (COCOSO) method.
     ///
-    /// The COCOSO method expects the decision matrix is normalized using the [`MinMax`](crate::normalization::Normalize::normalize_minmax)
+    /// The COCOSO method expects the decision matrix is normalized using the [`MinMax`](crate::normalization::Normalize::normalize_min_max)
     /// method. Then calculates the weighted sum of the comparision sequence and the total power weight
     /// of the comparison sequence for each alternative. The values of $S_i$ are based on the grey
     /// relationship generation method and the values for $P_i$ are based on the multiplicative WASPAS
@@ -145,12 +145,12 @@ pub trait Rank {
     /// $$ k_{ib} = \frac{S_i}{\min_i(S_i)} + \frac{P_i}{\min_i(P_i)} $$
     /// $$ k_{ic} = \frac{\lambda(S_i) + (1 - \lambda)(P_i)}{\lambda \max_i(S_i) + (1 - \lambda) \max_i(P_i)} \quad 0 \leq \lambda \leq 1 $$
     ///
-    /// where $k_{ia}$ represents the average of the sums of [`WeightedSum`](crate::ranking::Rank::rank_weightedsum)
-    /// and [`WeightedProduct`](crate::ranking::Rank::rank_weightedproduct) scores, $k_{ib}$
-    /// represents the [`WeightedSum`](crate::ranking::Rank::rank_weightedsum) and
-    /// [`WeightedProduct`](crate::ranking::Rank::rank_weightedproduct) scores over the best scores
-    /// for each each method respectfully, and $k_{ic}$ represents the [`WeightedSum`](crate::ranking::Rank::rank_weightedsum)
-    /// and [`WeightedProduct`](crate::ranking::Rank::rank_weightedproduct) scores using the
+    /// where $k_{ia}$ represents the average of the sums of [`WeightedSum`](crate::ranking::Rank::rank_weighted_sum)
+    /// and [`WeightedProduct`](crate::ranking::Rank::rank_weighted_product) scores, $k_{ib}$
+    /// represents the [`WeightedSum`](crate::ranking::Rank::rank_weighted_sum) and
+    /// [`WeightedProduct`](crate::ranking::Rank::rank_weighted_product) scores over the best scores
+    /// for each each method respectfully, and $k_{ic}$ represents the [`WeightedSum`](crate::ranking::Rank::rank_weighted_sum)
+    /// and [`WeightedProduct`](crate::ranking::Rank::rank_weighted_product) scores using the
     /// compromise strategy, and $n$ is the number of alternatives.
     ///
     /// Lastly, we rank the alternatives as follows:
@@ -182,7 +182,7 @@ pub trait Rank {
     /// ];
     /// let weights = dvector![0.25, 0.25, 0.25, 0.25];
     /// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
-    /// let normalized_matrix = matrix.normalize_minmax(&criteria_types).unwrap();
+    /// let normalized_matrix = matrix.normalize_min_max(&criteria_types).unwrap();
     /// let ranking = normalized_matrix.rank_cocoso(&weights).unwrap();
     /// assert_relative_eq!(ranking, dvector![3.24754746, 1.14396494, 5.83576765], epsilon = 1e-5);
     /// ```
@@ -409,7 +409,7 @@ pub trait Rank {
     /// Ranks the alternatives using the Multi-Attributive Border Approximation Area Comparison (MABAC)
     /// method.
     ///
-    /// The MABAC method expects the decision matrix is normalized using the [`MinMax`](crate::normalization::Normalize::normalize_minmax)
+    /// The MABAC method expects the decision matrix is normalized using the [`MinMax`](crate::normalization::Normalize::normalize_min_max)
     /// method. Then computes a weighted matrix $v_{ij}$ using
     ///
     /// $$ v_{ij} = {w_j}(x_{ij} + 1) $$
@@ -464,7 +464,7 @@ pub trait Rank {
     /// ];
     /// let weights = dvector![0.25, 0.25, 0.25, 0.25];
     /// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
-    /// let normalized_matrix = matrix.normalize_minmax(&criteria_types).unwrap();
+    /// let normalized_matrix = matrix.normalize_min_max(&criteria_types).unwrap();
     /// let ranking = normalized_matrix.rank_mabac(&weights).unwrap();
     /// assert_relative_eq!(ranking, dvector![-0.01955314, -0.31233795,  0.52420052], epsilon = 1e-5);
     /// ```
@@ -472,7 +472,7 @@ pub trait Rank {
 
     /// Ranks the alternatives using the TOPSIS method.
     ///
-    /// The TOPSIS method expects the decision matrix is normalized using the [`MinMax`](crate::normalization::Normalize::normalize_minmax)
+    /// The TOPSIS method expects the decision matrix is normalized using the [`MinMax`](crate::normalization::Normalize::normalize_min_max)
     /// method. Then computes a weighted matrix $v_{ij}$ using
     ///
     /// $$ v_{ij} = x_{ij}{w_j} $$
@@ -523,7 +523,7 @@ pub trait Rank {
     /// ];
     /// let weights = dvector![0.25, 0.25, 0.25, 0.25];
     /// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
-    /// let normalized_matrix = matrix.normalize_minmax(&criteria_types).unwrap();
+    /// let normalized_matrix = matrix.normalize_min_max(&criteria_types).unwrap();
     /// let ranking = normalized_matrix.rank_topsis(&weights).unwrap();
     /// assert_relative_eq!(ranking, dvector![0.52910451, 0.72983217, 0.0], epsilon = 1e-5);
     /// ```
@@ -566,14 +566,14 @@ pub trait Rank {
     /// let weights = dvector![0.25, 0.25, 0.25, 0.25];
     /// let criteria_type = CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
     /// let normalized_matrix = matrix.normalize_sum(&criteria_type).unwrap();
-    /// let ranking = normalized_matrix.rank_weightedproduct(&weights).unwrap();
+    /// let ranking = normalized_matrix.rank_weighted_product(&weights).unwrap();
     /// assert_relative_eq!(
     ///     ranking,
     ///     dvector![0.21711531, 0.17273414, 0.53281425],
     ///     epsilon = 1e-5
     /// );
     /// ```
-    fn rank_weightedproduct(&self, weights: &DVector<f64>) -> Result<DVector<f64>, RankingError>;
+    fn rank_weighted_product(&self, weights: &DVector<f64>) -> Result<DVector<f64>, RankingError>;
 
     /// Rank the alternatives using the Weighted Sum Model.
     ///
@@ -606,10 +606,10 @@ pub trait Rank {
     ///
     /// let matrix = dmatrix![0.2, 0.8; 0.5, 0.5; 0.9, 0.1];
     /// let weights = dvector![0.6, 0.4];
-    /// let ranking = matrix.rank_weightedsum(&weights).unwrap();
+    /// let ranking = matrix.rank_weighted_sum(&weights).unwrap();
     /// assert_relative_eq!(ranking, dvector![0.44, 0.5, 0.58], epsilon = 1e-5);
     /// ```
-    fn rank_weightedsum(&self, weights: &DVector<f64>) -> Result<DVector<f64>, RankingError>;
+    fn rank_weighted_sum(&self, weights: &DVector<f64>) -> Result<DVector<f64>, RankingError>;
 }
 
 impl Rank for DMatrix<f64> {
@@ -945,7 +945,7 @@ impl Rank for DMatrix<f64> {
         Ok(closeness_to_ideal)
     }
 
-    fn rank_weightedproduct(&self, weights: &DVector<f64>) -> Result<DVector<f64>, RankingError> {
+    fn rank_weighted_product(&self, weights: &DVector<f64>) -> Result<DVector<f64>, RankingError> {
         if weights.len() != self.ncols() {
             return Err(RankingError::DimensionMismatch);
         }
@@ -965,7 +965,7 @@ impl Rank for DMatrix<f64> {
         Ok(weighted_matrix.column_product())
     }
 
-    fn rank_weightedsum(&self, weights: &DVector<f64>) -> Result<DVector<f64>, RankingError> {
+    fn rank_weighted_sum(&self, weights: &DVector<f64>) -> Result<DVector<f64>, RankingError> {
         if weights.len() != self.ncols() {
             return Err(RankingError::DimensionMismatch);
         }

@@ -35,7 +35,7 @@ mod critic_tests {
             0.3, 2.48, 1.75, 1.69
         ];
         let criteria_types = CriteriaType::profits(matrix.ncols());
-        let normalized_matrix = matrix.normalize_minmax(&criteria_types)?;
+        let normalized_matrix = matrix.normalize_min_max(&criteria_types)?;
         let weights = normalized_matrix.weight_critic()?;
         let expected_weights = dvector![0.22514451, 0.21769531, 0.24375671, 0.31340347];
         assert_relative_eq!(weights, expected_weights, epsilon = 1e-5);
@@ -130,7 +130,7 @@ mod standard_deviation_tests {
             1.2, 1.34, 0.21, 2.48;
             0.3, 2.48, 1.75, 1.69
         ];
-        let weights = matrix.weight_standarddeviation()?;
+        let weights = matrix.weight_standard_deviation()?;
         let expected_weights = dvector![0.41871179, 0.19503155, 0.25600523, 0.13025143];
         assert_relative_eq!(weights, expected_weights, epsilon = 1e-5);
 
@@ -149,7 +149,7 @@ mod variance_tests {
             0.3, 2.48, 1.75, 1.69
         ];
         let criteria_types = CriteriaType::profits(matrix.ncols());
-        let normalized_matrix = matrix.normalize_minmax(&criteria_types)?;
+        let normalized_matrix = matrix.normalize_min_max(&criteria_types)?;
         let weights = normalized_matrix.weight_variance()?;
         let expected_weights = dvector![0.23572429, 0.26602392, 0.25117527, 0.24707653];
         assert_relative_eq!(weights, expected_weights, epsilon = 1e-5);

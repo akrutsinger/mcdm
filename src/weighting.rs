@@ -76,7 +76,7 @@ pub trait Weight {
     ///
     /// # Weight Calculation
     ///
-    /// Normalize the decision matrix using the [`MinMax`](crate::normalization::Normalize::normalize_minmax) normalization
+    /// Normalize the decision matrix using the [`MinMax`](crate::normalization::Normalize::normalize_min_max) normalization
     /// method.
     ///
     /// Then calculate the standard devision. This reflects the degree of contrast (variation) in that
@@ -278,7 +278,7 @@ pub trait Weight {
     ///
     /// * `Result<DVector<f64>, WeightingError>` - A vector of weights for each criterion, or error
     ///   if the weighting calculation fails.
-    fn weight_standarddeviation(&self) -> Result<DVector<f64>, WeightingError>;
+    fn weight_standard_deviation(&self) -> Result<DVector<f64>, WeightingError>;
 
     /// Calculates the weights for the given decision matrix using variance.
     ///
@@ -290,7 +290,7 @@ pub trait Weight {
     ///
     /// # Weight Calculation
     ///
-    /// Normalize the decision matrix using the [`MinMax`](crate::normalization::Normalize::normalize_minmax) normalization
+    /// Normalize the decision matrix using the [`MinMax`](crate::normalization::Normalize::normalize_min_max) normalization
     /// method.
     ///
     /// Then calculate the variance measure for all of the criteria using:
@@ -470,7 +470,7 @@ impl Weight for DMatrix<f64> {
         Ok(e / e_sum)
     }
 
-    fn weight_standarddeviation(&self) -> Result<DVector<f64>, WeightingError> {
+    fn weight_standard_deviation(&self) -> Result<DVector<f64>, WeightingError> {
         let std = self.row_variance().map(|v| v.sqrt()).transpose();
 
         // Sum of the standard deviations

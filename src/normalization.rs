@@ -35,7 +35,7 @@ use nalgebra::DMatrix;
 ///     0.3, 2.48, 1.75, 1.69
 /// ];
 /// let criteria_types = CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
-/// let normalized_matrix = decision_matrix.normalize_minmax(&criteria_types).unwrap();
+/// let normalized_matrix = decision_matrix.normalize_min_max(&criteria_types).unwrap();
 /// let expected_matrix = dmatrix![
 ///     0.0, 0.85087719, 0.22727273, 0.74683544;
 ///     0.65384615, 0.0, 0.0, 0.0;
@@ -64,7 +64,7 @@ pub trait Normalize {
     ///
     /// * `Result<DMatrix<f64>, NormalizationError>` - A normalized decision matrix, or an error
     ///   if the normalization fails (e.g., due to mismatched dimensions or invalid types).
-    fn normalize_enhancedaccuracy(
+    fn normalize_enhanced_accuracy(
         &self,
         types: &[CriteriaType],
     ) -> Result<DMatrix<f64>, NormalizationError>;
@@ -157,7 +157,8 @@ pub trait Normalize {
     ///
     /// * `Result<DMatrix<f64>, NormalizationError>` - A normalized decision matrix, or an error
     ///   if the normalization fails.
-    fn normalize_minmax(&self, types: &[CriteriaType]) -> Result<DMatrix<f64>, NormalizationError>;
+    fn normalize_min_max(&self, types: &[CriteriaType])
+        -> Result<DMatrix<f64>, NormalizationError>;
 
     /// Considers exponentiation of criterion's minimum and maximum value for normalization.
     ///
@@ -246,14 +247,14 @@ pub trait Normalize {
     ///
     /// * `Result<DMatrix<f64>, NormalizationError>` - A normalized decision matrix, or an error
     ///   if the normalization fails.
-    fn normalize_zavadskasturskis(
+    fn normalize_zavadskas_turskis(
         &self,
         types: &[CriteriaType],
     ) -> Result<DMatrix<f64>, NormalizationError>;
 }
 
 impl Normalize for DMatrix<f64> {
-    fn normalize_enhancedaccuracy(
+    fn normalize_enhanced_accuracy(
         &self,
         types: &[CriteriaType],
     ) -> Result<DMatrix<f64>, NormalizationError> {
@@ -406,7 +407,10 @@ impl Normalize for DMatrix<f64> {
         Ok(normalized_matrix)
     }
 
-    fn normalize_minmax(&self, types: &[CriteriaType]) -> Result<DMatrix<f64>, NormalizationError> {
+    fn normalize_min_max(
+        &self,
+        types: &[CriteriaType],
+    ) -> Result<DMatrix<f64>, NormalizationError> {
         // Check if the matrix is not empty
         if self.is_empty() {
             return Err(NormalizationError::EmptyMatrix);
@@ -552,7 +556,7 @@ impl Normalize for DMatrix<f64> {
         Ok(normalized_matrix)
     }
 
-    fn normalize_zavadskasturskis(
+    fn normalize_zavadskas_turskis(
         &self,
         types: &[CriteriaType],
     ) -> Result<DMatrix<f64>, NormalizationError> {
