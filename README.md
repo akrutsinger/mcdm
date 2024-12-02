@@ -54,11 +54,11 @@ Ranking algorithms combine normalized data and weights to determine the best alt
 | COmbined Distance-based ASessment (CODAS) | Ranks alternatives based on euclidean distance and taxicab distance from the negative ideal solution. |
 | COmplex PRoportional ASsessment (COPRAS) | Ranks alternatives by separately considering the effects of maximizing (beneficial) and minimizing (non-beneficial) index values of attributes. |
 | Evaluation based on Distance from Average Solution (EDAS) | Ranks alternatives based on how alternatives are evaluated with respct to their distance from the mean solution. |
+| Election based on Relative Value Distances (ERVD) | Ranks alternatives based on the distance each alternative is from a value decision which represents a positive or negative ideal solution.
 | Multi-Attributive Border Approximation Area Comparison (MABAC) | A compensatory ranking method that allows for the trade-off between criteria. The general approach is to calculate the distance between each alternative and an ideal solution called the "border approximation area". |
 | Technique for Order of Preference by Similarity to Ideal Solution (TOPSIS)          |   Conceptually says the best alternative should have the shortest geometric distance from the postivei ideal solution and the longest distance form the negative ideal solution.  |
 | Weighted Product Model | Ranks alternatives based on product of each weighted alternative. |
 | Weighted Sum | Ranks alternatives based on the weighted sum of the alternatives criteria values. |
-|  |  |
 
 ## 🚀 Usage
 

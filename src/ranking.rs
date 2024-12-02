@@ -406,6 +406,103 @@ pub trait Rank {
         weights: &DVector<f64>,
     ) -> Result<DVector<f64>, RankingError>;
 
+    /// Ranks the alternatives using the Enhanced Relative Value Decomposition (ERVD) method.
+    ///
+    /// The ERVD method expects the decision matrix is not normalized.
+    ///
+    /// To evaluate decision alternatives, start by defining a decision matrix, $d_{ij}$, where $i$
+    /// represents the alternatives and $j$ represents the criteria.
+    ///
+    /// Then, define the reference points $\mu,j=1,\ldots,m$ for each decision criterion.
+    ///
+    /// Next, normalize the decision matrix using the [`Sum`](crate::normalization::Normalize::normalize_sum)
+    /// method, which gives us the normalized decision matrix $r_{ij}$.
+    ///
+    /// Next, transform the reference points into the normalized scale:
+    ///
+    /// $$ \varphi_j = \frac{\mu_j}{\sum_{i=1}^n d_{ij}} $$
+    ///
+    /// where $\mu_j$ is the $j$th element of the reference point vector and $d_{ij}$ is the $i$th
+    /// row and $j$th column of the decision matrix.
+    ///
+    /// Next, calculate the reference value decision according to criterion $C_j$ by the
+    /// increasing value function for profit criteria:
+    ///
+    /// $$ v_{ij} = \begin{cases}
+    ///     (r_{ij} - \varphi_j)^\alpha & \text{if} \quad r_{ij} > \varphi_j \\\\
+    ///     \text{-}\lambda(\varphi_j - r_{ij})^\alpha & \text{otherwise}
+    /// \end{cases} $$
+    ///
+    /// and decreasing value function for cost criteria:
+    ///
+    ///$$ v_{ij} = \begin{cases}
+    ///     (\varphi_j - r_{ij})^\alpha & \text{if} \quad r_{ij} < \varphi_j \\\\
+    ///     \text{-}\lambda(r_{ij} - \varphi_j)^\alpha & \text{otherwise}
+    /// \end{cases} $$
+    ///
+    ///
+    /// Next, determine the positive ideal solution (PIS), $A^+$, and negative ideal solutions
+    /// (NIS), $A^-$ using:
+    ///
+    /// $$ A^+ = \left\\{ v_1^+, \ldots, v_m^+ \right\\} $$
+    /// $$ A^- = \left\\{ v_1^-, \ldots, v_m^- \right\\} $$
+    ///
+    /// where $v_j^+ = \max_i(v_{ij})$ and $v_j^- = \min_i(v_{ij})$.
+    ///
+    /// Next, calculate the separation measures, $S_i$, from PIS and NIS individually using the
+    /// [Minkowski metric](https://en.wikipedia.org/wiki/Minkowski_distance):
+    ///
+    /// $$ S_i^+ = \sum_{j=1}^m w_j \cdot \left| v_{ij} - v_j^+ \right| $$
+    /// $$ S_i^- = \sum_{j=1}^m w_j \cdot \left| v_{ij} - v_j^- \right| $$
+    ///
+    /// Finally, rank the alternatives by calculating their relative closeness to the ideal solution:
+    ///
+    /// $$ \phi_i = \frac{S_i^-}{S_i^+ + S_i^-} \quad \text{for} \quad i=1, \ldots, n$$
+    ///
+    /// # Arguments
+    ///
+    /// * `types` - A 1D array of criterion types.
+    /// * `weights` - A 1D array of weights corresponding to the relative importance of each
+    ///   criterion.
+    /// * `reference_point` - A 1D array of reference points corresponding to the relative importance
+    ///   of each criterion.
+    /// * `lambda` - A scalar value representing attenuation factor for the losses. Suggested to be
+    ///   between 2.0 and 2.5.Default is 2.25.
+    /// * `alpha` - A scalar value representing the diminishing sensitivity parameter. Default is
+    ///   0.88.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<DVector<f64>, RankingError>` - A 1D array of preference values, or an error if the
+    ///   ranking process fails.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use approx::assert_relative_eq;
+    /// use mcdm::ranking::Rank;
+    /// use nalgebra::{dmatrix, dvector};
+    ///
+    /// let matrix = dmatrix![
+    ///     2.9, 2.31, 0.56, 1.89;
+    ///     1.2, 1.34, 0.21, 2.48;
+    ///     0.3, 2.48, 1.75, 1.69
+    /// ];
+    /// let weights = dvector![0.25, 0.25, 0.25, 0.25];
+    /// let reference_point = dvector![1.46666667, 2.04333333, 0.84, 2.02];
+    /// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
+    /// let ranking = matrix.rank_ervd(&criteria_types, &weights, &reference_point, 0.5, 0.5).unwrap();
+    /// assert_relative_eq!(ranking, dvector![0.30321682, 0.216203469, 1.0], epsilon = 1e-5);
+    /// ```
+    fn rank_ervd(
+        &self,
+        types: &[CriteriaType],
+        weights: &DVector<f64>,
+        reference_point: &DVector<f64>,
+        lambda: f64,
+        alpha: f64,
+    ) -> Result<DVector<f64>, RankingError>;
+
     /// Ranks the alternatives using the Multi-Attributive Border Approximation Area Comparison (MABAC)
     /// method.
     ///
@@ -475,28 +572,28 @@ pub trait Rank {
     /// The TOPSIS method expects the decision matrix is normalized using the [`MinMax`](crate::normalization::Normalize::normalize_min_max)
     /// method. Then computes a weighted matrix $v_{ij}$ using
     ///
-    /// $$ v_{ij} = x_{ij}{w_j} $$
+    /// $$ v_{ij} = r_{ij}{w_j} $$
     ///
-    /// where $x_{ij}$ is the $i$th element of the alternative (row), $j$th elements of the criterion
-    /// (column), and $w_j$ is the weight of the $j$th criterion.
+    /// where $r_{ij}$ is the $i$th element of the alternative (row), $j$th elements of the criterion
+    /// (column) of the normalized decision matrix, and $w_j$ is the weight of the $j$th criterion.
     ///
-    /// We then derive a positive ideal solution (PIS) and a negative ideal solution (NIS). The PIS is
-    /// calculated as the maximum value for each criterion, and the NIS is the minimum value for each
-    /// criterion.
+    /// We then derive a positive ideal solution (PIS), $A_j^+$, and a negative ideal solution (NIS),
+    /// $A_j^-$.
     ///
-    /// $$ v_j^+ = \left\\{v_1^+, v_2^+, \dots, v_n^+\right\\} = \max_j v_{ij} $$
-    /// $$ v_j^- = \left\\{v_1^-, v_2^-, \dots, v_n^-\right\\} = \min_j v_{ij} $$
+    /// $$ A^+ = \left\\{v_1^+, v_2^+, \dots, v_n^+\right\\} = \max_j v_{ij} $$
+    /// $$ A^- = \left\\{v_1^-, v_2^-, \dots, v_n^-\right\\} = \min_j v_{ij} $$
     ///
-    /// where $v_j^+$ is the positive ideal solution, $v_j^-$ is the negative ideal solution, $n$ is the
-    /// number of criteria, and $i$ is the alternative index
+    /// where $v_j^+ = \max_i(v_{ij})$ and $v_j^- = \min_i(v_{ij})$.
     ///
-    /// Finally we determine the distance to the PIS ($D_i^+$) and NIS ($D_i^-$). The distance to the
-    /// PIS is calculated as the square root of the sum of the squares of the differences between the
-    /// weighted matrix row and the PIS. The distance to the NIS is calculated as the square root of the
-    /// sum of the squares of the differences between the weighted matrix row and the NIS as follows:
+    /// Next, calculate the separation measures of each alternative to the PIS, $S_i^+$, and NIS,
+    /// $S_i^-$. The separation measures are computed through Euclidean distance and calculated as:
     ///
-    /// $$ D_i^+ = \sqrt{ \sum_{j=1}^{n} (v_{ij} - v_j^+)^2 } $$
-    /// $$ D_i^- = \sqrt{ \sum_{j=1}^{n} (v_{ij} - v_j^-)^2 } $$
+    /// $$ S_i^+ = \sqrt{ \sum_{j=1}^{n} (v_{ij} - v_j^+)^2 } $$
+    /// $$ S_i^- = \sqrt{ \sum_{j=1}^{n} (v_{ij} - v_j^-)^2 } $$
+    ///
+    /// Finally, calculate the relative closeness of each alternative ot the ideal solution.
+    ///
+    /// $$ \phi_i = \frac{S_i^-}{S_i^+ + S_i^-} $$
     ///
     /// # Arguments
     ///
@@ -862,6 +959,77 @@ impl Rank for DMatrix<f64> {
         let nsn = DVector::from_element(num_alternatives, 1.0) - (sn / max_sn);
 
         Ok((nsp + nsn) / 2.0)
+    }
+
+    fn rank_ervd(
+        &self,
+        types: &[CriteriaType],
+        weights: &DVector<f64>,
+        reference_point: &DVector<f64>,
+        lambda: f64,
+        alpha: f64,
+    ) -> Result<DVector<f64>, RankingError> {
+        let criteria_profits = CriteriaType::profits(types.len());
+        let normalized_matrix = self.normalize_sum(&criteria_profits)?;
+        let reference_point = reference_point.component_div(&self.row_sum().transpose());
+
+        // Calculate the value matrix based on criteria
+        let mut value_matrix = normalized_matrix.clone();
+
+        for (i, row) in normalized_matrix.row_iter().enumerate() {
+            for (j, value) in row.iter().enumerate() {
+                match types[j] {
+                    CriteriaType::Profit => {
+                        if *value > reference_point[j] {
+                            value_matrix[(i, j)] = (value - reference_point[j]).powf(alpha);
+                        } else {
+                            value_matrix[(i, j)] =
+                                (-1.0 * lambda) * (reference_point[j] - value).powf(alpha);
+                        }
+                    }
+                    CriteriaType::Cost => {
+                        if *value < reference_point[j] {
+                            value_matrix[(i, j)] = (reference_point[j] - value).powf(alpha);
+                        } else {
+                            value_matrix[(i, j)] =
+                                (-1.0 * lambda) * (value - reference_point[j]).powf(alpha);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Compute the Positive Ideal Solution (PIS) and Negative Ideal Solution (NIS)
+        let pis = value_matrix
+            .column_iter()
+            .map(|col| col.max())
+            .collect::<Vec<f64>>();
+        let nis = value_matrix
+            .column_iter()
+            .map(|col| col.min())
+            .collect::<Vec<f64>>();
+
+        let pis = DVector::from_vec(pis).transpose();
+        let nis = DVector::from_vec(nis).transpose();
+
+        // Calculate separation measures
+        let mut s_plus: DVector<f64> = DVector::zeros(value_matrix.nrows());
+        let mut s_minus: DVector<f64> = DVector::zeros(value_matrix.nrows());
+
+        for (i, row) in value_matrix.row_iter().enumerate() {
+            for (j, &value) in row.iter().enumerate() {
+                s_plus[i] += weights[j] * (value - pis[j]).abs();
+                s_minus[i] += weights[j] * (value - nis[j]).abs();
+            }
+        }
+
+        let mut ranking = DVector::zeros(self.nrows());
+
+        for i in 0..ranking.nrows() {
+            ranking[i] = s_minus[i] / (s_plus[i] + s_minus[i]);
+        }
+
+        Ok(ranking)
     }
 
     fn rank_mabac(&self, weights: &DVector<f64>) -> Result<DVector<f64>, RankingError> {
