@@ -567,6 +567,114 @@ pub trait Rank {
     /// ```
     fn rank_mabac(&self, weights: &DVector<f64>) -> Result<DVector<f64>, RankingError>;
 
+    /// Ranks alternatives using the Multi-Attributive Ideal-Real Comparative Analysis (MAIRCA)
+    /// method.
+    ///
+    /// The MAIRCA method operates on a normalized decision matrix. The typical normalization method
+    /// used is the [`MinMax`](crate::normalization::Normalize::normalize_min_max) method.
+    ///
+    /// To start, we define a normalied $n \times m$ decision matrix where $n$ is the number of
+    /// alternatives and $m$ is the number of criteria.
+    ///
+    /// $$ x_{ij} =
+    /// \begin{bmatrix}
+    /// x_{11} & x_{12} & \ldots & x_{1m} \\\\
+    /// x_{21} & x_{22} & \ldots & x_{2m} \\\\
+    /// \vdots & \vdots & \ddots & \vdots \\\\
+    /// x_{n1} & x_{n2} & \ldots & x_{nm}
+    /// \end{bmatrix}
+    /// $$
+    ///
+    /// Next, calculate the preference for choosing alternatives using the vector $P_{Ai}$ where
+    ///
+    /// $$ P_{Ai} = \frac{1}{n} $$
+    ///
+    /// Next, calculate a theoretical ranking matrix $T_p$ where
+    ///
+    /// $$ T_p =
+    /// \begin{bmatrix}
+    /// t_{p11} & t_{p12} & \ldots & t_{p1m} \\\\
+    /// t_{p21} & t_{p22} & \ldots & t_{p2m} \\\\
+    /// \vdots & \vdots & \ddots & \vdots \\\\
+    /// t_{pn1} & t_{pn2} & \ldots & t_{pnm}
+    /// \end{bmatrix} =
+    /// \begin{bmatrix}
+    /// P_{A1} \cdot w_1 & P_{A1} \cdot w_2 & \ldots & P_{A1} \cdot w_m \\\\
+    /// P_{A2} \cdot w_1 & P_{A2} \cdot w_2 & \ldots & P_{A2} \cdot w_m \\\\
+    /// \vdots           & \vdots           & \ddots & \vdots \\\\
+    /// P_{An} \cdot w_1 & P_{An} \cdot w_2 & \ldots & P_{An} \cdot w_m
+    /// \end{bmatrix}
+    /// $$
+    ///
+    /// Next, calculate the real rating matrix
+    ///
+    /// $$ T_r =
+    /// \begin{bmatrix}
+    /// t_{r11} & t_{r12} & \ldots & t_{r1m} \\\\
+    /// t_{r21} & t_{r22} & \ldots & t_{r2m} \\\\
+    /// \vdots & \vdots & \ddots & \vdots \\\\
+    /// t_{rn1} & t_{rn2} & \ldots & t_{rnm}
+    /// \end{bmatrix}
+    /// $$
+    ///
+    /// The values of the real rating matrix are dependent on the criteria type. If the criteria
+    /// type is profit:
+    ///
+    /// $$ t_{rij} = t_{pij} \cdot \left(  \frac{x_{ij} - \min(x_j)}{\max(x_j) - \min(x_j)} \right) $$
+    ///
+    /// if the criteria type is cost:
+    ///
+    /// $$ t_{rij} = t_{pij} \cdot \left(  \frac{x_{ij} - \max(x_j)}{\min(x_j) - \max(x_j)} \right) $$
+    ///
+    /// Next, calculate the total gap matrix, $G$, by taking the element-wise difference between the
+    /// theoretical ranking method and the real rating matrix.
+    ///
+    /// $$ G = T_p - T_r  =
+    /// \begin{bmatrix}
+    /// t_{p11} - t_{r11} & t_{p12} - t_{r12} & \ldots & t_{p1m} - t_{r1m} \\\\
+    /// t_{p21} - t_{r21} & t_{p22} - t_{r22} & \ldots & t_{p2m} - t_{r2m} \\\\
+    /// \vdots            & \vdots            & \ddots & \vdots \\\\
+    /// t_{pn1} - t_{rn1} & t_{pn2} - t_{rn2} & \ldots & t_{pnm} - t_{rnm}
+    /// \end{bmatrix}
+    /// $$
+    ///
+    /// Finally, rank the alternatives using the sum of the rows of the gap matrix, $G$.
+    ///
+    /// $$ Q_i = \sum_{j=1}^m g_{ij} $$
+    ///
+    /// Lower values of $Q_i$ indicate that alternative $i$ is ranked higher.
+    ///
+    /// # Arguments
+    ///
+    /// * `weights` - A 1D array of weights corresponding to the relative importance of each
+    ///   criterion.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<DVector<f64>, RankingError>` - A 1D array of preference values, or an error if the
+    ///   ranking process fails.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use approx::assert_relative_eq;
+    /// use mcdm::ranking::Rank;
+    /// use mcdm::normalization::Normalize;
+    /// use nalgebra::{dmatrix, dvector};
+    ///
+    /// let matrix = dmatrix![
+    ///     2.9, 2.31, 0.56, 1.89;
+    ///     1.2, 1.34, 0.21, 2.48;
+    ///     0.3, 2.48, 1.75, 1.69
+    /// ];
+    /// let weights = dvector![0.25, 0.25, 0.25, 0.25];
+    /// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
+    /// let normalized_matrix = matrix.normalize_min_max(&criteria_types).unwrap();
+    /// let ranking = normalized_matrix.rank_mairca(&weights).unwrap();
+    /// assert_relative_eq!(ranking, dvector![0.18125122, 0.27884615, 0.0], epsilon = 1e-5);
+    /// ```
+    fn rank_mairca(&self, weights: &DVector<f64>) -> Result<DVector<f64>, RankingError>;
+
     /// Ranks the alternatives using the TOPSIS method.
     ///
     /// The TOPSIS method expects the decision matrix is normalized using the [`MinMax`](crate::normalization::Normalize::normalize_min_max)
@@ -1061,6 +1169,29 @@ impl Rank for DMatrix<f64> {
         let ranking = q.row_iter().map(|row| row.sum()).collect::<Vec<f64>>();
 
         Ok(DVector::from(ranking))
+    }
+
+    fn rank_mairca(&self, weights: &DVector<f64>) -> Result<DVector<f64>, RankingError> {
+        if weights.len() != self.ncols() {
+            return Err(RankingError::DimensionMismatch);
+        }
+
+        // Theoretical ranking matrix
+        let tp = weights / self.nrows() as f64;
+
+        // Real rating matrix
+        let tr = self.scale_columns(&tp);
+
+        // Total gap matrix
+        let mut g = tr.clone();
+
+        for (i, row) in tr.row_iter().enumerate() {
+            for (j, value) in row.iter().enumerate() {
+                g[(i, j)] = tp[j] - value;
+            }
+        }
+
+        Ok(g.column_sum())
     }
 
     fn rank_topsis(&self, weights: &DVector<f64>) -> Result<DVector<f64>, RankingError> {
