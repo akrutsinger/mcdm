@@ -68,7 +68,7 @@ To start using `mcdm`, add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-mcdm = "0.1"
+mcdm = "0.2"
 ```
 
 ### 🧪 Example
