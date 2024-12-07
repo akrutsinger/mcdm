@@ -675,6 +675,114 @@ pub trait Rank {
     /// ```
     fn rank_mairca(&self, weights: &DVector<f64>) -> Result<DVector<f64>, RankingError>;
 
+    /// Ranks alternatives using the Measurement of Alternatives and Ranking according to COmpromise
+    /// Solutions (MARCOS) method.
+    ///
+    /// The MARCOS method is designed to rank alternatives of a non-normalized decision matrix based
+    /// on their performance across multiple criteria. It combines normalization, ideal solutions,
+    /// and compromise approaches to evaulate alternatives.
+    ///
+    /// We start by defining an augmented decision matrix, $M$, with $n$ rows of alternatives and
+    /// $m$ columns of criteria. The first row of $M$ defines the anti-ideal ($aam$) solution, and
+    /// the last row defines the ideal ($aim$) solution.
+    ///
+    /// $$ M = \begin{bmatrix}
+    /// x_{aa1} & x_{aa2} & \ldots & x_{aam} \\\\
+    /// x_{11} & x_{12} & \ldots & x_{1m} \\\\
+    /// x_{21} & x_{22} & \ldots & x_{2m} \\\\
+    /// \vdots & \vdots & \ddots & \vdots \\\\
+    /// x_{n1} & x_{n2} & \ldots & x_{nm} \\\\
+    /// x_{ai1} & x_{ai2} & \ldots & x_{aim} \\\\
+    /// \end{bmatrix}
+    /// $$
+    ///
+    /// The ideal solution ($AI$) and anti-ideal solution ($AAI$) values for cost ($C$) and profit
+    /// ($P$) criteria are defined as:
+    ///
+    /// $$ AI = \begin{cases}
+    ///     \max_i(x_{ij}) & \text{if } j \in P \\\\
+    ///     \min_i(x_{ij}) & \text{if } j \in C
+    /// \end{cases} $$
+    ///
+    /// $$ AAI = \begin{cases}
+    ///     \min_i(x_{ij}) & \text{if } j \in P \\\\
+    ///     \max_i(x_{ij}) & \text{if } j \in C
+    /// \end{cases} $$
+    ///
+    /// Next, normalize the decision matrix using the following:
+    ///
+    /// $$ r_{ij} = \begin{cases}
+    ///     \frac{x_{ij}}{x_{aij}} & \text{if } j \in P \\\\
+    ///     \frac{x_{aij}}{x_{ij}} & \text{if } j \in C
+    /// \end{cases} $$
+    ///
+    /// where $x_{ij}$ is the value of alternative $i$ in criterion $j$ and $x_{ai}$ is the value of
+    /// the ideal solution for criterion $j$.
+    ///
+    /// Next, calculate the weighted matrix as:
+    ///
+    /// $$ v_{ij} = w_j \cdot (r_{ij} + 1) $$
+    ///
+    /// Next, calculate the degrees of utility, $K_i$ of each alternative where $K_i^+$ is the ideal
+    /// solution and $K_i^-$ is the anti-ideal solution:
+    ///
+    /// $$ K_i^+ = \frac{S_i}{S_ai} $$
+    /// $$ K_i^- = \frac{S_i}{S_aai} $$
+    ///
+    /// where $S_i (i = 1, \ldots, n)$ represents the sum of the elemnts of the weighted matrix $V$
+    /// as represented by:
+    ///
+    /// $$ S_i = \sum_{i=1}^n v_{ij} $$
+    ///
+    ///
+    /// Next, calculate the utility of each alternative where $f(K_i^+)$ is the utility of the ideal
+    /// solution and $f(K_i^-)$ is the utility of the anti-ideal solution defined as:
+    ///
+    /// $$ f(K_i^+) = \frac{K_i^+}{K_i^+ + K_i^-} $$
+    /// $$ f(K_i^-) = \frac{K_i^-}{K_i^+ + K_i^-} $$
+    ///
+    /// Finally, calculate ranking by making a determination from the utility functions:
+    ///
+    /// $$ f(K_i) = \frac{K_i^+ + K_i^-}{1 + \frac{1 - f(K_i^+)}{f(K_i^+)} + \frac{1 - f(K_i^-)}{f(K_i^-)}} $$
+    ///
+    /// # Arguments
+    ///
+    /// Finally, calculate the preference values:
+    ///
+    /// # Arguments
+    ///
+    /// * `types` - A 1D array of criterion types.
+    /// * `weights` - A 1D array of weights corresponding to the relative importance of each
+    ///   criterion.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<DVector<f64>, RankingError>` - A 1D array of preference values, or an error if the
+    ///   ranking process fails.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use approx::assert_relative_eq;
+    /// use mcdm::ranking::Rank;
+    /// use nalgebra::{dmatrix, dvector};
+    ///
+    /// let matrix = dmatrix![
+    ///     2.9, 2.31, 0.56, 1.89;
+    ///     1.2, 1.34, 0.21, 2.48;
+    ///     0.3, 2.48, 1.75, 1.69
+    /// ];
+    /// let weights = dvector![0.25, 0.25, 0.25, 0.25];
+    /// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
+    /// let ranking = matrix.rank_marcos(&criteria_types, &weights).unwrap();
+    /// assert_relative_eq!(ranking, dvector![0.51306940, 0.36312213, 0.91249658], epsilon = 1e-5);
+    /// ```
+    fn rank_marcos(
+        &self,
+        types: &[CriteriaType],
+        weights: &DVector<f64>,
+    ) -> Result<DVector<f64>, RankingError>;
+
     /// Ranks the alternatives using the TOPSIS method.
     ///
     /// The TOPSIS method expects the decision matrix is normalized using the [`MinMax`](crate::normalization::Normalize::normalize_min_max)
@@ -1192,6 +1300,67 @@ impl Rank for DMatrix<f64> {
         }
 
         Ok(g.column_sum())
+    }
+
+    fn rank_marcos(
+        &self,
+        types: &[CriteriaType],
+        weights: &DVector<f64>,
+    ) -> Result<DVector<f64>, RankingError> {
+        let (num_alternatives, num_criteria) = self.shape();
+
+        if num_alternatives == 0 || num_criteria == 0 {
+            return Err(RankingError::EmptyMatrix);
+        }
+
+        if types.len() != num_criteria || weights.len() != num_criteria {
+            return Err(RankingError::DimensionMismatch);
+        }
+
+        let max_criteria_values = self.column_iter().map(|x| x.max()).collect::<Vec<f64>>();
+        let min_criteria_values = self.column_iter().map(|x| x.min()).collect::<Vec<f64>>();
+        let max_criteria_values = DVector::from_vec(max_criteria_values);
+        let min_criteria_values = DVector::from_vec(min_criteria_values);
+
+        let mut exmatrix = DMatrix::zeros(num_alternatives + 2, num_criteria);
+        exmatrix.rows_mut(0, num_alternatives).copy_from(self);
+
+        for j in 0..num_criteria {
+            match types[j] {
+                CriteriaType::Profit => {
+                    exmatrix[(num_alternatives, j)] = max_criteria_values[j];
+                    exmatrix[(num_alternatives + 1, j)] = min_criteria_values[j];
+                }
+                CriteriaType::Cost => {
+                    exmatrix[(num_alternatives, j)] = min_criteria_values[j];
+                    exmatrix[(num_alternatives + 1, j)] = max_criteria_values[j];
+                }
+            }
+        }
+
+        let normalized_exmatrix = exmatrix.normalize_marcos(types)?;
+
+        let weighted_matrix = normalized_exmatrix.scale_columns(weights);
+
+        // Utility degree
+        let s = weighted_matrix.column_sum();
+        let mut k_neg = DVector::zeros(num_alternatives);
+        let mut k_pos = DVector::zeros(num_alternatives);
+        for i in 0..num_alternatives {
+            k_neg[i] = s[i] / s[exmatrix.nrows() - 1];
+            k_pos[i] = s[i] / s[exmatrix.nrows() - 2];
+        }
+
+        // Utility function
+        let sum_k = &k_pos + &k_neg;
+        let f_k_pos = k_neg.component_div(&sum_k);
+        let f_k_neg = k_pos.component_div(&sum_k);
+        let one = DVector::from_element(num_alternatives, 1.0);
+        let denominator = &one
+            + (&one - &f_k_pos).component_div(&f_k_pos)
+            + (&one - &f_k_neg).component_div(&f_k_neg);
+
+        Ok(sum_k.component_div(&denominator))
     }
 
     fn rank_topsis(&self, weights: &DVector<f64>) -> Result<DVector<f64>, RankingError> {

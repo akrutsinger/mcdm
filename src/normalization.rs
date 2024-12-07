@@ -116,6 +116,10 @@ pub trait Normalize {
         types: &[CriteriaType],
     ) -> Result<DMatrix<f64>, NormalizationError>;
 
+    /// Normalization function specific to the [`MARCOS`](crate::ranking::Rank::rank_marcos) ranking
+    /// method.
+    fn normalize_marcos(&self, types: &[CriteriaType]) -> Result<DMatrix<f64>, NormalizationError>;
+
     /// Consider maximum rating of criterion for a given criteria.
     ///
     /// For profit:
@@ -366,6 +370,36 @@ impl Normalize for DMatrix<f64> {
                 normalized_matrix[(i, j)] = match types[j] {
                     CriteriaType::Cost => (1.0 - ln_ratio) / (self.nrows() as f64 - 1.0),
                     CriteriaType::Profit => ln_ratio,
+                };
+            }
+        }
+
+        Ok(normalized_matrix)
+    }
+
+    fn normalize_marcos(&self, types: &[CriteriaType]) -> Result<DMatrix<f64>, NormalizationError> {
+        if self.is_empty() {
+            return Err(NormalizationError::EmptyMatrix);
+        }
+
+        if types.len() != self.ncols() {
+            return Err(NormalizationError::NormalizationCriteraTypeMismatch);
+        }
+
+        // Initialize a matrix to store the normalized values
+        let mut normalized_matrix = DMatrix::<f64>::zeros(self.nrows(), self.ncols());
+
+        for (j, col) in self.column_iter().enumerate() {
+            let next_to_last_row_value = self[(self.nrows() - 3, j)];
+            // Avoid division by zero
+            if next_to_last_row_value.abs() < f64::EPSILON {
+                return Err(NormalizationError::ZeroRange);
+            }
+
+            for (i, value) in col.iter().enumerate() {
+                normalized_matrix[(i, j)] = match types[j] {
+                    CriteriaType::Cost => next_to_last_row_value / value,
+                    CriteriaType::Profit => value / next_to_last_row_value,
                 };
             }
         }
