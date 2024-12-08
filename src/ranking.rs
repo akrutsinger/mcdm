@@ -783,6 +783,67 @@ pub trait Rank {
         weights: &DVector<f64>,
     ) -> Result<DVector<f64>, RankingError>;
 
+    /// Ranks alternatives using the Multi-Objective Optimization on the basis of Ratio Analysis
+    /// (MOORA) method.
+    ///
+    /// The MOORA rankign method operates on a non-normalized decision matrix. This method ranks
+    /// alternatives by optimizing multiple objectives, such as maximizing benefits and minimizing
+    /// costs.
+    ///
+    /// We start by assuming all criteria are profits and normalize the decision matrix, $x_{ij}$,
+    /// using the [`Vector`](crate::normalization::Normalize::normalize_vector) method:
+    ///
+    /// $$ r_{ij} = \frac{x_{ij}}{\sqrt{\sum_{i=1}^m x^2_{ij}}} $$
+    ///
+    /// where $x_{ij}$ is the $i$th alternative (row) and $j$th criterion (column).
+    ///
+    /// Next, calculate the weighted matrix as:
+    ///
+    /// $$ v_{ij} = w_j \cdot r_{ij} $$
+    ///
+    /// Next, calculate the sums of the profit, $S_p$, and cost criteira, $S_c$:
+    ///
+    /// $$ S_p = \sum_{j=1}^m v_{ij} \quad \text{if } j \text{ is a profit criterion} $$
+    /// $$ S_c = \sum_{j=1}^m v_{ij} \quad \text{if } j \text{ is a cost criterion} $$
+    ///
+    /// Finally, calculate the composite score $y_i$ as:
+    ///
+    /// $$ y_i = S_p - S_c $$
+    ///
+    /// # Arguments
+    ///
+    /// * `types` - A 1D array of criterion types.
+    /// * `weights` - A 1D array of weights corresponding to the relative importance of each
+    ///   criterion.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<DVector<f64>, RankingError>` - A 1D array of preference values, or an error if the
+    ///   ranking process fails.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use approx::assert_relative_eq;
+    /// use mcdm::ranking::Rank;
+    /// use nalgebra::{dmatrix, dvector};
+    ///
+    /// let matrix = dmatrix![
+    ///     2.9, 2.31, 0.56, 1.89;
+    ///     1.2, 1.34, 0.21, 2.48;
+    ///     0.3, 2.48, 1.75, 1.69
+    /// ];
+    /// let weights = dvector![0.25, 0.25, 0.25, 0.25];
+    /// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
+    /// let ranking = matrix.rank_moora(&criteria_types, &weights).unwrap();
+    /// assert_relative_eq!(ranking, dvector![-0.12902028, -0.14965973,  0.26377149], epsilon = 1e-5);
+    /// ```
+    fn rank_moora(
+        &self,
+        types: &[CriteriaType],
+        weights: &DVector<f64>,
+    ) -> Result<DVector<f64>, RankingError>;
+
     /// Ranks the alternatives using the TOPSIS method.
     ///
     /// The TOPSIS method expects the decision matrix is normalized using the [`MinMax`](crate::normalization::Normalize::normalize_min_max)
@@ -1361,6 +1422,55 @@ impl Rank for DMatrix<f64> {
             + (&one - &f_k_neg).component_div(&f_k_neg);
 
         Ok(sum_k.component_div(&denominator))
+    }
+
+    fn rank_moora(
+        &self,
+        types: &[CriteriaType],
+        weights: &DVector<f64>,
+    ) -> Result<DVector<f64>, RankingError> {
+        let (num_alternatives, num_criteria) = self.shape();
+
+        if num_alternatives == 0 || num_criteria == 0 {
+            return Err(RankingError::EmptyMatrix);
+        }
+
+        if types.len() != num_criteria {
+            return Err(RankingError::DimensionMismatch);
+        }
+
+        if weights.len() != self.ncols() {
+            return Err(RankingError::DimensionMismatch);
+        }
+
+        let normalized_matrix = self.normalize_vector(&CriteriaType::profits(types.len()))?;
+        let weighted_matrix = normalized_matrix.scale_columns(weights);
+
+        let sum_normalized_profit = DVector::from_iterator(
+            num_alternatives,
+            weighted_matrix.row_iter().map(|row| {
+                row.iter()
+                    .zip(types.iter())
+                    .filter(|&(_, c_type)| *c_type == CriteriaType::Profit)
+                    .map(|(&val, _)| val)
+                    .sum::<f64>()
+            }),
+        );
+
+        let sum_normalized_cost = DVector::from_iterator(
+            num_alternatives,
+            weighted_matrix.row_iter().map(|row| {
+                row.iter()
+                    .zip(types.iter())
+                    .filter(|&(_, c_type)| *c_type == CriteriaType::Cost)
+                    .map(|(&val, _)| val)
+                    .sum::<f64>()
+            }),
+        );
+
+        let ranking = &sum_normalized_profit - &sum_normalized_cost;
+
+        Ok(ranking)
     }
 
     fn rank_topsis(&self, weights: &DVector<f64>) -> Result<DVector<f64>, RankingError> {
