@@ -189,6 +189,29 @@ pub trait Normalize {
         types: &[CriteriaType],
     ) -> Result<DMatrix<f64>, NormalizationError>;
 
+    /// Normalization function specific to the [`OCRA`](crate::ranking::Rank::rank_ocra) ranking
+    /// method.
+    ///
+    /// For profit:
+    /// $$r_{ij} = \frac{x_{ij} - \min_j(x_{ij})}{\min_j(x_{ij})}$$
+    ///
+    /// For cost:
+    /// $$r_{ij} = \frac{\max_j(x_{ij}) - x_{ij}}{\min_j(x_{ij})}$$
+    ///
+    /// where $x_{ij}$ is the $i$th element of the alternative (row), $j$th elements of the criterion
+    /// (column), $\max_j$ is the maximum criterion value, and $\min_j$ is the minimum value in the
+    /// decision matrix.
+    ///
+    /// # Arguments
+    ///
+    /// * `types` - An array slice indicating if each criterion is a profit or cost.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<DMatrix<f64>, NormalizationError>` - A normalized decision matrix, or an error
+    ///   if the normalization fails.
+    fn normalize_ocra(&self, types: &[CriteriaType]) -> Result<DMatrix<f64>, NormalizationError>;
+
     /// Considers the sum of the criteria values for normalization.
     ///
     /// For profit:
@@ -514,6 +537,41 @@ impl Normalize for DMatrix<f64> {
                 normalized_matrix[(i, j)] = match types[j] {
                     CriteriaType::Cost => (min_value / value).powi(3),
                     CriteriaType::Profit => (value / max_value).powi(2),
+                };
+            }
+        }
+
+        Ok(normalized_matrix)
+    }
+
+    fn normalize_ocra(&self, types: &[CriteriaType]) -> Result<DMatrix<f64>, NormalizationError> {
+        // Check if the matrix is not empty
+        if self.is_empty() {
+            return Err(NormalizationError::EmptyMatrix);
+        }
+
+        // Ensure enough criteria types for all criteria
+        if types.len() != self.ncols() {
+            return Err(NormalizationError::NormalizationCriteraTypeMismatch);
+        }
+
+        // Initialize a matrix to store the normalized values
+        let mut normalized_matrix = DMatrix::<f64>::zeros(self.nrows(), self.ncols());
+
+        // Iterate over each column (criterion)
+        for (j, col) in self.column_iter().enumerate() {
+            let min_value = col.min();
+            let max_value = col.max();
+
+            // Avoid division by zero
+            if (max_value - min_value).abs() < f64::EPSILON {
+                return Err(NormalizationError::ZeroRange);
+            }
+
+            for (i, value) in col.iter().enumerate() {
+                normalized_matrix[(i, j)] = match types[j] {
+                    CriteriaType::Cost => (max_value - value) / min_value,
+                    CriteriaType::Profit => (value - min_value) / min_value,
                 };
             }
         }

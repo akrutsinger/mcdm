@@ -786,7 +786,7 @@ pub trait Rank {
     /// Ranks alternatives using the Multi-Objective Optimization on the basis of Ratio Analysis
     /// (MOORA) method.
     ///
-    /// The MOORA rankign method operates on a non-normalized decision matrix. This method ranks
+    /// The MOORA ranking method operates on a non-normalized decision matrix. This method ranks
     /// alternatives by optimizing multiple objectives, such as maximizing benefits and minimizing
     /// costs.
     ///
@@ -839,6 +839,69 @@ pub trait Rank {
     /// assert_relative_eq!(ranking, dvector![-0.12902028, -0.14965973,  0.26377149], epsilon = 1e-5);
     /// ```
     fn rank_moora(
+        &self,
+        types: &[CriteriaType],
+        weights: &DVector<f64>,
+    ) -> Result<DVector<f64>, RankingError>;
+
+    /// Ranks alternatives using the Operational Competitiveness Rating Analysis (OCRA) method.
+    ///
+    /// The OCRA ranking method operates on a non-normalized decision matrix. This method ranks
+    /// alternatives by comparing their performance across multiple criteria. It is designed to
+    /// handle both beneficial critieria (those to be maximized, such as profits or quality) and
+    /// non-beneficial criteria (those to be minimized, such as costs or environmental impact).
+    ///
+    /// We start by normalizing the decision matrix, $x_{ij}$, using the [`OCRA`](crate::normalization::Normalize::normalize_ocra)
+    /// method:
+    ///
+    /// For profit:
+    /// $$r_{ij} = \frac{x_{ij} - \min_j(x_{ij})}{\min_j(x_{ij})}$$
+    ///
+    /// For cost:
+    /// $$r_{ij} = \frac{\max_j(x_{ij}) - x_{ij}}{\min_j(x_{ij})}$$
+    ///
+    /// Next, determine the preferences for profit, $\bar{\bar{I_i}}$, and cost, $\bar{\bar{O_i}}$:
+    ///
+    /// $$ \bar{\bar{I_i}} = \bar{I_i} - \min(\bar{I_i}) $$
+    /// $$ \bar{\bar{O_i}} = \bar{O_i} - \min(\bar{O_i}) $$
+    ///
+    /// where $\bar{I_i}$ is a measure of relative performance for the $i$th alternative and cost
+    /// criteria, and $\bar{O_i}$ is a measure of relative cost for the $i$th alternative and profit
+    /// criteria.
+    ///
+    /// Finally, determine the overall preference, $P_i$ of the alternatives:
+    ///
+    /// $$ P_i = \left( \bar{\bar{I_i}} + \bar{\bar{O_i}} \right) - \min\left( \bar{\bar{I_i}} + \bar{\bar{O_i}} \right) $$
+    ///
+    /// # Arguments
+    ///
+    /// * `types` - A 1D array of criterion types.
+    /// * `weights` - A 1D array of weights corresponding to the relative importance of each
+    ///   criterion.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<DVector<f64>, RankingError>` - A 1D array of preference values, or an error if the
+    ///   ranking process fails.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use approx::assert_relative_eq;
+    /// use mcdm::ranking::Rank;
+    /// use nalgebra::{dmatrix, dvector};
+    ///
+    /// let matrix = dmatrix![
+    ///     2.9, 2.31, 0.56, 1.89;
+    ///     1.2, 1.34, 0.21, 2.48;
+    ///     0.3, 2.48, 1.75, 1.69
+    /// ];
+    /// let weights = dvector![0.25, 0.25, 0.25, 0.25];
+    /// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
+    /// let ranking = matrix.rank_ocra(&criteria_types, &weights).unwrap();
+    /// assert_relative_eq!(ranking, dvector![0.0, 0.73175174, 3.64463555], epsilon = 1e-5);
+    /// ```
+    fn rank_ocra(
         &self,
         types: &[CriteriaType],
         weights: &DVector<f64>,
@@ -1469,6 +1532,52 @@ impl Rank for DMatrix<f64> {
         );
 
         let ranking = &sum_normalized_profit - &sum_normalized_cost;
+
+        Ok(ranking)
+    }
+
+    fn rank_ocra(
+        &self,
+        types: &[CriteriaType],
+        weights: &DVector<f64>,
+    ) -> Result<DVector<f64>, RankingError> {
+        let (num_alternatives, num_criteria) = self.shape();
+
+        if num_alternatives == 0 || num_criteria == 0 {
+            return Err(RankingError::EmptyMatrix);
+        }
+
+        if types.len() != num_criteria {
+            return Err(RankingError::DimensionMismatch);
+        }
+
+        if weights.len() != num_criteria {
+            return Err(RankingError::DimensionMismatch);
+        }
+
+        let normalized_matrix = self.normalize_ocra(types)?;
+
+        let mut i = DVector::zeros(num_alternatives);
+        let mut o = DVector::zeros(num_alternatives);
+        for (j, col) in normalized_matrix.column_iter().enumerate() {
+            match types[j] {
+                CriteriaType::Profit => {
+                    i += weights[j] * col;
+                }
+                CriteriaType::Cost => {
+                    o += weights[j] * col;
+                }
+            }
+        }
+
+        let i_min = i.min();
+        let o_min = o.min();
+        i.apply(|x| *x -= i_min);
+        o.apply(|x| *x -= o_min);
+
+        let i_o_sum = i + o;
+        let i_o_min = i_o_sum.min();
+        let ranking = i_o_sum.map(|x| x - i_o_min);
 
         Ok(ranking)
     }
