@@ -381,6 +381,88 @@ mod ocra_tests {
     }
 }
 
+mod probid_tests {
+    use super::*;
+
+    #[test]
+    fn test_rank_with_odd_num_alternatives() -> Result<(), McdmError> {
+        let matrix = dmatrix![
+            2.9, 2.31, 0.56, 1.89;
+            1.2, 1.34, 0.21, 2.48;
+            0.3, 2.48, 1.75, 1.69
+        ];
+        let weights = dvector![0.25, 0.25, 0.25, 0.25];
+        let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1])?;
+        let ranking = matrix.rank_probid(&criteria_types, &weights, false)?;
+        assert_relative_eq!(
+            ranking,
+            dvector![0.31041914, 0.39049427, 1.1111652],
+            epsilon = 1e-5
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_rank_with_even_num_alternatives() -> Result<(), McdmError> {
+        let matrix = dmatrix![
+            2.9, 2.31, 0.56, 1.89;
+            1.2, 1.34, 0.21, 2.48;
+            0.3, 2.48, 1.75, 1.69;
+            1.3, 1.48, 1.2, 0.69
+        ];
+        let weights = dvector![0.25, 0.25, 0.25, 0.25];
+        let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1])?;
+        let ranking = matrix.rank_probid(&criteria_types, &weights, false)?;
+        assert_relative_eq!(
+            ranking,
+            dvector![0.39286123, 0.40670392, 1.04890283, 0.84786888],
+            epsilon = 1e-5
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_simple_rank() -> Result<(), McdmError> {
+        let matrix = dmatrix![
+            2.9, 2.31, 0.56, 1.89;
+            1.2, 1.34, 0.21, 2.48;
+            0.3, 2.48, 1.75, 1.69
+        ];
+        let weights = dvector![0.25, 0.25, 0.25, 0.25];
+        let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1])?;
+        let ranking = matrix.rank_probid(&criteria_types, &weights, true)?;
+        assert_relative_eq!(
+            ranking,
+            dvector![0.0, 1.31254211, 3.3648893],
+            epsilon = 1e-5
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_simple_rank_with_more_than_four_alts() -> Result<(), McdmError> {
+        let matrix = dmatrix![
+            2.9, 2.31, 0.56, 1.89;
+            1.2, 1.34, 0.21, 2.48;
+            0.3, 2.48, 1.75, 1.69;
+            1.3, 1.48, 1.2, 0.69
+        ];
+        let weights = dvector![0.25, 0.25, 0.25, 0.25];
+        let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1])?;
+        let ranking = matrix.rank_probid(&criteria_types, &weights, true)?;
+        assert_relative_eq!(
+            ranking,
+            dvector![0.33826075, 0.52928193, 3.95966538, 1.77215771],
+            epsilon = 1e-5
+        );
+
+        Ok(())
+    }
+}
+
 mod topsis_tests {
     use super::*;
 

@@ -907,6 +907,121 @@ pub trait Rank {
         weights: &DVector<f64>,
     ) -> Result<DVector<f64>, RankingError>;
 
+    /// Rank alternatives using Preference Ranking on the Basis of Ideal-Average Distance (PROBID)
+    /// method.
+    ///
+    /// This ranking method operates on a non-normalized decision matrix. It ranks alternatives
+    /// based on their proximity to an ideal solution while considering average performance of
+    /// alternatives.
+    ///
+    /// Start with a decision matrix, $x_{ij}$, where $i$ represents alternatives and $j$ represents
+    /// criteria.
+    ///
+    /// Normalize the decision matrix using the [`Vector`](crate::normalization::Normalize::normalize_vector)
+    /// method to get the normalized matri, $r_{ij}$.
+    ///
+    /// Next, calculate the normalized weighted decision matrix, $v_{ij}$:
+    ///
+    /// $$ v_{ij} = w_j \cdot r_{ij} $$
+    ///
+    /// where $w_j$ is the weight of the $j$th criterion.
+    ///
+    /// Next, sort the normalized weighted decision matrix by criteria and criteria type. This will
+    /// create a matrix of successive Positive Ideal Solutions. We represent the sorted normalized
+    /// weighted decision matrix, $A_{(k)}$ as:
+    ///
+    /// $$ \begin{split}
+    /// A_{(k)} &= \left\\{ (\text{Largest}(v_j, k) | j \in J), \ldots, (\text{Smallest}(v_j, k) | j \in J^\prime) \right\\} \\\\
+    ///         &= \left\\{ v_{(k)1}, v_{(k)2}, \ldots, v_{(k)n} \right\\}
+    /// \end{split} $$
+    ///
+    /// where $k \in \\{1, 2, \ldots, m\\}$, $J$ is the set of profit criteria, and $J^\prime$ is the
+    /// set of cost criteria.
+    ///
+    /// Next, find the average value of each objective column as:
+    ///
+    /// $$ \bar{v}\_j = \frac{\sum_{k=1}^m v_{(k)j}}{m} \quad \text{for } j \in \\{1,2,\ldots,n\\} $$
+    ///
+    /// and the average solution given by:
+    ///
+    /// $$ \bar{A} = \left( \bar{v}\_1, \bar{v}\_2, \ldots, \bar{v}\_n \right) $$
+    ///
+    /// Next, iteratively calculate the distance of each solution to the ideal solutions and the
+    /// average solution. The distance to the ideal solutions is:
+    ///
+    /// $$ S_{i(k)} = \sqrt{\sum_{j=1}^n \left( v_{ij} - v\_{(k)j} \right)^2} \quad \text{for } i \in \\{1,2,\ldots,m\\} $$
+    ///
+    /// Next, determind overall positive ideal distance, $S_i^+$, and negative ideal distance,
+    /// $S_i^-$ as:
+    ///
+    /// $$ S_i^+ = \begin{cases}
+    ///     \sum_{k=1}^{(m+1)/2} \frac{1}{k} S_{i(k)} & i \in \\{1,2,\ldots,m\\} \text{when } m \text{ is odd} \\\\
+    ///     \sum_{k=1}^{m/2} \frac{1}{k} S_{i(k)} & i \in \\{1,2,\ldots,m\\} \text{when } m \text{ is even}
+    /// \end{cases} $$
+    ///
+    /// $$ S_i^- = \begin{cases}
+    ///     \sum_{k=(m+1)/2}^m \frac{1}{m-k+1} S_{i(k)} & i \in \\{1,2,\ldots,m\\} \text{when } m \text{ is odd} \\\\
+    ///     \sum_{k=m/2+1}^m \frac{1}{m-k+1} S_{i(k)} & i \in \\{1,2,\ldots,m\\} \text{when } m \text{ is even}
+    /// \end{cases} $$
+    ///
+    /// For the simpler PROBID method, the distance calculate is slightly different:
+    ///
+    /// $$ S_i^+ = \begin{cases}
+    ///     \sum_{k=1}^{m/4} \frac{1}{k} S_{i(k)} & i \in \\{1,2,\ldots,m\\} \text{when } m \geq 4 \\\\
+    ///     S_{i(1)} & i \in \\{1,2,\ldots,m\\} \text{when } 0<m<4
+    /// \end{cases} $$
+    ///
+    /// $$ S_i^- = \begin{cases}
+    ///     \sum_{k=m+1-(m/4)}^m \frac{1}{m-k+1} S_{i(k)} & i \in \\{1,2,\ldots,m\\} \text{when } m \text{ is odd} \\\\
+    ///     S_{i(m)} & i \in \\{1,2,\ldots,m\\} \text{when } 0<m<4
+    /// \end{cases} $$
+    ///
+    /// Next, calculate the positive ideal to negative ideal ration, $R_i$:
+    ///
+    /// $$ R_i = \frac{S_i^+}{S_i^-} $$
+    ///
+    /// Finally, compute the performance score as:
+    ///
+    /// $$ P_i = \frac{1}{1 + R_i^2} + S_{i(\text{avg})} $$
+    ///
+    /// # Arguments
+    ///
+    /// * `types` - A 1D array of criterion types.
+    /// * `weights` - A 1D array of weights corresponding to the relative importance of each
+    ///   criterion.
+    /// * `simpler_probid` - A boolean value indicating whether to use the simpler PROBID method.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<DVector<f64>, RankingError>` - A 1D array of preference values, or an error if the
+    ///   ranking process fails.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use approx::assert_relative_eq;
+    /// use mcdm::ranking::Rank;
+    /// use nalgebra::{dmatrix, dvector};
+    ///
+    /// let matrix = dmatrix![
+    ///     2.9, 2.31, 0.56, 1.89;
+    ///     1.2, 1.34, 0.21, 2.48;
+    ///     0.3, 2.48, 1.75, 1.69
+    /// ];
+    /// let weights = dvector![0.25, 0.25, 0.25, 0.25];
+    /// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
+    /// let ranking = matrix.rank_probid(&criteria_types, &weights, false).unwrap();
+    /// assert_relative_eq!(ranking, dvector![0.31041914, 0.39049427, 1.1111652], epsilon = 1e-5);
+    /// let ranking = matrix.rank_probid(&criteria_types, &weights, true).unwrap();
+    /// assert_relative_eq!(ranking, dvector![0.0, 1.31254211, 3.3648893], epsilon = 1e-5);
+    /// ```
+    fn rank_probid(
+        &self,
+        types: &[CriteriaType],
+        weights: &DVector<f64>,
+        simpler_probid: bool,
+    ) -> Result<DVector<f64>, RankingError>;
+
     /// Ranks the alternatives using the TOPSIS method.
     ///
     /// The TOPSIS method expects the decision matrix is normalized using the [`MinMax`](crate::normalization::Normalize::normalize_min_max)
@@ -1578,6 +1693,113 @@ impl Rank for DMatrix<f64> {
         let i_o_sum = i + o;
         let i_o_min = i_o_sum.min();
         let ranking = i_o_sum.map(|x| x - i_o_min);
+
+        Ok(ranking)
+    }
+
+    fn rank_probid(
+        &self,
+        types: &[CriteriaType],
+        weights: &DVector<f64>,
+        simpler_probid: bool,
+    ) -> Result<DVector<f64>, RankingError> {
+        let (num_alternatives, num_criteria) = self.shape();
+
+        if num_alternatives == 0 || num_criteria == 0 {
+            return Err(RankingError::EmptyMatrix);
+        }
+
+        if types.len() != num_criteria {
+            return Err(RankingError::DimensionMismatch);
+        }
+
+        if weights.len() != num_criteria {
+            return Err(RankingError::DimensionMismatch);
+        }
+
+        let normalized_matrix = self.normalize_vector(&CriteriaType::profits(num_criteria))?;
+        let weighted_matrix = normalized_matrix.scale_columns(weights);
+
+        let mut pis_matrix = weighted_matrix.clone();
+        for (j, column) in weighted_matrix.column_iter().enumerate() {
+            let mut column_vec: Vec<f64> = column.iter().cloned().collect();
+            match types[j] {
+                CriteriaType::Profit => {
+                    column_vec
+                        .sort_by(|a, b| b.partial_cmp(a).unwrap_or(core::cmp::Ordering::Equal));
+                    // Descending order
+                }
+                CriteriaType::Cost => {
+                    column_vec
+                        .sort_by(|a, b| a.partial_cmp(b).unwrap_or(core::cmp::Ordering::Equal));
+                    // Ascending order
+                }
+            }
+
+            pis_matrix
+                .column_mut(j)
+                .copy_from(&DVector::from_vec(column_vec));
+        }
+
+        let average_pis = pis_matrix.row_mean();
+
+        let mut si = DMatrix::zeros(num_alternatives, num_alternatives);
+        for i in 0..num_alternatives {
+            let alt = weighted_matrix.row(i);
+            for j in 0..num_alternatives {
+                si[(i, j)] = (alt - pis_matrix.row(j)).map(|x| x.powi(2)).sum().sqrt();
+            }
+        }
+
+        let si_average: DVector<f64> = DVector::from_vec(
+            weighted_matrix
+                .row_iter()
+                .map(|row| (row - average_pis.clone()).map(|x| x.powi(2)).sum().sqrt())
+                .collect(),
+        );
+
+        let m = num_alternatives;
+        let mut si_pos_ideal = DVector::zeros(m);
+        let mut si_neg_ideal = DVector::zeros(m);
+
+        let ranking: DVector<f64> = if !simpler_probid {
+            let lim = if m % 2 == 1 { (m + 1) / 2 } else { m / 2 };
+
+            for k in 1..=lim {
+                let factor = 1.0 / k as f64;
+                si_pos_ideal += si.column(k - 1) * factor;
+            }
+
+            for k in lim..=m {
+                let factor = 1.0 / (m - k + 1) as f64;
+                si_neg_ideal += si.column(k - 1) * factor;
+            }
+
+            let ri = si_pos_ideal.component_div(&si_neg_ideal);
+            DVector::from_iterator(
+                m,
+                ri.iter()
+                    .zip(si_average.iter())
+                    .map(|(r, s)| 1.0 / (1.0 + r.powi(2)) + s),
+            )
+        } else {
+            if m >= 4 {
+                for k in 1..=m / 4 {
+                    let factor = 1.0 / k as f64;
+                    si_pos_ideal += si.column(k - 1) * factor;
+                }
+
+                for k in (m + 1 - m / 4)..=m {
+                    let factor = 1.0 / (m - k + 1) as f64;
+                    si_neg_ideal += si.column(k - 1) * factor;
+                }
+            } else {
+                si_pos_ideal = si.row(0).transpose();
+                si_neg_ideal = si.row(m - 1).transpose();
+            }
+
+            si_neg_ideal.component_div(&si_pos_ideal)
+        };
 
         Ok(ranking)
     }
