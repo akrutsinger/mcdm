@@ -1022,6 +1022,67 @@ pub trait Rank {
         simpler_probid: bool,
     ) -> Result<DVector<f64>, RankingError>;
 
+    /// Rank alternatives using the Root Assessment Method (RAM).
+    ///
+    /// The RAM method expects the decision matrix is normalized using the [`Sum`](crate::normalization::Normalize::normalize_sum)
+    /// method. This method ranks alternatives by comparing them to a root or reference alternative.
+    /// RAM considers both the relative performance of alternatives and their deviation from the
+    /// reference point, ensuring a balanced evaluation across multiple criteria.
+    ///
+    /// We start with a normalized decision matrix $r_{ij}$. We typically expect the decision matrix
+    /// normalized using the [`Sum`](crate::normalization::Normalize::normalize_sum) method.
+    ///
+    /// Next, calculate the weighted decision matrix:
+    ///
+    /// $$ v_{ij} = r_{ij} w_j $$
+    ///
+    /// Next, calculate the sums of weighted normalized scored for the profit ($\_{+i}$) and cost
+    /// ($\_{-i}$) criteria of the $i$th alternative:
+    ///
+    /// $$ S_{+i} = \sum_{j=1}^n y_{+ij}^+ $$
+    ///
+    /// $$ S_{-i} = \sum_{j=1}^n y_{-ij}^- $$
+    ///
+    /// Finally, compute the performance score as:
+    ///
+    /// $$ P_i = \sqrt[{2 + S_{-i}}]{2 + S_{+i}}$$
+    ///
+    /// Alternatives with higher $P_i$ values are more preferred.
+    ///
+    /// # Arguments
+    ///
+    /// * `types` - A 1D array of criterion types.
+    /// * `weights` - A 1D array of weights corresponding to the relative importance of each
+    ///   criterion.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<DVector<f64>, RankingError>` - A 1D array of preference values, or an error if the
+    ///   ranking process fails.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use approx::assert_relative_eq;
+    /// use mcdm::ranking::Rank;
+    /// use nalgebra::{dmatrix, dvector};
+    ///
+    /// let matrix = dmatrix![
+    ///     2.9, 2.31, 0.56, 1.89;
+    ///     1.2, 1.34, 0.21, 2.48;
+    ///     0.3, 2.48, 1.75, 1.69
+    /// ];
+    /// let weights = dvector![0.25, 0.25, 0.25, 0.25];
+    /// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
+    /// let ranking = matrix.rank_ram(&criteria_types, &weights).unwrap();
+    /// assert_relative_eq!(ranking, dvector![1.40671879, 1.39992479, 1.48267751], epsilon = 1e-5);
+    /// ```
+    fn rank_ram(
+        &self,
+        types: &[CriteriaType],
+        weights: &DVector<f64>,
+    ) -> Result<DVector<f64>, RankingError>;
+
     /// Ranks the alternatives using the TOPSIS method.
     ///
     /// The TOPSIS method expects the decision matrix is normalized using the [`MinMax`](crate::normalization::Normalize::normalize_min_max)
@@ -1804,6 +1865,59 @@ impl Rank for DMatrix<f64> {
         Ok(ranking)
     }
 
+    fn rank_ram(
+        &self,
+        types: &[CriteriaType],
+        weights: &DVector<f64>,
+    ) -> Result<DVector<f64>, RankingError> {
+        let (num_alternatives, num_criteria) = self.shape();
+
+        if num_alternatives == 0 || num_criteria == 0 {
+            return Err(RankingError::EmptyMatrix);
+        }
+
+        if types.len() != num_criteria {
+            return Err(RankingError::DimensionMismatch);
+        }
+
+        if weights.len() != num_criteria {
+            return Err(RankingError::DimensionMismatch);
+        }
+
+        let normalized_matrix = &self.normalize_sum(&CriteriaType::profits(num_criteria))?;
+
+        let weighted_matrix = normalized_matrix.scale_columns(weights);
+
+        // Vectors of PIS and NIS
+        let spi = DVector::from_iterator(
+            num_alternatives,
+            weighted_matrix.row_iter().map(|row| {
+                row.iter()
+                    .zip(types.iter())
+                    .filter(|&(_, c_type)| *c_type == CriteriaType::Profit)
+                    .map(|(&val, _)| val)
+                    .sum::<f64>()
+            }),
+        );
+        let smi = DVector::from_iterator(
+            num_alternatives,
+            weighted_matrix.row_iter().map(|row| {
+                row.iter()
+                    .zip(types.iter())
+                    .filter(|&(_, c_type)| *c_type == CriteriaType::Cost)
+                    .map(|(&val, _)| val)
+                    .sum()
+            }),
+        );
+
+        let spi_plus_2 = spi.add_scalar(2.0);
+        let smi_plus_2 = smi.add_scalar(2.0);
+        let ranking = spi_plus_2.zip_map(&smi_plus_2, |spi_elem, smi_elem| {
+            spi_elem.powf(1.0 / smi_elem)
+        });
+
+        Ok(ranking)
+    }
     fn rank_topsis(&self, weights: &DVector<f64>) -> Result<DVector<f64>, RankingError> {
         if weights.len() != self.ncols() {
             return Err(RankingError::DimensionMismatch);

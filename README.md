@@ -61,6 +61,7 @@ Ranking algorithms combine normalized data and weights to determine the best alt
 | Multi-Objective Optimization on the basis of Ratio Analysis (MOORA) | Ranking method that ranks alternatives based on multiple conflicting criteria. |
 | Operational Competitiveness Rating Analysis (OCRA) | The OCRA ranking method operates on a non-normalized decision matrix. This method ranks alternatives by comparing their performance across multiple criteria. It is designed to handle both beneficial critieria (those to be maximized, such as profits or quality) and non-beneficial criteria (those to be minimized, such as costs or environmental impact). |
 | Preference Ranking on the Basis of Ideal-Average Distance (PROBID) | Ranks alternatives based on their proximity to an ideal solution while considering average performance of alternatives. |
+| Root Assessment Method (RAM) | Ranks alternatives by comparing them to a root or reference alternative. RAM considers both the relative performance of alternatives and their deviation from the reference point, ensuring a balanced evaluation across multiple criteria. |
 | Technique for Order of Preference by Similarity to Ideal Solution (TOPSIS)          |   Conceptually says the best alternative should have the shortest geometric distance from the postivei ideal solution and the longest distance form the negative ideal solution.  |
 | Weighted Product Model | Ranks alternatives based on product of each weighted alternative. |
 | Weighted Sum | Ranks alternatives based on the weighted sum of the alternatives criteria values. |
