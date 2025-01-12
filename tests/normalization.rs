@@ -163,6 +163,30 @@ mod ocra_tests {
     }
 }
 
+mod rim_tests {
+    use super::*;
+
+    #[test]
+    fn test_normalize() -> Result<(), McdmError> {
+        let matrix = dmatrix![
+            2.9, 2.31, 0.56, 1.89;
+            1.2, 1.34, 0.21, 2.48;
+            0.3, 2.48, 1.75, 1.69
+        ];
+        let criteria_range = dmatrix![0.1, 3.0; 1.0, 2.48; 0.0, 1.9; 0.69, 3.1];
+        let reference_ideal = dmatrix![0.1, 0.1; 2.48, 2.48; 1.9, 1.9; 0.69, 0.69];
+        let normalized_matrix = matrix.normalize_rim(&criteria_range, &reference_ideal)?;
+        let expected_matrix = dmatrix![
+            0.03448276, 0.88513514, 0.29473684, 0.50207469;
+            0.62068966, 0.22972973, 0.11052632, 0.25726141;
+            0.93103448, 1.0,        0.92105263, 0.58506224
+        ];
+        assert_relative_eq!(normalized_matrix, expected_matrix, epsilon = 1e-5);
+
+        Ok(())
+    }
+}
+
 mod sum_tests {
     use super::*;
 
