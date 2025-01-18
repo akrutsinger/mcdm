@@ -163,6 +163,31 @@ mod ocra_tests {
     }
 }
 
+mod spotis_tests {
+    use super::*;
+
+    #[test]
+    fn test_normalize() -> Result<(), McdmError> {
+        let matrix = dmatrix![
+            2.9, 2.31, 0.56, 1.89;
+            1.2, 1.34, 0.21, 2.48;
+            0.3, 2.48, 1.75, 1.69
+        ];
+        let criteria_types = CriteriaType::from(vec![-1, 1, 1, -1])?;
+        let bounds = dmatrix![0.1, 3.0; 1.0, 2.48; 0.0, 1.9; 0.69, 3.1];
+        let normalized_matrix = matrix.normalize_spotis(&criteria_types, &bounds)?;
+        let expected_matrix = dmatrix![
+            0.96551724, 0.11486486, 0.70526316, 0.49792531;
+            0.37931034, 0.77027027, 0.88947368, 0.74273859;
+            0.06896552, 0.0       , 0.07894737, 0.41493776
+        ];
+
+        assert_relative_eq!(normalized_matrix, expected_matrix, epsilon = 1e-5);
+
+        Ok(())
+    }
+}
+
 mod sum_tests {
     use super::*;
 

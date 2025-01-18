@@ -40,10 +40,12 @@ pub mod dmatrix_ext;
 pub mod errors;
 pub mod normalization;
 pub mod ranking;
+pub mod validation;
 pub mod weighting;
 
 pub use dmatrix_ext::DMatrixExt;
 pub use errors::ValidationError;
+pub use validation::{MatrixValidate, VectorValidate};
 
 /// Enum to represent the type of each criterion: either Cost or Profit.
 #[derive(Clone, Debug, PartialEq, Eq)]

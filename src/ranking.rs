@@ -4,6 +4,7 @@ use crate::errors::RankingError;
 use crate::normalization::Normalize;
 use crate::CriteriaType;
 use crate::DMatrixExt;
+use crate::MatrixValidate;
 use nalgebra::{DMatrix, DVector};
 
 /// A trait for ranking alternatives in Multiple-Criteria Decision Making (MCDM).
@@ -1083,6 +1084,82 @@ pub trait Rank {
         weights: &DVector<f64>,
     ) -> Result<DVector<f64>, RankingError>;
 
+    /// Rank alternatives using the Stable Preference Ordering Towards Ideal Solution (SPOTIS)
+    /// method.
+    ///
+    /// The SPOTIS method expects an un-normalized decision matrix. This method evaluates given
+    /// decision alternatives using the distance from the best ideal solution.
+    ///
+    /// Start with an $n \times m$ decision matrix of elements $x_{ij}$ where $n$ is the number of
+    /// alternatives and $m$ is the number of criteria.
+    ///
+    /// Next, normalize the decision matrix using the [`SPOTIS`](crate::normalization::Normalize::normalize_spotis)-specific
+    /// method. This method define the bounds of the problem. Minimum and Maximum bounds of classical MCDM
+    /// MCDM problems must be defined to transform MCDM problems from ill-defined to well-defined.
+    ///
+    /// $$ \left[ S_j^{\min}, S_j^{\max}\right], j \in \\{1, 2, \ldots, m\\} $$
+    ///
+    /// $S_j^*$ is the ideal solution point. This is a vector which includes maximum or minimum
+    /// values from the bounds or specific criterion depending on the crition type. Take the maximum
+    /// value for profit criteria and miimum value for cost criteria.
+    ///
+    /// $$ S_j^* = \begin{cases}
+    ///     S_j^{\min} & \text{if } j \text{th criteria is cost} \\\\
+    ///     S_j^{\max} & \text{if } j \text{th criteria is profit}
+    /// \end{cases} $$
+    ///
+    /// The normalized matrix, $d_{ij}$ is the normalized distance matrix. For each alternative
+    /// $A_i, i \in \\{1, 2, \ldots, n\\}$, calculate its normalized distance with respect to the
+    /// ideal solution for each criteria $C_j, j \in \\{1, 2, \ldots, m\\}$:
+    ///
+    /// $$ d_{ij} = \frac{A_{ij} - S_j^*}{S_j^{\max} - S_j^{\min}} $$
+    ///
+    /// Finally, calculate the performance score as:
+    ///
+    /// $$ P_i = \sum_{j=1}^m w_j d_{ij} $$
+    ///
+    /// Alternatives with lower $P_i$ values are more preferred because $P_i$ is interpreted as
+    /// distance from the ideal or expected solution.
+    ///
+    /// # Arguments
+    ///
+    /// * `types` - A 1D array of criterion types.
+    /// * `weights` - A 1D array of weights corresponding to the relative importance of each
+    ///   criterion.
+    /// * `bounds` - A 2D array that defines the decision problembounds of the criteria. Each row
+    ///   represent the bounds for a given criterion. The first value is the lower bound and the
+    ///   second value is the upper bound. Row one corresponds to criterion one, and so on.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<DVector<f64>, RankingError>` - A 1D array of preference values, or an error if the
+    ///   ranking process fails.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use approx::assert_relative_eq;
+    /// use mcdm::ranking::Rank;
+    /// use nalgebra::{dmatrix, dvector};
+    ///
+    /// let matrix = dmatrix![
+    ///     2.9, 2.31, 0.56, 1.89;
+    ///     1.2, 1.34, 0.21, 2.48;
+    ///     0.3, 2.48, 1.75, 1.69
+    /// ];
+    /// let weights = dvector![0.25, 0.25, 0.25, 0.25];
+    /// let bounds = dmatrix![0.1, 3.0; 1.0, 2.48; 0.0, 1.9; 0.69, 3.1];
+    /// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
+    /// let ranking = matrix.rank_spotis(&criteria_types, &weights, &bounds).unwrap();
+    /// assert_relative_eq!(ranking, dvector![0.57089264, 0.69544822, 0.14071266], epsilon = 1e-5);
+    /// ```
+    fn rank_spotis(
+        &self,
+        types: &[CriteriaType],
+        weights: &DVector<f64>,
+        bounds: &DMatrix<f64>,
+    ) -> Result<DVector<f64>, RankingError>;
+
     /// Ranks the alternatives using the TOPSIS method.
     ///
     /// The TOPSIS method expects the decision matrix is normalized using the [`MinMax`](crate::normalization::Normalize::normalize_min_max)
@@ -1915,6 +1992,34 @@ impl Rank for DMatrix<f64> {
         let ranking = spi_plus_2.zip_map(&smi_plus_2, |spi_elem, smi_elem| {
             spi_elem.powf(1.0 / smi_elem)
         });
+
+        Ok(ranking)
+    }
+    fn rank_spotis(
+        &self,
+        types: &[CriteriaType],
+        weights: &DVector<f64>,
+        bounds: &DMatrix<f64>,
+    ) -> Result<DVector<f64>, RankingError> {
+        let (num_alternatives, num_criteria) = self.shape();
+
+        if num_alternatives == 0 || num_criteria == 0 {
+            return Err(RankingError::EmptyMatrix);
+        }
+
+        if (types.len() != num_criteria)
+            || (weights.len() != num_criteria)
+            || (bounds.nrows() != num_criteria)
+        {
+            return Err(RankingError::DimensionMismatch);
+        }
+
+        bounds.is_bounds_valid()?;
+        self.is_within_bounds(bounds)?;
+
+        let normalized_matrix = self.normalize_spotis(types, bounds)?;
+
+        let ranking = normalized_matrix.scale_columns(weights).column_sum();
 
         Ok(ranking)
     }

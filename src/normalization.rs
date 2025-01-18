@@ -2,7 +2,7 @@
 
 use crate::errors::NormalizationError;
 use crate::CriteriaType;
-use nalgebra::DMatrix;
+use nalgebra::{DMatrix, DVector};
 
 /// A trait for normalizing decision matrices in Multiple-Criteria Decision Making (MCDM) problems.
 ///
@@ -211,6 +211,32 @@ pub trait Normalize {
     /// * `Result<DMatrix<f64>, NormalizationError>` - A normalized decision matrix, or an error
     ///   if the normalization fails.
     fn normalize_ocra(&self, types: &[CriteriaType]) -> Result<DMatrix<f64>, NormalizationError>;
+
+    /// Normalization function specific to the [`SPOTIS`](crate::ranking::Rank::rank_spotis) ranking
+    /// method.
+    ///
+    /// Calculate the normalized distance matrix. For each alternative
+    /// $A_i, i \in \\{1, 2, \ldots, n\\}$, calculate its normalized distance with respect to the
+    /// ideal solution for each criteria $C_j, j \in \\{1, 2, \ldots, m\\}$:
+    ///
+    /// $$ r_{ij} = \frac{A_{ij} - S_j^*}{S_j^{\max} - S_j^{\min}} $$
+    ///
+    /// # Arguments
+    ///
+    /// * `types` - An array slice indicating if each criterion is a profit or cost.
+    /// * `bounds` - A 2D array that defines the decision problembounds of the criteria. Each row
+    ///   represent the bounds for a given criterion. The first value is the lower bound and the
+    ///   second value is the upper bound. Row one corresponds to criterion one, and so on.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<DMatrix<f64>, NormalizationError>` - A normalized decision matrix, or an error
+    ///   if the normalization fails.
+    fn normalize_spotis(
+        &self,
+        types: &[CriteriaType],
+        bounds: &DMatrix<f64>,
+    ) -> Result<DMatrix<f64>, NormalizationError>;
 
     /// Considers the sum of the criteria values for normalization.
     ///
@@ -574,6 +600,44 @@ impl Normalize for DMatrix<f64> {
                     CriteriaType::Profit => (value - min_value) / min_value,
                 };
             }
+        }
+
+        Ok(normalized_matrix)
+    }
+
+    fn normalize_spotis(
+        &self,
+        types: &[CriteriaType],
+        bounds: &DMatrix<f64>,
+    ) -> Result<DMatrix<f64>, NormalizationError> {
+        // Check if the matrix is not empty
+        if self.is_empty() {
+            return Err(NormalizationError::EmptyMatrix);
+        }
+
+        // Ensure enough criteria types for all criteria
+        if types.len() != self.ncols() {
+            return Err(NormalizationError::NormalizationCriteraTypeMismatch);
+        }
+
+        let mut expected_solution_point = DVector::zeros(self.ncols());
+
+        for (i, row) in bounds.row_iter().enumerate() {
+            expected_solution_point[i] = match types[i] {
+                CriteriaType::Cost => row.min(),
+                CriteriaType::Profit => row.max(),
+            }
+        }
+
+        let range = bounds.column(0) - bounds.column(1);
+
+        let mut normalized_matrix = DMatrix::zeros(self.nrows(), self.ncols());
+
+        for (i, row) in self.row_iter().enumerate() {
+            let normalized_row = (row - &expected_solution_point.transpose())
+                .component_div(&range.transpose())
+                .map(|val: f64| val.abs());
+            normalized_matrix.set_row(i, &normalized_row);
         }
 
         Ok(normalized_matrix)
