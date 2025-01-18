@@ -554,6 +554,58 @@ mod topsis_tests {
     }
 }
 
+mod waspas_tests {
+    use super::*;
+    use mcdm::CriteriaType;
+
+    #[test]
+    fn test_rank() -> Result<(), McdmError> {
+        let matrix = dmatrix![
+            2.9, 2.31, 0.56, 1.89;
+            1.2, 1.34, 0.21, 2.48;
+            0.3, 2.48, 1.75, 1.69
+        ];
+        let weights = dvector![0.25, 0.25, 0.25, 0.25];
+        let criteria_type = CriteriaType::from(vec![-1, 1, 1, -1])?;
+        let lambda = 0.5;
+        let normalized_matrix = matrix.normalize_linear(&criteria_type)?;
+        let ranking = normalized_matrix.rank_waspas(&weights, lambda)?;
+        assert_relative_eq!(
+            ranking,
+            dvector![0.48487887, 0.36106779, 1.0],
+            epsilon = 1e-5
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_rank_with_invalid_dimensions() -> Result<(), McdmError> {
+        let matrix = dmatrix![0.2, 0.8; 0.5, 0.5; 0.9, 0.1];
+        let weights = dvector![0.6];
+        let ranking = matrix.rank_waspas(&weights, 0.5);
+        assert!(ranking.is_err());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_rank_with_invalid_lambda() -> Result<(), McdmError> {
+        let matrix = dmatrix![
+            2.9, 2.31, 0.56, 1.89;
+            1.2, 1.34, 0.21, 2.48;
+            0.3, 2.48, 1.75, 1.69
+        ];
+        let weights = dvector![0.25, 0.25, 0.25, 0.25];
+        let ranking = matrix.rank_waspas(&weights, -0.1);
+        assert!(ranking.is_err());
+
+        let ranking = matrix.rank_waspas(&weights, 1.1);
+        assert!(ranking.is_err());
+
+        Ok(())
+    }
+}
 mod weighted_product_tests {
     use super::*;
     use mcdm::CriteriaType;

@@ -64,6 +64,7 @@ Ranking algorithms combine normalized data and weights to determine the best alt
 | Root Assessment Method (RAM) | Ranks alternatives by comparing them to a root or reference alternative. RAM considers both the relative performance of alternatives and their deviation from the reference point, ensuring a balanced evaluation across multiple criteria. |
 | Stable Preference Ordering Towards Ideal Solution (SPOTIS) | Ranks alternatives based on their distance from an ideal solution |
 | Technique for Order of Preference by Similarity to Ideal Solution (TOPSIS)          |   Conceptually says the best alternative should have the shortest geometric distance from the postivei ideal solution and the longest distance form the negative ideal solution.  |
+| Weighted Aggregated Sum Product ASessment (WASPAS) | Ranks alternatives using both the Weighted Product and Weighted Sum models. WASPAS uses a preferance value, lambda, to give more preferance towards either the Weighted Product or Weighted Sum models. Preferances can be equal towards both models as well. |
 | Weighted Product Model | Ranks alternatives based on product of each weighted alternative. |
 | Weighted Sum | Ranks alternatives based on the weighted sum of the alternatives criteria values. |
 

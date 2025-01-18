@@ -1219,6 +1219,74 @@ pub trait Rank {
     /// ```
     fn rank_topsis(&self, weights: &DVector<f64>) -> Result<DVector<f64>, RankingError>;
 
+    /// Rank alternatives using the Weighted Aggregated Sum Product ASessment (WASPAS) method.
+    ///
+    /// The WASPAS method expects the decision matrix is normalized using the [`Linear`](crate::normalization::Normalize::normalize_linear)
+    /// method. The WASPAS ranking method is a combination of the [`WeightedProduct`](Rank::rank_weighted_product)
+    /// and [`WeightedSum`](Rank::rank_weighted_sum) ranking methods.
+    ///
+    /// We start by calculating the [`WeightedProduct`](Rank::rank_weighted_product), $WPM$, and
+    /// [`WeightedSum`](Rank::rank_weighted_sum), $WSM$.
+    ///
+    /// $$ WPM = \prod_{j=1}^m(r_{ij})^{w_j} $$
+    /// $$ WSM = \sum_{j=1}^m r_{ij}{w_j} $$
+    ///
+    /// where $w_j$ is the weight of the $j$th criterion and $r_{ij}$ is the normalized decision
+    /// matrix at the $i$th alternative and $j$th criterion.
+    ///
+    /// Lastly, calculate the total relative importance for each alternative:
+    ///
+    /// $$ \begin{split}
+    /// Q_i &= \lambda WSM + (1-\lambda)WPM \\\\
+    ///     &= \lambda \sum_{j=1}^m r_{ij}{w_j} + (1-\lambda) \prod_{j=1}^m(r_{ij})^{w_j}
+    /// \end{split} $$
+    ///
+    /// Higher values of $Q_i$ are more preferred alternatives.
+    ///
+    /// # Arguments
+    ///
+    /// * `weights` - A 1D array of weights corresponding to the relative importance of each
+    ///   criterion.
+    /// * `lambda` - Preferance value between 0.0 and 1.0. The default value is 0.5. A value of 0.5
+    ///   means equal preferance between WPM and WSM ranking. A value less than 0.5 shift preference
+    ///   in favor of WPM. A value greater than 0.5 shift preference in favor of WSM ranking.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<DVector<f64>, RankingError>` - A 1D array of preference values, or an error if the
+    ///   ranking process fails.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use approx::assert_relative_eq;
+    /// use mcdm::ranking::Rank;
+    /// use mcdm::normalization::Normalize;
+    /// use mcdm::CriteriaType;
+    /// use nalgebra::{dmatrix, dvector};
+    ///
+    /// let matrix = dmatrix![
+    ///     2.9, 2.31, 0.56, 1.89;
+    ///     1.2, 1.34, 0.21, 2.48;
+    ///     0.3, 2.48, 1.75, 1.69
+    /// ];
+    /// let weights = dvector![0.25, 0.25, 0.25, 0.25];
+    /// let criteria_type = CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
+    /// let lambda = 0.5;
+    /// let normalized_matrix = matrix.normalize_linear(&criteria_type).unwrap();
+    /// let ranking = normalized_matrix.rank_waspas(&weights, lambda).unwrap();
+    /// assert_relative_eq!(
+    ///     ranking,
+    ///     dvector![0.48487887, 0.36106779, 1.0],
+    ///     epsilon = 1e-5
+    /// );
+    /// ```
+    fn rank_waspas(
+        &self,
+        weights: &DVector<f64>,
+        lambda: f64,
+    ) -> Result<DVector<f64>, RankingError>;
+
     /// Computes the Weighted Product Model (WPM) preference values for alternatives.
     ///
     /// The WPM model expects the decision matrix is normalized using the [`Sum`](crate::normalization::Normalize::normalize_sum) method. Then computes
@@ -2073,6 +2141,26 @@ impl Rank for DMatrix<f64> {
         Ok(closeness_to_ideal)
     }
 
+    fn rank_waspas(
+        &self,
+        weights: &DVector<f64>,
+        lambda: f64,
+    ) -> Result<DVector<f64>, RankingError> {
+        if weights.len() != self.ncols() {
+            return Err(RankingError::DimensionMismatch);
+        }
+
+        if !(0.0..=1.0).contains(&lambda) {
+            return Err(RankingError::InvalidValue);
+        }
+
+        let q_sum = self.rank_weighted_sum(weights)?;
+        let q_product = self.rank_weighted_product(weights)?;
+
+        let ranking = (lambda * q_sum) + ((1.0 - lambda) * q_product);
+
+        Ok(ranking)
+    }
     fn rank_weighted_product(&self, weights: &DVector<f64>) -> Result<DVector<f64>, RankingError> {
         if weights.len() != self.ncols() {
             return Err(RankingError::DimensionMismatch);
