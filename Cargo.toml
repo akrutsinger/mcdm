@@ -3,7 +3,7 @@ name = "mcdm"
 description = "A Rust library to assist with solving Multiple-Criteria Decision Making (MCDM) problems."
 categories = ["science", "mathematics"]
 keywords = ["mcdm", "multiple-criteria", "decision-making", "optimization", "ranking"]
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 license = "MIT"
 documentation = "https://docs.rs/mcdm"
@@ -19,7 +19,7 @@ std = []
 alloc = []
 
 [dependencies]
-error_set = "0.6"
+error_set = "0.8"
 nalgebra = { version = "0.33", default-features = false, features = ["alloc", "libm", "macros"]  }
 
 [dev-dependencies]

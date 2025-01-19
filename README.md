@@ -75,7 +75,8 @@ To start using `mcdm`, add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-mcdm = "0.2"
+# TODO: replace the * with the latest version
+mcdm = "0.*"
 ```
 
 ### 🧪 Example
