@@ -1,6 +1,7 @@
 //! Techniques for ranking alternatives.
 
 use crate::errors::RankingError;
+use crate::is_reference_ideal_bounds_valid;
 use crate::normalization::Normalize;
 use crate::CriteriaType;
 use crate::DMatrixExt;
@@ -1084,6 +1085,103 @@ pub trait Rank {
         weights: &DVector<f64>,
     ) -> Result<DVector<f64>, RankingError>;
 
+    /// Rank alternatives using the Reference Ideal Method (RIM).
+    ///
+    /// The RIM method expects a non-normalized decision matrix and uses criteria bounds and
+    /// reference ideal to evaluate alternatives.
+    ///
+    /// We start by defining the terms:
+    ///
+    /// * Criteria weights: $w_j$, $j \in \\{1, 2, \ldots, N\\}$ where $N$ is the number of criteria.
+    /// * Decision matrix: $X = [x_{ij}]_{M \times N}$ where $M$ is the number of alternatives and
+    ///   $N$ is the number of criteria.
+    /// * Criteria Range: $t_j = [t_j^{(\min)}, t_j^{(\max)}]$, $j \in \\{1, 2, \ldots, N\\}$. This
+    ///   defines an artibrary bounds for each criterion.
+    /// * Reference Ideal: $s_j = [s_j^{(\min)}, s_j^{(\max)}]$, $j \in \\{1, 2, \ldots, N\\}$ where
+    ///   $[s_j^{(\min)}, s_j^{(\max)}] \subset [t_j^{(\min)}, t_j^{(\max)}]$. The Reference Ideal
+    ///   defines the most preferred interval of values for each criterion. It can be derived from
+    ///   the criteria range or defined as the expected outcome of the decision process.
+    ///
+    /// Now we need to normalize the decision matrix $X$ using the [`RIM`](crate::normalization::Normalize::normalize_rim) normalization function:
+    ///
+    /// $$ f(x, \[A,B\], \[C,D\]) = \begin{cases}
+    ///     1 & \text{if } x \in \[C,D\] \\\\
+    ///     1 - \frac{d_{\min}(x, \[C,D\])}{|A-C|} & \text{if } x \in \[A,C\] \land A \neq C \\\\
+    ///     1 - \frac{d_{\min}(x, \[C,D\])}{|D-B|} & \text{if } x \in \[D,B\] \land D \neq B
+    /// \end{cases} $$
+    ///
+    /// where $\[A,B\]$ is the criteria range, $\[C,D\]$ is the reference ideal, and $x \in \[A,B\],\[C,D\] \subset \[A,B\]$.
+    /// The function $d_{\min}(x, \[C,D\])$ is defined as:
+    ///
+    /// $$ d_{\min}(x, \[C,D\]) = \min(|x - C|, |x - D|) $$
+    ///
+    /// The normalization lets us map the value $x$ to the range $\[0,1\]$ in the criteria domain with
+    /// regard to the ideal reference value. The RIM normalization is calculated as:
+    ///
+    /// $$ Y = \[y_{ij}\]_{M \times N} = \[f(x\_{ij}, t_j, s_j)\]\_{M \times N} $$
+    ///
+    /// Next, calculate the weighted normalized matrix $Y\prime$:
+    ///
+    /// $$ Y^\prime = \[y^\prime_{ij}\]_{M \times N} = \[w_j y\_{ij}\]\_{M \times N} $$
+    ///
+    /// Next, calculate the variation to the normalized reference ideal for each alternative $A_i$:
+    ///
+    /// $$ I^+_i = \sqrt{\sum\_{j=1}^n (y^\prime\_{ij} - w_j)^2}$$
+    ///
+    /// $$ I^-_i = \sqrt{\sum\_{j=1}^n (y^\prime)^2}$$
+    ///
+    /// Lastly, calculate the relative index of each alternative:
+    ///
+    /// $$ P_i = \frac{I^+_i}{I^+_i + I^-_i} $$
+    ///
+    /// Higher values of $P_i$ indicate more preferred alternatives.
+    ///
+    /// # Arguments
+    ///
+    /// * `types` - A 1D array of criterion types.
+    /// * `weights` - A 1D array of weights corresponding to the relative importance of each
+    ///   criterion.
+    /// * `criteria_range` - A 2D array that defines the arbitrarily chosen bounds of the criteria.
+    ///   Each row represent the bounds for a given criterion. The first value is the lower bound
+    ///   and the second value is the upper bound. Row one corresponds to criterion one, and so on.
+    /// * `reference_ideal` - A 2D array that defines the most preferred interval of values for each
+    ///   criterion. Each row represent the bounds for a given criterion. The first value is the lower
+    ///   bound and the second value is the upper bound. Row one corresponds to criterion one, and so
+    ///   on. The `reference_ideal` must be a subset of the `criteria_range`.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<DVector<f64>, RankingError>` - A 1D array of preference values, or an error if the
+    ///   ranking process fails.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use approx::assert_relative_eq;
+    /// use mcdm::ranking::Rank;
+    /// use nalgebra::{dmatrix, dvector};
+    ///
+    /// let matrix = dmatrix![
+    ///     2.9, 2.31, 0.56, 1.89;
+    ///     1.2, 1.34, 0.21, 2.48;
+    ///     0.3, 2.48, 1.75, 1.69
+    /// ];
+    /// let weights = dvector![0.25, 0.25, 0.25, 0.25];
+    /// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
+    /// let criteria_range = dmatrix![0.1, 3.0; 1.0, 2.48; 0.0, 1.9; 0.69, 3.1];
+    /// let reference_ideal = dmatrix![0.1, 0.1; 2.48, 2.48; 1.9, 1.9; 0.69, 0.69];
+    /// let ranking =
+    ///     matrix.rank_rim(&criteria_types, &weights, &criteria_range, &reference_ideal).unwrap();
+    /// assert_relative_eq!(ranking, dvector![0.44909838, 0.33256763, 0.80336877], epsilon = 1e-5);
+    /// ```
+    fn rank_rim(
+        &self,
+        types: &[CriteriaType],
+        weights: &DVector<f64>,
+        criteria_range: &DMatrix<f64>,
+        reference_ideal: &DMatrix<f64>,
+    ) -> Result<DVector<f64>, RankingError>;
+
     /// Rank alternatives using the Stable Preference Ordering Towards Ideal Solution (SPOTIS)
     /// method.
     ///
@@ -2063,6 +2161,53 @@ impl Rank for DMatrix<f64> {
 
         Ok(ranking)
     }
+
+    fn rank_rim(
+        &self,
+        types: &[CriteriaType],
+        weights: &DVector<f64>,
+        criteria_range: &DMatrix<f64>,
+        reference_ideal: &DMatrix<f64>,
+    ) -> Result<DVector<f64>, RankingError> {
+        let (num_alternatives, num_criteria) = self.shape();
+
+        if num_alternatives == 0 || num_criteria == 0 {
+            return Err(RankingError::EmptyMatrix);
+        }
+
+        if (types.len() != num_criteria)
+            || (weights.len() != num_criteria)
+            || (criteria_range.nrows() != num_criteria)
+            || (reference_ideal.nrows() != num_criteria)
+        {
+            return Err(RankingError::DimensionMismatch);
+        }
+
+        is_reference_ideal_bounds_valid(reference_ideal, criteria_range)?;
+
+        let normalized_matrix = self.normalize_rim(criteria_range, reference_ideal)?;
+
+        let weighted_normalized_matrix = normalized_matrix.scale_columns(weights);
+
+        let mut variation_to_pis = DVector::zeros(num_alternatives);
+        let mut variation_to_nis = DVector::zeros(num_alternatives);
+
+        for (i, row) in weighted_normalized_matrix.row_iter().enumerate() {
+            variation_to_pis[i] = (row - weights.transpose()).map(|x| x.powi(2)).sum().sqrt();
+
+            variation_to_nis[i] = row.map(|x| x.powi(2)).sum().sqrt();
+        }
+
+        let variation_to_ideal = DVector::from_vec(
+            variation_to_nis
+                .iter()
+                .zip(&variation_to_pis)
+                .map(|(&dm_val, &dp_val)| dm_val / (dm_val + dp_val))
+                .collect::<Vec<f64>>(),
+        );
+
+        Ok(variation_to_ideal)
+    }
     fn rank_spotis(
         &self,
         types: &[CriteriaType],
@@ -2091,6 +2236,7 @@ impl Rank for DMatrix<f64> {
 
         Ok(ranking)
     }
+
     fn rank_topsis(&self, weights: &DVector<f64>) -> Result<DVector<f64>, RankingError> {
         if weights.len() != self.ncols() {
             return Err(RankingError::DimensionMismatch);
@@ -2161,6 +2307,7 @@ impl Rank for DMatrix<f64> {
 
         Ok(ranking)
     }
+
     fn rank_weighted_product(&self, weights: &DVector<f64>) -> Result<DVector<f64>, RankingError> {
         if weights.len() != self.ncols() {
             return Err(RankingError::DimensionMismatch);

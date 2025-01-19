@@ -486,6 +486,32 @@ mod ram_tests {
     }
 }
 
+mod rim_tests {
+    use super::*;
+
+    #[test]
+    fn test_rank() -> Result<(), McdmError> {
+        let matrix = dmatrix![
+            2.9, 2.31, 0.56, 1.89;
+            1.2, 1.34, 0.21, 2.48;
+            0.3, 2.48, 1.75, 1.69
+        ];
+        let weights = dvector![0.25, 0.25, 0.25, 0.25];
+        let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1])?;
+        let criteria_range = dmatrix![0.1, 3.0; 1.0, 2.48; 0.0, 1.9; 0.69, 3.1];
+        let reference_ideal = dmatrix![0.1, 0.1; 2.48, 2.48; 1.9, 1.9; 0.69, 0.69];
+        let ranking =
+            matrix.rank_rim(&criteria_types, &weights, &criteria_range, &reference_ideal)?;
+        assert_relative_eq!(
+            ranking,
+            dvector![0.44909838, 0.33256763, 0.80336877],
+            epsilon = 1e-5
+        );
+
+        Ok(())
+    }
+}
+
 mod spotis_tests {
     use super::*;
 

@@ -47,6 +47,8 @@ pub use dmatrix_ext::DMatrixExt;
 pub use errors::ValidationError;
 pub use validation::{MatrixValidate, VectorValidate};
 
+use nalgebra::DMatrix;
+
 /// Enum to represent the type of each criterion: either Cost or Profit.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum CriteriaType {
@@ -126,4 +128,35 @@ impl CriteriaType {
             })
             .collect()
     }
+}
+
+// Validates the reference ideal array aligns with the given bounds for each criterion.
+//
+// Validations:
+// 1. Ensure `ref_ideal` has a shape of `[M, 2]`, where `M` is the number of criteria.
+// 2. Ensure shape of `ref_ideal` and `bounds` are the same.
+// 3. Verifies all `ref_ideal` values lie within the `bounds` array and that the `ref_ideal` values
+//    are in scending order (i.e., `[min, max]`).
+fn is_reference_ideal_bounds_valid(
+    ref_ideal: &DMatrix<f64>,
+    bounds: &DMatrix<f64>,
+) -> Result<(), ValidationError> {
+    if ref_ideal.ncols() != 2 {
+        return Err(ValidationError::InvalidShape);
+    }
+
+    if ref_ideal.shape() != bounds.shape() {
+        return Err(ValidationError::DimensionMismatch);
+    }
+
+    for (i, row) in ref_ideal.row_iter().enumerate() {
+        let min = bounds[(i, 0)];
+        let max = bounds[(i, 1)];
+
+        if (row[0] < min || row[1] > max) || row[0] > row[1] {
+            return Err(ValidationError::InvalidValue);
+        }
+    }
+
+    Ok(())
 }

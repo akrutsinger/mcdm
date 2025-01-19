@@ -1,6 +1,7 @@
 //! Normalization methods for normalizing a decision matrix.
 
 use crate::errors::NormalizationError;
+use crate::is_reference_ideal_bounds_valid;
 use crate::CriteriaType;
 use nalgebra::{DMatrix, DVector};
 
@@ -211,6 +212,30 @@ pub trait Normalize {
     /// * `Result<DMatrix<f64>, NormalizationError>` - A normalized decision matrix, or an error
     ///   if the normalization fails.
     fn normalize_ocra(&self, types: &[CriteriaType]) -> Result<DMatrix<f64>, NormalizationError>;
+
+    /// Normalization function specific to the [`RIM`](crate::ranking::Rank::rank_rim) ranking
+    /// method.
+    ///
+    /// $$ f(x, \[A,B\], \[C,D\]) = \begin{cases}
+    ///     1 & \text{if } x \in \[C,D\] \\\\
+    ///     1 - \frac{d_{\min}(x, \[C,D\])}{|A-C|} & \text{if } x \in \[A,C\] \land A \neq C \\\\
+    ///     1 - \frac{d_{\min}(x, \[C,D\])}{|D-B|} & \text{if } x \in \[D,B\] \land D \neq B
+    /// \end{cases} $$
+    ///
+    /// where $\[A,B\]$ is the criteria range, $\[C,D\]$ is the reference ideal, and $x \in \[A,B\],\[C,D\] \subset \[A,B\]$.
+    /// The function $d_{\min}(x, \[C,D\])$ is defined as:
+    ///
+    /// $$ d_{\min}(x, \[C,D\]) = \min(|x - C|, |x - D|) $$
+    ///
+    /// The normalization lets us map the value $x$ to the range $\[0,1\]$ in the criteria domain with
+    /// regard to the ideal reference value. The RIM normalization is calculated as:
+    ///
+    /// $$ Y = \[y_{ij}\]_{M \times N} = \[f(x\_{ij}, t_j, s_j)\]\_{M \times N} $$
+    fn normalize_rim(
+        &self,
+        criteria_range: &DMatrix<f64>,
+        reference_ideal: &DMatrix<f64>,
+    ) -> Result<DMatrix<f64>, NormalizationError>;
 
     /// Normalization function specific to the [`SPOTIS`](crate::ranking::Rank::rank_spotis) ranking
     /// method.
@@ -599,6 +624,41 @@ impl Normalize for DMatrix<f64> {
                     CriteriaType::Cost => (max_value - value) / min_value,
                     CriteriaType::Profit => (value - min_value) / min_value,
                 };
+            }
+        }
+
+        Ok(normalized_matrix)
+    }
+
+    fn normalize_rim(
+        &self,
+        criteria_range: &DMatrix<f64>,
+        reference_ideal: &DMatrix<f64>,
+    ) -> Result<DMatrix<f64>, NormalizationError> {
+        is_reference_ideal_bounds_valid(reference_ideal, criteria_range)?;
+
+        // Initialize a matrix to store the normalized values
+        let mut normalized_matrix = DMatrix::<f64>::zeros(self.nrows(), self.ncols());
+
+        fn _dmin(x: f64, c: f64, d: f64) -> f64 {
+            f64::min(f64::abs(x - c), f64::abs(x - d))
+        }
+
+        for (i, row) in self.row_iter().enumerate() {
+            for (j, x) in row.iter().enumerate() {
+                let a = criteria_range[(j, 0)];
+                let b = criteria_range[(j, 1)];
+                let c = reference_ideal[(j, 0)];
+                let d = reference_ideal[(j, 1)];
+                normalized_matrix[(i, j)] = if c <= *x && *x <= d {
+                    1.0
+                } else if (a <= *x && *x < c) && (a != c) {
+                    1.0 - (_dmin(*x, c, d) / f64::abs(a - c))
+                } else if (d < *x && *x <= b) && (d != b) {
+                    1.0 - (_dmin(*x, c, d) / f64::abs(d - b))
+                } else {
+                    0.0
+                }
             }
         }
 

@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Ranking methods:
-  - ERVD, MAIRCA, MARCOS, MOORA, OCRA, PROBID, RAM, SPOTIS, WASPAS
+  - ERVD, MAIRCA, MARCOS, MOORA, OCRA, PROBID, RAM, RIM, SPOTIS, WASPAS
 - OCRA-specific normalization method.
 - SPOTIS-specific normalization method.
 
