@@ -40,9 +40,11 @@ pub trait Weight {
     ///
     /// # Weight Calculation
     ///
-    /// Normalize the decision matrix using the [`Sum`](crate::normalization::Normalize::normalize_sum) normalization method.
+    /// Normalize the decision matrix using the [`Sum`](crate::normalization::Normalize::normalize_sum)
+    /// normalization method.
     ///
-    /// Next, calculate the angle between the criterion's values and the mean of the criterion's values.
+    /// Next, calculate the angle between the criterion's values and the mean of the criterion's
+    /// values.
     ///
     /// $$ \theta_j = \arccos \left(\frac{\sum_{i=1}^m \left(\frac{x_{ij}}{m}\right)}{\sqrt{\sum_{i=1}^m \left(x_{ij}\right)^2} \sqrt{\sum_{i=1}^m \left(\frac{1}{m}\right)^2}} \right) $$
     ///
@@ -50,8 +52,8 @@ pub trait Weight {
     ///
     /// $$ w_j = \frac{\theta_j}{\sum_{j=1}^m \theta_j} $$
     ///
-    /// where $x_{ij}$ is the $i$th element of the alternative (row) and $j$th elements of the criterion
-    /// (column) with $m$ total criteria.
+    /// where $x_{ij}$ is the $i$th element of the alternative (row) and $j$th elements of the
+    /// criterion (column) with $m$ alternatives.
     ///
     /// # Arguments
     ///
@@ -67,41 +69,41 @@ pub trait Weight {
     /// Calculates the weights for the given decision matrix using CRiteria Importance Through
     /// Intercriteria Correlation (CRITIC) method.
     ///
-    /// The CRITIC method is based on two key concepts. Contrast intensity and conflict or correlation.
-    /// Contrast intensity measures the amount of variation (or dispersion) in each criterion. A higher
-    /// contrast meas the criterion discriminates better between the alternatives. Conflict or
-    /// correlation measures the interrelationship between criteria. Criteria that are highly correlated
-    /// (i.e., redundant) should have less weight compared to those that are independent or less
-    /// correlated.
+    /// The CRITIC method is based on two key concepts. Contrast intensity and conflict or
+    /// correlation. Contrast intensity measures the amount of variation (or dispersion) in each
+    /// criterion. A higher contrast meas the criterion discriminates better between the
+    /// alternatives. Conflict or correlation measures the interrelationship between criteria.
+    /// Criteria that are highly correlated (i.e., redundant) should have less weight compared to
+    /// those that are independent or less correlated.
     ///
     /// # Weight Calculation
     ///
-    /// Normalize the decision matrix using the [`MinMax`](crate::normalization::Normalize::normalize_min_max) normalization
-    /// method.
+    /// Normalize the decision matrix using the [`MinMax`](crate::normalization::Normalize::normalize_min_max)
+    /// normalization method.
     ///
-    /// Then calculate the standard devision. This reflects the degree of contrast (variation) in that
-    /// criterion. Criteria with a higher standard deviation are considered more important.
+    /// Then calculate the standard devision. This reflects the degree of contrast (variation) in
+    /// that criterion. Criteria with a higher standard deviation are considered more important.
     ///
     /// $$ \sigma_j = \sqrt{\frac{\sum_{i=1}^m (x_{ij} - x_j)^2}{m}} \quad \text{for} \quad j=1, \ldots, n $$
     ///
     /// where $x_{ij}$ is the $i$th element of the alternative (row) and $j$th elements of the criterion
-    /// (column) with $m$ total criteria and $n$ total alternatives.
+    /// (column) with $m$ alternatives and $n$ criteria.
     ///
     /// Next, compute the pearson correlation between the criteria:
     ///
     /// $$ r_{jk} = \frac{\sum_{i=1}^m (x_{ij} - x_j)(x_{ik} - x_k)}{\sqrt{\sum_{i=1}^m (x_{ij} - x_j)^2}\sqrt{\sum_{i=1}^m (x_{jk} - x_k)^2}} $$
     ///
     /// where $x_{ij}$ is the $i$th element of the alternative (row) and $j$th elements of the criterion
-    /// (column) with $m$ total criteria and $n$ total alternatives.
+    /// (column) with $m$ alternatives and $n$ criteria.
     ///
     /// Next, compute the information content using both contrast intesity (standard devision) and its
     /// relationship with the other criteria (correlation):
     ///
-    /// $$ C_j = \sigma_j \sum_{k=1}^m \left(1-r_{jk}\right) $$
+    /// $$ C_j = \sigma_j \sum_{k=1}^n \left(1-r_{jk}\right) $$
     ///
     /// Finally, determine the objective weights
     ///
-    /// $$ w_j = \frac{C_j}{\sum_{k=1}^m C_k} $$
+    /// $$ w_j = \frac{C_j}{\sum_{k=1}^n C_k} $$
     ///
     /// # Arguments
     ///
@@ -127,8 +129,8 @@ pub trait Weight {
     ///
     /// $$ w_i = \frac{1}{n} $$
     ///
-    /// where $w_i$ is the weight assigned to criterion $i$, and $n$ is the total number of
-    /// criteria in the decision matrix.
+    /// where $w_i$ is the weight assigned to criterion $i$, and $n$ is the number of criteria in
+    /// the decision matrix.
     ///
     /// # Arguments
     ///
@@ -145,21 +147,23 @@ pub trait Weight {
     ///
     /// # Weight Calculation
     ///
-    /// Normalize the decision matrix using the [`Sum`](crate::normalization::Normalize::normalize_sum) normalization method.
+    /// Normalize the decision matrix using the [`Sum`](crate::normalization::Normalize::normalize_sum)
+    /// normalization method.
     ///
-    /// Each criterion (column) in the normalized matrix is evaluated for its entropy. If any value in a
-    /// column is zero, the entropy for that column is set to zero. Otherwise, the entropy is calculated
-    /// by:
+    /// Each criterion (column) in the normalized matrix is evaluated for its entropy. If any value
+    /// in a column is zero, the entropy for that column is set to zero. Otherwise, the entropy is
+    /// calculated by:
     ///
-    /// $$E_j = -\frac{\sum_{i=1}^m p_{ij}\ln(p_{ij})}{\ln(m)}$$
+    /// $$E_j = -\frac{\sum_{i=1}^m r_{ij}\ln(r_{ij})}{\ln(m)}$$
     ///
-    /// where $E_j$ is the entropy of column $j$, $m$ is the number of alternatives, $n$ is the number
-    /// of criteria, and $p_{ij}$ is the value of normalized decision matrix for criterion $j$ and
-    /// alternative $i$
+    /// where $E_j$ is the entropy of column $j$, $m$ is the number of alternatives, $n$ is the
+    /// number of criteria, and $r_{ij}$ is the value of normalized decision matrix for alternative
+    /// $i$ and criterion $j$
     ///
-    /// After calculating entropy measure $E_j$ for each criterion, derive the weights for each criterion:
+    /// After calculating entropy measure $E_j$ for each criterion, derive the weights for each
+    /// criterion:
     ///
-    /// $$ w_j = \frac{1 - E_j}{\sum_{i=1}^n (1 - E_i)} \quad \text{for} \quad j=1, \ldots, n $$
+    /// $$ w_j = \frac{1 - E_j}{\sum_{j=1}^n (1 - E_j)} \quad \text{for} \quad j=1, \ldots, n $$
     ///
     /// # Arguments
     ///
@@ -178,18 +182,23 @@ pub trait Weight {
     ///
     /// The Gini coefficient is used to calculate the weights for each criterion.
     ///
-    /// $$ G_j = \frac{\sum_{i=1}^n \sum_{k=1}^n |x_{ij} - x_{kj}|}{2n^2 \bar{x}_j} $$
+    /// $$ G_j = \frac{\sum_{i=1}^m \sum_{k=1}^m |r_{ij} - r_{kj}|}{2m^2 \bar{r}_j} $$
     ///
-    /// where $G_j$ is the Gini coefficient for criterion $j$, $n$ is the number of alternatives,
-    /// $x_{ij}$ is the value of the decision matrix for criterion $j$ and alternative $i$, and
-    /// $\bar{x}_j$ is the mean of the values for the $j$th criterion across all alternatives.
+    /// where $G_j$ is the Gini coefficient for criterion $j$, $m$ is the number of alternatives,
+    /// $r_{ij}$ and $r_{kj}$ are the value of the normalized decision matrix for alternatives $i$
+    /// and $k$ criterion $j$, and $\bar{r}_j$ is the mean of the normalized values for criterion
+    /// $j$.
+    ///
+    /// The Gini coefficient $G_j$ ranges from 0 to 1, where $G_j \approx 0$ is low dispersion where
+    /// each alternative is equally important, and $G_j \approx 1$ is high dispersion meaning each
+    /// alternative is very different from the others.
     ///
     /// After calculating the Gini coefficient $G_j$ for each criterion, derive the weights for each
     /// criterion:
     ///
-    /// $$ w_j = \frac{G_j}{\sum_{i=1}^m G_i} \quad \text{for} \quad j=1, \ldots, m $$
+    /// $$ w_j = \frac{G_j}{\sum_{j=1}^n G_j} \quad \text{for} \quad j=1, \ldots, n $$
     ///
-    /// where $m$ is the number of criteria.
+    /// where $n$ is the number of criteria.
     ///
     /// # Arguments
     ///
@@ -206,28 +215,29 @@ pub trait Weight {
     ///
     /// # Weight Calculation
     ///
-    /// Normalize the decision matrix using the [`Linear`](crate::normalization::Normalize::normalize_linear) method. When
-    /// passing the `CriteriaType` to the `Linear` normalization method, you must switch the criteria
-    /// types so each cost becomes a profit and each profit becomes a cost.
+    /// Normalize the decision matrix using the [`Linear`](crate::normalization::Normalize::normalize_linear)
+    /// method. When passing the `CriteriaType` to the `Linear` normalization method, you must
+    /// switch the criteria types so each cost becomes a profit and each profit becomes a cost.
     ///
     /// The MEREC weighting method is based on the following formula:
     ///
-    /// $$ S_i = \ln \left( 1 + \left ( \frac{1}{m}\sum_j \ln(n^x_{ij}) \right) \right) $$
+    /// $$ S_i = \ln \left( 1 + \left ( \frac{1}{n}\sum_{j=1}^n \ln(r_{ij}) \right) \right) $$
     ///
     /// where $S_i$ is the overall performance of alternative $i$, $m$ is the number of alternatives,
-    /// and $n^x_{ij}$ is the value of normalized decision matrix for criterion $j$.
+    /// and $r_{ij}$ is the value of normalized decision matrix for alternative $i$ andcriterion
+    /// $j$.
     ///
     /// Next, calculate the performance of alternatives after removal of each criterion:
     ///
-    /// $$ S_i^{\prime} = \ln \left( 1 + \left(\frac{1}{m} \sum_{k,k \neq j} \left | \ln(n^x_{ij}) \right | \right) \right) $$
+    /// $$ S_i^{\prime} = \ln \left( 1 + \left(\frac{1}{n} \sum_{k,k \neq j}^n \left | \ln(r_{ik}) \right | \right) \right) $$
     ///
     /// Next, calculate the sum of absolute deviations using the following:
     ///
-    /// $$ E_j = \sum_i S_{ij}^{\prime} - S_i $$
+    /// $$ E_j = \sum_{i=1}^m S_{ij}^{\prime} - S_i $$
     ///
     /// Finally, calculate the weights using the following:
     ///
-    /// $$ w_j = \frac{E_j}{\sum_k E_k} $$
+    /// $$ w_j = \frac{E_j}{\sum_{j=1}^n E_j} $$
     ///
     /// # Arguments
     ///
@@ -262,8 +272,8 @@ pub trait Weight {
     ///
     /// $$ \sigma_j = \sqrt{\frac{\sum_{i=1}^m (x_{ij} - x_j)^2}{m}} \quad \text{for} \quad j=1, \ldots, n $$
     ///
-    /// where $x_{ij}$ is the $i$th element of the alternative (row) and $j$th elements of the criterion
-    /// (column) with $m$ total criteria and $n$ total alternatives.
+    /// where $x_{ij}$ is the $i$th element of the alternative (row) and $j$th elements of the
+    /// criterion (column) with $m$ alternatives and $n$ criteria.
     ///
     /// Next, derive the weights based on the standard deviation of the criteria:
     ///
@@ -283,9 +293,9 @@ pub trait Weight {
     /// Calculates the weights for the given decision matrix using variance.
     ///
     /// Variance measures speread of dispersion of data points within a crition across alternatives.
-    /// With this method, the underlying principle is that criterion with a higher variance has greater
-    /// discriminative power, meaning it plays a more significant fole in distinguishing between
-    /// alternatives. Therefore, criteria with higher variance are given more weight in the
+    /// With this method, the underlying principle is that criterion with a higher variance has
+    /// greater discriminative power, meaning it plays a more significant fole in distinguishing
+    /// between alternatives. Therefore, criteria with higher variance are given more weight in the
     /// decision-making process.
     ///
     /// # Weight Calculation
@@ -295,17 +305,18 @@ pub trait Weight {
     ///
     /// Then calculate the variance measure for all of the criteria using:
     ///
-    /// $$ V_j = \frac{1}{n} \sum_{i=1}^n (x_{ij} - \bar{x}_j)^2 \quad \text{for} \quad j=1, \ldots, m $$
+    /// $$ \sigma_j^2 = \frac{1}{m} \sum_{i=1}^m (r_{ij} - \bar{r}_j)^2 \quad \text{for} \quad j=1, \ldots, n $$
     ///
-    /// where $x_{ij}$ is the value of the $i$th alternative (row) and $j$th criterion (column) with $m$
-    /// total criteria and $n$ total alternatives, and $\bar{x}_j$ is the mean of the $j$th criterion
-    /// values across all alternatives.
+    /// where $\sigma_j^2$ is the variance of criteria $j$, $r_{ij}$ is the value of the normalized
+    /// decision matrix for the $i$th alternative (row) and $j$th criterion (column) with $m$
+    /// alternatives and $n$ criteria, and $\bar{x}_j$ is the mean of the $j$th criterion values
+    /// across all alternatives.
     ///
     /// Next, derive the weights based on the variance of the criteria:
     ///
-    /// $$ w_j = \frac{V_j}{\sum_{k=1}^m V_k} \quad \text{for} \quad j=1, \ldots, m $$
+    /// $$ w_j = \frac{\sigma_j^2}{\sum_{j=1}^n \sigma_j^2} \quad \text{for} \quad j=1, \ldots, n $$
     ///
-    /// where $m$ is the number of criteria.
+    /// where $n$ is the number of criteria.
     ///
     /// # Arguments
     ///
@@ -321,17 +332,17 @@ pub trait Weight {
 
 impl Weight for DMatrix<f64> {
     fn weight_angular(&self) -> Result<DVector<f64>, WeightingError> {
-        let (n, m) = self.shape();
+        let (num_alternatives, num_criteria) = self.shape();
 
-        if n == 0 || m == 0 {
+        if num_alternatives == 0 || num_criteria == 0 {
             return Err(WeightingError::EmptyMatrix);
         }
 
-        let mut weights = DVector::zeros(m);
-        let add_col = DVector::from_element(n, 1.0 / m as f64);
+        let mut weights = DVector::zeros(num_criteria);
+        let add_col = DVector::from_element(num_alternatives, 1.0 / num_criteria as f64);
 
         for (i, vec) in self.column_iter().enumerate() {
-            let numerator = vec.sum() / m as f64;
+            let numerator = vec.sum() / num_criteria as f64;
             let norm_vec = vec.dot(&vec).sqrt();
             let add_col_norm = add_col.dot(&add_col).sqrt();
             weights[i] = (numerator / (norm_vec * add_col_norm)).acos();
@@ -344,9 +355,9 @@ impl Weight for DMatrix<f64> {
     }
 
     fn weight_critic(&self) -> Result<DVector<f64>, WeightingError> {
-        let (n, m) = self.shape();
+        let (num_alternatives, num_criteria) = self.shape();
 
-        if n == 0 || m == 0 {
+        if num_alternatives == 0 || num_criteria == 0 {
             return Err(WeightingError::EmptyMatrix);
         }
 
@@ -355,13 +366,13 @@ impl Weight for DMatrix<f64> {
 
         let pearson_correlation = {
             let mut normalized_matrix = self.clone();
-            for j in 0..m {
+            for j in 0..num_criteria {
                 let mut col = normalized_matrix.column_mut(j);
                 for x in col.iter_mut() {
                     *x = (*x - column_means[j]) / column_stds[j];
                 }
             }
-            normalized_matrix.transpose() * &normalized_matrix / n as f64
+            normalized_matrix.transpose() * &normalized_matrix / num_alternatives as f64
         };
 
         let correlation_information =
@@ -409,18 +420,18 @@ impl Weight for DMatrix<f64> {
     }
 
     fn weight_gini(&self) -> Result<DVector<f64>, WeightingError> {
-        let (n, m) = self.shape();
+        let (num_alternatives, num_criteria) = self.shape();
 
         // Initialize weights as a zero vector
-        let mut weights = DVector::zeros(m);
+        let mut weights = DVector::zeros(num_criteria);
 
         for (j, column) in self.column_iter().enumerate() {
-            let mut values = DVector::zeros(n);
-            let column_mean = column.sum() / n as f64;
+            let mut values = DVector::zeros(num_alternatives);
+            let column_mean = column.sum() / num_alternatives as f64;
 
-            for i in 0..n {
+            for i in 0..num_alternatives {
                 let numerator: f64 = column.iter().map(|&x| (self[(i, j)] - x).abs()).sum();
-                let denominator = 2.0 * (n as f64).powi(2) * column_mean;
+                let denominator = 2.0 * (num_alternatives as f64).powi(2) * column_mean;
                 values[i] = numerator / denominator;
             }
 
@@ -433,30 +444,30 @@ impl Weight for DMatrix<f64> {
     }
 
     fn weight_merec(&self) -> Result<DVector<f64>, WeightingError> {
-        let (n, m) = self.shape();
+        let (num_alternatives, num_criteria) = self.shape();
 
         let s = DVector::from_iterator(
-            n,
+            num_alternatives,
             self.row_iter().map(|row| {
                 let log_values = row.iter().map(|&x| x.ln().abs()).sum::<f64>();
-                (1.0 + log_values / m as f64).ln()
+                (1.0 + log_values / num_criteria as f64).ln()
             }),
         );
 
-        let mut s_prim = DMatrix::zeros(n, m);
+        let mut s_prim = DMatrix::zeros(num_alternatives, num_criteria);
 
         for (j, _) in self.column_iter().enumerate() {
             let ex_nmatrix = self.clone().remove_column(j); // Remove column `j`
 
             for (i, row) in ex_nmatrix.row_iter().enumerate() {
                 let log_values = row.iter().map(|&x| x.ln().abs()).sum::<f64>();
-                s_prim[(i, j)] = (1.0 + log_values / m as f64).ln();
+                s_prim[(i, j)] = (1.0 + log_values / num_criteria as f64).ln();
             }
         }
 
         let e = DVector::from_iterator(
-            m,
-            (0..m).map(|j| {
+            num_criteria,
+            (0..num_criteria).map(|j| {
                 s_prim
                     .column(j)
                     .iter()

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Documentation had many inconsistencies and blantant errors. Should mostly be fixed, but more could still be lerking.
+
+## [0.3.0] - 2024-01-19
+
 ### Added
 
 - Ranking methods:
@@ -37,7 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Renamed modules `weights` to `weighting` and `methods` to `ranking` to be more clear in their function and put them in the singular form.
-- - Tests now return appropriate errors instead of panicing on failures.
+- Tests now return appropriate errors instead of panicing on failures.
 
 ### Fixed
 

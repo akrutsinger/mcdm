@@ -15,7 +15,8 @@ use nalgebra::{DMatrix, DVector};
 /// importance of each criterion as given by the `weights` array.
 ///
 /// Higher preference values indicate better alternatives. The specific ranking method used (such as
-/// [`TOPSIS`](crate::ranking::Rank::rank_topsis) or others) will depend on the implementation of this trait.
+/// [`TOPSIS`](crate::ranking::Rank::rank_topsis) or others) will depend on the implementation of
+/// this trait.
 ///
 /// # Example
 ///
@@ -33,34 +34,34 @@ use nalgebra::{DMatrix, DVector};
 pub trait Rank {
     /// Ranks decision matrix alternatives using the Additive Ratio ASsessment (ARAS) method.
     ///
-    /// The ARAS method expects the decision matrix before any normalization or manipulation. The method
-    /// assesses alternatives by comparing their overall performance to the ideal (best) alternative. It
-    /// calculates a utility degree for each alternative based on the ratio of the sum of weighted
-    /// normalized values for each criterion relative to the ideal alternative, which has the maximum
-    /// performance for each criterion.
+    /// The ARAS method expects the decision matrix before any normalization or manipulation. The
+    /// method assesses alternatives by comparing their overall performance to the ideal (best)
+    /// alternative. It calculates a utility degree for each alternative based on the ratio of the
+    /// sum of weighted normalized values for each criterion relative to the ideal alternative,
+    /// which has the maximum performance for each criterion.
     ///
-    /// This method takes an $n{\times}m$ decision matrix
+    /// This method takes an $m{\times}n$ decision matrix
     ///
     /// $$ x_{ij} =
     /// \begin{bmatrix}
-    /// x_{11} & x_{12} & \ldots & x_{1m} \\\\
-    /// x_{21} & x_{22} & \ldots & x_{2m} \\\\
+    /// x_{11} & x_{12} & \ldots & x_{1n} \\\\
+    /// x_{21} & x_{22} & \ldots & x_{2n} \\\\
     /// \vdots & \vdots & \ddots & \vdots \\\\
-    /// x_{n1} & x_{n2} & \ldots & x_{nm}
+    /// x_{m1} & x_{m2} & \ldots & x_{mn}
     /// \end{bmatrix}
     /// $$
     ///
     /// then extends the matrix by adding an additional "best case" alternative row based on the
-    /// minimum or maximum values of each criterion column. If that criterion is a profit, we use the
-    /// maximum; if the criterion is a cost, we use the minimum.
+    /// minimum or maximum values of each criterion column. If that criterion is a profit, we use
+    /// the maximum; if the criterion is a cost, we use the minimum.
     ///
     /// $$ E =
     /// \begin{bmatrix}
-    ///     E_0(x_{i1}) & E_0(x_{i2}) & \ldots & E_0(x_{im}) \\\\
-    ///     x_{11} & x_{12} & \ldots & x_{1m} \\\\
-    ///     x_{21} & x_{22} & \ldots & x_{2m} \\\\
+    ///     E_0(x_{i1}) & E_0(x_{i2}) & \ldots & E_0(x_{in}) \\\\
+    ///     x_{11} & x_{12} & \ldots & x_{1n} \\\\
+    ///     x_{21} & x_{22} & \ldots & x_{2n} \\\\
     ///     \vdots & \vdots & \ddots & \vdots \\\\
-    ///     x_{(n+1)1} & x_{(n+1)2} & \ldots & x_{(n+1)m}
+    ///     x_{(m+1)1} & x_{(m+1)2} & \ldots & x_{(m+1)n}
     /// \end{bmatrix}
     /// $$
     ///
@@ -73,23 +74,25 @@ pub trait Rank {
     /// \end{cases}
     /// $$
     ///
-    /// Next, obtain the normalized matrix, $s_{ij}$ by using the [`Sum`](crate::normalization::Normalize::normalize_sum) normalization method on $E$.
-    /// Then compute the weighted matrix $v_{ij}$ using
+    /// Next, obtain the normalized matrix, $s_{ij}$ by using the [`Sum`](crate::normalization::Normalize::normalize_sum)
+    /// normalization method on $E$. Then compute the weighted matrix $v_{ij}$ using
     ///
     /// $$ v_{ij} = w_j s_{ij} $$
     ///
     /// Next, determine the optimal criterion values only for the extended "best case" alternative
     /// (remember, this is the first row of the extended matrix).
     ///
-    /// $$ S_0 = \sum_{j=1}^m v_{0j} $$
+    /// $$ S_0 = \sum_{j=1}^n v_{0j} $$
     ///
     /// Likewise, determine the sum of each other alternative using
     ///
-    /// $$ S_i = \sum_{j=1}^m v_{ij} $$
+    /// $$ S_i = \sum_{j=1}^n v_{ij} $$
     ///
     /// Lastly, calculate the utility degree $K_i$ which determines the ranking of each alternative
     ///
     /// $$ K_i = \frac{S_i}{S_0} $$
+    ///
+    /// Alternatives with a higher $K_i$ value are more preferred.
     ///
     /// # Arguments
     ///
@@ -128,21 +131,21 @@ pub trait Rank {
     /// Ranks the alternatives using the COmbined Compromise SOlution (COCOSO) method.
     ///
     /// The COCOSO method expects the decision matrix is normalized using the [`MinMax`](crate::normalization::Normalize::normalize_min_max)
-    /// method. Then calculates the weighted sum of the comparision sequence and the total power weight
-    /// of the comparison sequence for each alternative. The values of $S_i$ are based on the grey
-    /// relationship generation method and the values for $P_i$ are based on the multiplicative WASPAS
-    /// method.
+    /// method. Then calculates the weighted sum of the comparision sequence and the total power
+    /// weight of the comparison sequence for each alternative. The values of $S_i$ are based on the
+    /// grey relationship generation method and the values for $P_i$ are based on the multiplicative
+    /// WASPAS method.
     ///
-    /// $$ S_i = \sum_{j=1}^m(w_j r_{ij}) $$
-    /// $$ P_i = \sum_{j=1}^m(r_{ij})^{w_j} $$
+    /// $$ S_i = \sum_{j=1}^n(w_j r_{ij}) $$
+    /// $$ P_i = \sum_{j=1}^n(r_{ij})^{w_j} $$
     ///
-    /// where $S_i$ is the grey relationship, $P_i$ is the multiplicative `WASPAS`, $m$ is the number of
-    /// criteria, $r_{ij}$ is the $i$th element of the alternative, $j$th elements of the criterion of
-    /// the normalized decision matrix, and $w_j$ is the $j$th weight.
+    /// where $S_i$ is the grey relationship, $P_i$ is the multiplicative `WASPAS`, $n$ is the
+    /// number of criteria, $r_{ij}$ is the $i$th alternative and $j$th criterion of the normalized
+    /// decision matrix, and $w_j$ is the $j$th weight.
     ///
     /// We then compute the relative weights of alternatives using aggregation strategies.
     ///
-    /// $$ k_{ia} = \frac{P_i + S_i}{\sum_{i=1}^n \left(P_i + S_i\right)} $$
+    /// $$ k_{ia} = \frac{P_i + S_i}{\sum_{i=1}^m \left(P_i + S_i\right)} $$
     /// $$ k_{ib} = \frac{S_i}{\min_i(S_i)} + \frac{P_i}{\min_i(P_i)} $$
     /// $$ k_{ic} = \frac{\lambda(S_i) + (1 - \lambda)(P_i)}{\lambda \max_i(S_i) + (1 - \lambda) \max_i(P_i)} \quad 0 \leq \lambda \leq 1 $$
     ///
@@ -152,11 +155,13 @@ pub trait Rank {
     /// [`WeightedProduct`](crate::ranking::Rank::rank_weighted_product) scores over the best scores
     /// for each each method respectfully, and $k_{ic}$ represents the [`WeightedSum`](crate::ranking::Rank::rank_weighted_sum)
     /// and [`WeightedProduct`](crate::ranking::Rank::rank_weighted_product) scores using the
-    /// compromise strategy, and $n$ is the number of alternatives.
+    /// compromise strategy, and $m$ is the number of alternatives.
     ///
     /// Lastly, we rank the alternatives as follows:
     ///
     /// $$ k_i = (k_{ia}k_{ib}k_{ic})^{\frac{1}{3}} + \frac{1}{3}(k_{ia} + k_{ib} + k_{ic}) $$
+    ///
+    /// Alternatives with a higher $k_i$ value are more preferred.
     ///
     /// # Arguments
     ///
@@ -195,7 +200,8 @@ pub trait Rank {
     /// method. Then calculates an assessment matrix based on the euclidean distance and taxicab
     /// distance from the negative ideal solution.
     ///
-    /// Build a weighted matrix $v_{ij}$ using the normalized decision matrix, $r_{ij}$, and weights.
+    /// Build a weighted matrix $v_{ij}$ using the normalized decision matrix, $r_{ij}$, and
+    /// weights, $w_j$.
     ///
     /// $$ v_{ij} = r_{ij}{w_j} $$
     ///
@@ -205,8 +211,8 @@ pub trait Rank {
     ///
     /// Calculate the euclidean distance and taxicab distance from the negative ideal solution
     ///
-    /// $$ E_i = \sqrt{\sum_{i=1}^n(v_{ij} - NIS_j)^2} $$
-    /// $$ T_i = \sum_{i=1}^n \left|v_{ij} - NIS_j\right| $$
+    /// $$ E_i = \sqrt{\sum_{i=1}^m(v_{ij} - NIS_j)^2} $$
+    /// $$ T_i = \sum_{i=1}^m \left|v_{ij} - NIS_j\right| $$
     ///
     /// Next, build the assessment matrix
     ///
@@ -222,7 +228,9 @@ pub trait Rank {
     ///
     /// Lastly, calculate the assessment score of each alternative
     ///
-    /// $$ H_i = \sum_{k=1}^n h_{ik} $$
+    /// $$ H_i = \sum_{k=1}^n h_{ik} \quad \text{for } i = 1, 2, \ldots, m $$
+    ///
+    /// Alternatives with a higher $H_i$ value are more preferred.
     ///
     /// # Arguments
     ///
@@ -260,13 +268,14 @@ pub trait Rank {
     ///
     /// The COPRAS method expects the decision matrix without normalization. This method evaluates
     /// alternatives by separately considering the effects of maximizing (beneficial) and minimizing
-    /// (non-beneficial) index values of attributes. This approach allows COPRAS to assess the impact of
-    /// each type of crition independently, ensuring both positive contributions and cost factors are
-    /// accounted for in the final ranking. This separation provides a more balanced and accurate
-    /// assessment of each alternative.
+    /// (non-beneficial) index values of attributes. This approach allows COPRAS to assess the
+    /// impact of each type of crition independently, ensuring both positive contributions and cost
+    /// factors are accounted for in the final ranking. This separation provides a more balanced and
+    /// accurate assessment of each alternative.
     ///
-    /// Start by calculating the normalized decision matrix, $r_{ij}$, using the [`Sum`](crate::normalization::Normalize::normalize_sum) method, but treat each
-    /// criterion as a profit. The normalization is caclculated as:
+    /// Start by calculating the normalized decision matrix, $r_{ij}$, using the
+    /// [`Sum`](crate::normalization::Normalize::normalize_sum) method, but treat each criterion as
+    /// a profit. The normalization is caclculated as:
     ///
     /// $$ r_{ij} = \frac{x_{ij}}{\sum_{i=1}^m x_{ij}} $$
     ///
@@ -278,23 +287,25 @@ pub trait Rank {
     /// Next, determine the sums of difficult normalized values of the weighted matrix $v_{ij}$.
     ///
     /// $$ S_{+i} = \sum_{j=1}^k v_{ij} $$
-    /// $$ S_{-i} = \sum_{j=k+1}^m v_{ij} $$
+    /// $$ S_{-i} = \sum_{j=k+1}^n v_{ij} $$
     ///
-    /// where $k$ is the number of attributes to maximize. The rest of the attributes from $k+1$ to $m$
-    /// are minimized. $S_{+i}$ and $S_{-i}$ show the level of the goal achievement for alternatives.
-    /// Higher value of $S_{+i}$ indicates the alternative is better and a lower value of $S_{-i}$
-    /// indicate a better alternative.
+    /// where $k$ is the number of attributes to maximize. The rest of the attributes from $k+1$ to
+    /// $n$ are minimized. $S_{+i}$ and $S_{-i}$ show the level of the goal achievement for
+    /// alternatives. Higher value of $S_{+i}$ indicates the alternative is better and a lower value
+    /// of $S_{-i}$ indicate a better alternative.
     ///
     /// Next, calculate the relative significance of alternatives using:
     ///
-    /// $$ Q_i = S_{+i} + \frac{S_{-\min} \sum_{i=1}^n S_{-i}}{S_{-i} \sum_{i=1}^n \left(\frac{S_{-\min}}{S_{-i}}\right)} $$
+    /// $$ Q_i = S_{+i} + \frac{S_{-\min} \sum_{i=1}^m S_{-i}}{S_{-i} \sum_{i=1}^m \left(\frac{S_{-\min}}{S_{-i}}\right)} $$
     ///
     /// Lastly, rank the alternatives using:
     ///
     /// $$ U_i = \frac{Q_i}{Q_i^{\max}} \times 100\\% $$
     ///
-    /// where $Q_i^{\max}$ is the maximum value of the utility function. Better alternatives have higher
-    /// $U_i$ values.
+    /// Alternatives with a higher $U_i$ value are more preferred.
+    ///
+    /// where $Q_i^{\max}$ is the maximum value of the utility function. Better alternatives have
+    /// higher $U_i$ values.
     ///
     /// # Arguments
     ///
@@ -330,39 +341,41 @@ pub trait Rank {
         weights: &DVector<f64>,
     ) -> Result<DVector<f64>, RankingError>;
 
-    /// Ranks the alternatives using the Evaluation based on Distance from Average Solution (EDAS) method.
+    /// Ranks the alternatives using the Evaluation based on Distance from Average Solution (EDAS)
+    /// method.
     ///
-    /// The EDAS method ranks the alternatives using the average distance from the average solution. The
-    /// method expects a decision matrix before normalization. We define the decision matrix as:
+    /// The EDAS method ranks the alternatives using the average distance from the average solution.
+    /// The method expects a decision matrix before normalization. We define the decision matrix as:
     ///
     /// $$ X_{ij} =
     /// \begin{bmatrix}
-    ///     x_{11} & x_{12} & \ldots & x_{1m} \\\\
-    ///     x_{21} & x_{22} & \ldots & x_{2m} \\\\
+    ///     x_{11} & x_{12} & \ldots & x_{1n} \\\\
+    ///     x_{21} & x_{22} & \ldots & x_{2n} \\\\
     ///     \vdots & \vdots & \ddots & \vdots \\\\
-    ///     x_{n1} & x_{n2} & \ldots & x_{nm}
+    ///     x_{m1} & x_{m2} & \ldots & x_{mn}
     /// \end{bmatrix}
     /// $$
     ///
-    /// Then calculate the average solution as:
+    /// Then calculate the average solution for each criteria:
     ///
-    /// $$ \overline{X}\_{ij} = \frac{\sum_{i=1}^{n} x_{ij}}{n} $$
+    /// $$ \overline{X}\_{ij} = \frac{\sum_{i=1}^{m} x_{ij}}{m} $$
     ///
-    /// Next, calculate the positive and negative distance from the mean solution for each alternative.
-    /// When the criteria type is profit, compute the positive and negative distance as:
+    /// Next, calculate the positive and negative distance from the mean solution for each
+    /// alternative. When the criteria type is profit, compute the positive and negative distance
+    /// as:
     ///
     /// $$ PD_{i} = \frac{\max(0, (X_{ij} - \overline{X}\_{ij}))}{\overline{X}\_{ij}} $$
-    /// $$ ND_{i} = \frac{\max(0, (\overline{X}\_{ij})) - X_{ij}}{\overline{X}\_{ij}} $$
+    /// $$ ND_{i} = \frac{\max(0, (\overline{X}\_{ij} - X_{ij}))}{\overline{X}\_{ij}} $$
     ///
-    /// When the criter type is cost, compute the positive and negative distance as:
+    /// When the criteria type is cost, compute the positive and negative distance as:
     ///
-    /// $$ PD_{i} = \frac{\max(0, (\overline{X}\_{ij})) - X_{ij}}{\overline{X}\_{ij}} $$
+    /// $$ PD_{i} = \frac{\max(0, (\overline{X}\_{ij} - X_{ij}))}{\overline{X}\_{ij}} $$
     /// $$ ND_{i} = \frac{\max(0, (X_{ij} - \overline{X}\_{ij}))}{\overline{X}\_{ij}} $$
     ///
     /// Next, calculate the weighted sums for $PD$ and $ND$:
     ///
-    /// $$ SP_i = \sum_{j=1}^{m} w_j PD_{ij} $$
-    /// $$ SN_i = \sum_{j=1}^{m} w_j ND_{ij} $$
+    /// $$ SP_i = \sum_{j=1}^{n} w_j PD_{ij} $$
+    /// $$ SN_i = \sum_{j=1}^{n} w_j ND_{ij} $$
     ///
     /// Next, normalize the weighted sums:
     ///
@@ -372,6 +385,8 @@ pub trait Rank {
     /// Finally, rank the alternatives by calculating their evaluation scores as:
     ///
     /// $$ E_i = \frac{NSP_i + NSN_i}{2} $$
+    ///
+    /// Alternatives with a higher $E_i$ value are more preferred.
     ///
     /// # Arguments
     ///
@@ -411,20 +426,31 @@ pub trait Rank {
     ///
     /// The ERVD method expects the decision matrix is not normalized.
     ///
-    /// To evaluate decision alternatives, start by defining a decision matrix, $d_{ij}$, where $i$
-    /// represents the alternatives and $j$ represents the criteria.
+    /// To evaluate decision alternatives of an $m \times n$ unnormalized decision matrix with $m$
+    /// alternatives and $n$ decision criteria.
     ///
-    /// Then, define the reference points $\mu,j=1,\ldots,m$ for each decision criterion.
+    /// $$ X = [x_{ij}] =
+    /// \begin{bmatrix}
+    ///     x_{11} & x_{12} & \ldots & x_{1n} \\\\
+    ///     x_{21} & x_{22} & \ldots & x_{2n} \\\\
+    ///     \vdots & \vdots & \ddots & \vdots \\\\
+    ///     x_{m1} & x_{m2} & \ldots & x_{mn}
+    /// \end{bmatrix}
+    /// $$
+    ///
+    /// Then, define the reference points $\mu,j=1,\ldots,n$ for each decision criterion.
     ///
     /// Next, normalize the decision matrix using the [`Sum`](crate::normalization::Normalize::normalize_sum)
-    /// method, which gives us the normalized decision matrix $r_{ij}$.
+    /// method treating all criteria as profits to get the normalized decision matrix $r_{ij}$.
+    ///
+    /// $$r_{ij} = \frac{x_{ij}}{\sum_{i=1}^m x_{ij}}$$
     ///
     /// Next, transform the reference points into the normalized scale:
     ///
-    /// $$ \varphi_j = \frac{\mu_j}{\sum_{i=1}^n d_{ij}} $$
+    /// $$ \varphi_j = \frac{\mu_j}{\sum_{i=1}^m x_{ij}} $$
     ///
-    /// where $\mu_j$ is the $j$th element of the reference point vector and $d_{ij}$ is the $i$th
-    /// row and $j$th column of the decision matrix.
+    /// where $\mu_j$ is the $j$th reference point vector and $x_{ij}$ is the $i$th alternative
+    /// (row) and $j$th criteria (column) of the decision matrix.
     ///
     /// Next, calculate the reference value decision according to criterion $C_j$ by the
     /// increasing value function for profit criteria:
@@ -445,20 +471,23 @@ pub trait Rank {
     /// Next, determine the positive ideal solution (PIS), $A^+$, and negative ideal solutions
     /// (NIS), $A^-$ using:
     ///
-    /// $$ A^+ = \left\\{ v_1^+, \ldots, v_m^+ \right\\} $$
-    /// $$ A^- = \left\\{ v_1^-, \ldots, v_m^- \right\\} $$
+    /// $$ A^+ = \left\\{ v_1^+, \ldots, v_n^+ \right\\} $$
+    /// $$ A^- = \left\\{ v_1^-, \ldots, v_n^- \right\\} $$
     ///
     /// where $v_j^+ = \max_i(v_{ij})$ and $v_j^- = \min_i(v_{ij})$.
     ///
     /// Next, calculate the separation measures, $S_i$, from PIS and NIS individually using the
     /// [Minkowski metric](https://en.wikipedia.org/wiki/Minkowski_distance):
     ///
-    /// $$ S_i^+ = \sum_{j=1}^m w_j \cdot \left| v_{ij} - v_j^+ \right| $$
-    /// $$ S_i^- = \sum_{j=1}^m w_j \cdot \left| v_{ij} - v_j^- \right| $$
+    /// $$ S_i^+ = \sum_{j=1}^n w_j \cdot \left| v_{ij} - v_j^+ \right| $$
+    /// $$ S_i^- = \sum_{j=1}^n w_j \cdot \left| v_{ij} - v_j^- \right| $$
     ///
-    /// Finally, rank the alternatives by calculating their relative closeness to the ideal solution:
+    /// Finally, rank the alternatives by calculating their relative closeness to the ideal
+    /// solution:
     ///
-    /// $$ \phi_i = \frac{S_i^-}{S_i^+ + S_i^-} \quad \text{for} \quad i=1, \ldots, n$$
+    /// $$ \phi_i = \frac{S_i^-}{S_i^+ + S_i^-} \quad \text{for} \quad i=1, \ldots, m$$
+    ///
+    /// Alternatives with a higher $\phi_i$ value are more preferred.
     ///
     /// # Arguments
     ///
@@ -504,38 +533,42 @@ pub trait Rank {
         alpha: f64,
     ) -> Result<DVector<f64>, RankingError>;
 
-    /// Ranks the alternatives using the Multi-Attributive Border Approximation Area Comparison (MABAC)
+    /// Ranks the alternatives using the Multi-Attributive Border Approximation Area Comparison
+    /// (MABAC)
     /// method.
     ///
-    /// The MABAC method expects the decision matrix is normalized using the [`MinMax`](crate::normalization::Normalize::normalize_min_max)
-    /// method. Then computes a weighted matrix $v_{ij}$ using
+    /// The MABAC method expects an $m \times n$ decision matrix that is normalized using the
+    /// [`MinMax`](crate::normalization::Normalize::normalize_min_max) method. Then computes a
+    /// weighted matrix $v_{ij}$ using
     ///
-    /// $$ v_{ij} = {w_j}(x_{ij} + 1) $$
+    /// $$ v_{ij} = {w_j}(r_{ij} + 1) $$
     ///
-    /// where $x_{ij}$ is the $i$th element of the alternative (row), $j$th elements of the criterion
-    /// (column), and $w_j$ is the weight of the $j$th criterion.
+    /// where $r_{ij}$ is the $i$th alternative (row), $j$th criterion (column), and $w_j$ is the
+    /// weight of the $j$th criterion.
     ///
-    /// We then compute the boundary appromixation area for all criteria.
+    /// Next, calculate the boundary appromixation area for all criteria:
     ///
-    /// $$ g_i = \left( \prod_{j=1}^m v_{ij} \right)^{1/m} $$
+    /// $$ g_j = \left( \prod_{i=1}^m v_{ij} \right)^{1/m} $$
     ///
-    /// where $g_i$ is the boundary approximation area for the $i$th alternative, $v_{ij}$ is the
+    /// where $g_j$ is the boundary approximation area for the $i$th alternative, $v_{ij}$ is the
     /// weighted matrix for the $i$th alternative and $j$th criterion, and $m$ is the number of
-    /// criteria.
+    /// alternatives.
     ///
-    /// Next we calculate the distance of the $i$th alternative and $j$th criterion from the boundary
-    /// approximation area
+    /// Next, calculate the distance of the $i$th alternative and $j$th criterion from the
+    /// boundary approximation area
     ///
-    /// $$ q_{ij} = v_{ij} - g_j $$
+    /// $$ q_{ij} = v_{ij} - g_j \quad \text{for } i=1, \ldots, m \text{, } j=1, \ldots, n$$
     ///
-    /// Lastly, we rank the alternatives according to the sum of the distances of the alternatives from
-    /// the border approximation area.
+    /// Lastly, rank the alternatives according to the sum of the distances of the alternatives
+    /// from the border approximation area.
     ///
-    /// $$ S_i = \sum_{j=1}^{m} q_{ij} \quad \text{for} \quad i=1, \ldots, n \quad \text{and} \quad j=1, \ldots, m $$
+    /// $$ S_i = \sum_{j=1}^{m} q_{ij} \quad \text{for } i=1, \ldots, m \text{, } j=1, \ldots, n $$
     ///
     /// where $q_{ij}$ is the distance of the $i$th alternative and $j$th criterion of the weighted
-    /// matrix $v_{ij}$ to the boundary approximation $g_i$, $n$ is the number of alternatives and $m$
-    /// is the number of criteria.
+    /// matrix $v_{ij}$ to the boundary approximation $g_j$, $m$ is the number of alternatives and
+    /// $n$ is the number of criteria.
+    ///
+    /// Alternatives with a higher $S_i$ value are more preferred.
     ///
     /// # Arguments
     ///
@@ -574,36 +607,36 @@ pub trait Rank {
     /// The MAIRCA method operates on a normalized decision matrix. The typical normalization method
     /// used is the [`MinMax`](crate::normalization::Normalize::normalize_min_max) method.
     ///
-    /// To start, we define a normalied $n \times m$ decision matrix where $n$ is the number of
-    /// alternatives and $m$ is the number of criteria.
+    /// Start with a normalied $m \times n$ decision matrix where $m$ is the number of alternatives
+    /// and $n$ is the number of criteria.
     ///
-    /// $$ x_{ij} =
+    /// $$ r_{ij} =
     /// \begin{bmatrix}
-    /// x_{11} & x_{12} & \ldots & x_{1m} \\\\
-    /// x_{21} & x_{22} & \ldots & x_{2m} \\\\
+    /// x_{11} & x_{12} & \ldots & x_{1n} \\\\
+    /// x_{21} & x_{22} & \ldots & x_{2n} \\\\
     /// \vdots & \vdots & \ddots & \vdots \\\\
-    /// x_{n1} & x_{n2} & \ldots & x_{nm}
+    /// x_{m1} & x_{m2} & \ldots & x_{mn}
     /// \end{bmatrix}
     /// $$
     ///
     /// Next, calculate the preference for choosing alternatives using the vector $P_{Ai}$ where
     ///
-    /// $$ P_{Ai} = \frac{1}{n} $$
+    /// $$ P_{Ai} = \frac{1}{m} $$
     ///
     /// Next, calculate a theoretical ranking matrix $T_p$ where
     ///
     /// $$ T_p =
     /// \begin{bmatrix}
-    /// t_{p11} & t_{p12} & \ldots & t_{p1m} \\\\
-    /// t_{p21} & t_{p22} & \ldots & t_{p2m} \\\\
+    /// t_{p11} & t_{p12} & \ldots & t_{p1n} \\\\
+    /// t_{p21} & t_{p22} & \ldots & t_{p2n} \\\\
     /// \vdots & \vdots & \ddots & \vdots \\\\
-    /// t_{pn1} & t_{pn2} & \ldots & t_{pnm}
+    /// t_{pm1} & t_{pm2} & \ldots & t_{pmn}
     /// \end{bmatrix} =
     /// \begin{bmatrix}
-    /// P_{A1} \cdot w_1 & P_{A1} \cdot w_2 & \ldots & P_{A1} \cdot w_m \\\\
-    /// P_{A2} \cdot w_1 & P_{A2} \cdot w_2 & \ldots & P_{A2} \cdot w_m \\\\
+    /// P_{A1} \cdot w_1 & P_{A1} \cdot w_2 & \ldots & P_{A1} \cdot w_n \\\\
+    /// P_{A2} \cdot w_1 & P_{A2} \cdot w_2 & \ldots & P_{A2} \cdot w_n \\\\
     /// \vdots           & \vdots           & \ddots & \vdots \\\\
-    /// P_{An} \cdot w_1 & P_{An} \cdot w_2 & \ldots & P_{An} \cdot w_m
+    /// P_{Am} \cdot w_1 & P_{Am} \cdot w_2 & \ldots & P_{Am} \cdot w_n
     /// \end{bmatrix}
     /// $$
     ///
@@ -611,39 +644,39 @@ pub trait Rank {
     ///
     /// $$ T_r =
     /// \begin{bmatrix}
-    /// t_{r11} & t_{r12} & \ldots & t_{r1m} \\\\
-    /// t_{r21} & t_{r22} & \ldots & t_{r2m} \\\\
+    /// t_{r11} & t_{r12} & \ldots & t_{r1n} \\\\
+    /// t_{r21} & t_{r22} & \ldots & t_{r2n} \\\\
     /// \vdots & \vdots & \ddots & \vdots \\\\
-    /// t_{rn1} & t_{rn2} & \ldots & t_{rnm}
+    /// t_{rm1} & t_{rm2} & \ldots & t_{rmn}
     /// \end{bmatrix}
     /// $$
     ///
     /// The values of the real rating matrix are dependent on the criteria type. If the criteria
     /// type is profit:
     ///
-    /// $$ t_{rij} = t_{pij} \cdot \left(  \frac{x_{ij} - \min(x_j)}{\max(x_j) - \min(x_j)} \right) $$
+    /// $$ t_{rij} = t_{pij} \cdot \left(  \frac{r_{ij} - \min(r_j)}{\max(r_j) - \min(r_j)} \right) $$
     ///
     /// if the criteria type is cost:
     ///
-    /// $$ t_{rij} = t_{pij} \cdot \left(  \frac{x_{ij} - \max(x_j)}{\min(x_j) - \max(x_j)} \right) $$
+    /// $$ t_{rij} = t_{pij} \cdot \left(  \frac{r_{ij} - \max(r_j)}{\min(r_j) - \max(r_j)} \right) $$
     ///
     /// Next, calculate the total gap matrix, $G$, by taking the element-wise difference between the
     /// theoretical ranking method and the real rating matrix.
     ///
     /// $$ G = T_p - T_r  =
     /// \begin{bmatrix}
-    /// t_{p11} - t_{r11} & t_{p12} - t_{r12} & \ldots & t_{p1m} - t_{r1m} \\\\
-    /// t_{p21} - t_{r21} & t_{p22} - t_{r22} & \ldots & t_{p2m} - t_{r2m} \\\\
+    /// t_{p11} - t_{r11} & t_{p12} - t_{r12} & \ldots & t_{p1n} - t_{r1n} \\\\
+    /// t_{p21} - t_{r21} & t_{p22} - t_{r22} & \ldots & t_{p2n} - t_{r2n} \\\\
     /// \vdots            & \vdots            & \ddots & \vdots \\\\
-    /// t_{pn1} - t_{rn1} & t_{pn2} - t_{rn2} & \ldots & t_{pnm} - t_{rnm}
+    /// t_{pm1} - t_{rm1} & t_{pm2} - t_{rm2} & \ldots & t_{pmn} - t_{rmn}
     /// \end{bmatrix}
     /// $$
     ///
     /// Finally, rank the alternatives using the sum of the rows of the gap matrix, $G$.
     ///
-    /// $$ Q_i = \sum_{j=1}^m g_{ij} $$
+    /// $$ Q_i = \sum_{j=1}^n g_{ij} $$
     ///
-    /// Lower values of $Q_i$ indicate that alternative $i$ is ranked higher.
+    /// Alternatives with a higher $Q_i$ value are more preferred.
     ///
     /// # Arguments
     ///
@@ -683,16 +716,16 @@ pub trait Rank {
     /// on their performance across multiple criteria. It combines normalization, ideal solutions,
     /// and compromise approaches to evaulate alternatives.
     ///
-    /// We start by defining an augmented decision matrix, $M$, with $n$ rows of alternatives and
-    /// $m$ columns of criteria. The first row of $M$ defines the anti-ideal ($aam$) solution, and
+    /// We start by defining an augmented decision matrix, $M$, with $m$ rows of alternatives and
+    /// $n$ columns of criteria. The first row of $M$ defines the anti-ideal ($aam$) solution, and
     /// the last row defines the ideal ($aim$) solution.
     ///
     /// $$ M = \begin{bmatrix}
-    /// x_{aa1} & x_{aa2} & \ldots & x_{aam} \\\\
-    /// x_{11} & x_{12} & \ldots & x_{1m} \\\\
-    /// x_{21} & x_{22} & \ldots & x_{2m} \\\\
+    /// x_{aa1} & x_{aa2} & \ldots & x_{aan} \\\\
+    /// x_{11} & x_{12} & \ldots & x_{1n} \\\\
+    /// x_{21} & x_{22} & \ldots & x_{2n} \\\\
     /// \vdots & \vdots & \ddots & \vdots \\\\
-    /// x_{n1} & x_{n2} & \ldots & x_{nm} \\\\
+    /// x_{m1} & x_{m2} & \ldots & x_{mn} \\\\
     /// x_{ai1} & x_{ai2} & \ldots & x_{aim} \\\\
     /// \end{bmatrix}
     /// $$
@@ -727,14 +760,13 @@ pub trait Rank {
     /// Next, calculate the degrees of utility, $K_i$ of each alternative where $K_i^+$ is the ideal
     /// solution and $K_i^-$ is the anti-ideal solution:
     ///
-    /// $$ K_i^+ = \frac{S_i}{S_ai} $$
-    /// $$ K_i^- = \frac{S_i}{S_aai} $$
+    /// $$ K_i^+ = \frac{S_i}{S_{ai}} $$
+    /// $$ K_i^- = \frac{S_i}{S_{aai}} $$
     ///
-    /// where $S_i (i = 1, \ldots, n)$ represents the sum of the elemnts of the weighted matrix $V$
+    /// where $S_i (i = 1, \ldots, m)$ represents the sum of the elemnts of the weighted matrix $V$
     /// as represented by:
     ///
-    /// $$ S_i = \sum_{i=1}^n v_{ij} $$
-    ///
+    /// $$ S_i = \sum_{i=1}^m v_{ij} $$
     ///
     /// Next, calculate the utility of each alternative where $f(K_i^+)$ is the utility of the ideal
     /// solution and $f(K_i^-)$ is the utility of the anti-ideal solution defined as:
@@ -745,6 +777,8 @@ pub trait Rank {
     /// Finally, calculate ranking by making a determination from the utility functions:
     ///
     /// $$ f(K_i) = \frac{K_i^+ + K_i^-}{1 + \frac{1 - f(K_i^+)}{f(K_i^+)} + \frac{1 - f(K_i^-)}{f(K_i^-)}} $$
+    ///
+    /// Alternatives with a lower $f(K_i)$ value are more preferred.
     ///
     /// # Arguments
     ///
@@ -787,12 +821,21 @@ pub trait Rank {
     /// Ranks alternatives using the Multi-Objective Optimization on the basis of Ratio Analysis
     /// (MOORA) method.
     ///
-    /// The MOORA ranking method operates on a non-normalized decision matrix. This method ranks
-    /// alternatives by optimizing multiple objectives, such as maximizing benefits and minimizing
-    /// costs.
+    /// The MOORA ranking method expects an $m \times n$ unnormalized decision matrix. This method
+    /// ranks alternatives by optimizing multiple objectives, such as maximizing benefits and
+    /// minimizing costs.
     ///
-    /// We start by assuming all criteria are profits and normalize the decision matrix, $x_{ij}$,
-    /// using the [`Vector`](crate::normalization::Normalize::normalize_vector) method:
+    /// $$ X = [x_{ij}] =
+    /// \begin{bmatrix}
+    ///     x_{11} & x_{12} & \ldots & x_{1n} \\\\
+    ///     x_{21} & x_{22} & \ldots & x_{2n} \\\\
+    ///     \vdots & \vdots & \ddots & \vdots \\\\
+    ///     x_{m1} & x_{m2} & \ldots & x_{mn}
+    /// \end{bmatrix}
+    /// $$
+    ///
+    /// Next, treat all criteria types as profit and normalize the decision matrix using the
+    /// [`Vector`](crate::normalization::Normalize::normalize_vector) method:
     ///
     /// $$ r_{ij} = \frac{x_{ij}}{\sqrt{\sum_{i=1}^m x^2_{ij}}} $$
     ///
@@ -804,12 +847,14 @@ pub trait Rank {
     ///
     /// Next, calculate the sums of the profit, $S_p$, and cost criteira, $S_c$:
     ///
-    /// $$ S_p = \sum_{j=1}^m v_{ij} \quad \text{if } j \text{ is a profit criterion} $$
-    /// $$ S_c = \sum_{j=1}^m v_{ij} \quad \text{if } j \text{ is a cost criterion} $$
+    /// $$ S_p = \sum_{j=1}^n v_{ij} \quad \text{if } j \text{ is a profit criterion} $$
+    /// $$ S_c = \sum_{j=1}^n v_{ij} \quad \text{if } j \text{ is a cost criterion} $$
     ///
     /// Finally, calculate the composite score $y_i$ as:
     ///
     /// $$ y_i = S_p - S_c $$
+    ///
+    /// Alternatives with a higher $y_i$ value are more preferred.
     ///
     /// # Arguments
     ///
@@ -847,12 +892,12 @@ pub trait Rank {
 
     /// Ranks alternatives using the Operational Competitiveness Rating Analysis (OCRA) method.
     ///
-    /// The OCRA ranking method operates on a non-normalized decision matrix. This method ranks
-    /// alternatives by comparing their performance across multiple criteria. It is designed to
-    /// handle both beneficial critieria (those to be maximized, such as profits or quality) and
-    /// non-beneficial criteria (those to be minimized, such as costs or environmental impact).
+    /// The OCRA ranking method expects an $m \times n$ unnormalized decision matrix. This method
+    /// ranks alternatives by comparing their performance across multiple criteria. It is designed
+    /// to handle both beneficial critieria (those to be maximized, such as profits or quality)
+    /// and non-beneficial criteria (those to be minimized, such as costs or environmental impact).
     ///
-    /// We start by normalizing the decision matrix, $x_{ij}$, using the [`OCRA`](crate::normalization::Normalize::normalize_ocra)
+    /// Start by normalizing the decision matrix, $x_{ij}$, using the [`OCRA`](crate::normalization::Normalize::normalize_ocra)
     /// method:
     ///
     /// For profit:
@@ -873,6 +918,8 @@ pub trait Rank {
     /// Finally, determine the overall preference, $P_i$ of the alternatives:
     ///
     /// $$ P_i = \left( \bar{\bar{I_i}} + \bar{\bar{O_i}} \right) - \min\left( \bar{\bar{I_i}} + \bar{\bar{O_i}} \right) $$
+    ///
+    /// Alternatives with a higher $P_i$ value are more preferred.
     ///
     /// # Arguments
     ///
@@ -911,15 +958,24 @@ pub trait Rank {
     /// Rank alternatives using Preference Ranking on the Basis of Ideal-Average Distance (PROBID)
     /// method.
     ///
-    /// This ranking method operates on a non-normalized decision matrix. It ranks alternatives
-    /// based on their proximity to an ideal solution while considering average performance of
-    /// alternatives.
+    /// This ranking method expects an $m \times n$ unnormalized decision matrix. It ranks
+    /// alternatives based on their proximity to an ideal solution while considering average
+    /// performance of alternatives.
     ///
     /// Start with a decision matrix, $x_{ij}$, where $i$ represents alternatives and $j$ represents
     /// criteria.
     ///
+    /// $$ X = [x_{ij}] =
+    /// \begin{bmatrix}
+    ///     x_{11} & x_{12} & \ldots & x_{1n} \\\\
+    ///     x_{21} & x_{22} & \ldots & x_{2n} \\\\
+    ///     \vdots & \vdots & \ddots & \vdots \\\\
+    ///     x_{m1} & x_{m2} & \ldots & x_{mn}
+    /// \end{bmatrix}
+    /// $$
+    ///
     /// Normalize the decision matrix using the [`Vector`](crate::normalization::Normalize::normalize_vector)
-    /// method to get the normalized matri, $r_{ij}$.
+    /// method to get the normalized matrix, $r_{ij}$.
     ///
     /// Next, calculate the normalized weighted decision matrix, $v_{ij}$:
     ///
@@ -928,7 +984,7 @@ pub trait Rank {
     /// where $w_j$ is the weight of the $j$th criterion.
     ///
     /// Next, sort the normalized weighted decision matrix by criteria and criteria type. This will
-    /// create a matrix of successive Positive Ideal Solutions. We represent the sorted normalized
+    /// create a matrix of successive Positive Ideal Solutions. Represent the sorted normalized
     /// weighted decision matrix, $A_{(k)}$ as:
     ///
     /// $$ \begin{split}
@@ -981,9 +1037,11 @@ pub trait Rank {
     ///
     /// $$ R_i = \frac{S_i^+}{S_i^-} $$
     ///
-    /// Finally, compute the performance score as:
+    /// Finally, calculate the performance score as:
     ///
     /// $$ P_i = \frac{1}{1 + R_i^2} + S_{i(\text{avg})} $$
+    ///
+    /// Alternatives with a higher $P_i$ value are more preferred.
     ///
     /// # Arguments
     ///
@@ -1025,28 +1083,29 @@ pub trait Rank {
 
     /// Rank alternatives using the Root Assessment Method (RAM).
     ///
-    /// The RAM method expects the decision matrix is normalized using the [`Sum`](crate::normalization::Normalize::normalize_sum)
-    /// method. This method ranks alternatives by comparing them to a root or reference alternative.
-    /// RAM considers both the relative performance of alternatives and their deviation from the
-    /// reference point, ensuring a balanced evaluation across multiple criteria.
+    /// The RAM method expects an $m \times n$ decision matrix normalized using the
+    /// [`Sum`](crate::normalization::Normalize::normalize_sum) method. This method ranks
+    /// alternatives by comparing them to a root or reference alternative. RAM considers both the
+    /// relative performance of alternatives and their deviation from the reference point, ensuring
+    /// a balanced evaluation across multiple criteria.
     ///
-    /// We start with a normalized decision matrix $r_{ij}$. We typically expect the decision matrix
-    /// normalized using the [`Sum`](crate::normalization::Normalize::normalize_sum) method.
+    /// Start with a normalized decision matrix $r_{ij}$. The [`Sum`](crate::normalization::Normalize::normalize_sum)
+    /// method is typically used to normalize the decision matrix.
     ///
     /// Next, calculate the weighted decision matrix:
     ///
     /// $$ v_{ij} = r_{ij} w_j $$
     ///
-    /// Next, calculate the sums of weighted normalized scored for the profit ($\_{+i}$) and cost
-    /// ($\_{-i}$) criteria of the $i$th alternative:
+    /// Next, calculate the sums of weighted normalized scored for the profit ($y_{ij}^+$) and cost
+    /// ($y_{ij}^-$) criteria of the $i$th alternative:
     ///
-    /// $$ S_{+i} = \sum_{j=1}^n y_{+ij}^+ $$
+    /// $$ S_i^+ = \sum_{j=1}^n y_{ij}^+ $$
     ///
-    /// $$ S_{-i} = \sum_{j=1}^n y_{-ij}^- $$
+    /// $$ S_i^- = \sum_{j=1}^n y_{ij}^- $$
     ///
     /// Finally, compute the performance score as:
     ///
-    /// $$ P_i = \sqrt[{2 + S_{-i}}]{2 + S_{+i}}$$
+    /// $$ P_i = \sqrt[{2 + S_i^-}]{2 + S_i^+}$$
     ///
     /// Alternatives with higher $P_i$ values are more preferred.
     ///
@@ -1089,39 +1148,53 @@ pub trait Rank {
     /// The RIM method expects a non-normalized decision matrix and uses criteria bounds and
     /// reference ideal to evaluate alternatives.
     ///
-    /// We start by defining the terms:
+    /// Term definitions:
     ///
-    /// * Criteria weights: $w_j$, $j \in \\{1, 2, \ldots, N\\}$ where $N$ is the number of criteria.
-    /// * Decision matrix: $X = [x_{ij}]_{M \times N}$ where $M$ is the number of alternatives and
-    ///   $N$ is the number of criteria.
-    /// * Criteria Range: $t_j = [t_j^{(\min)}, t_j^{(\max)}]$, $j \in \\{1, 2, \ldots, N\\}$. This
+    /// * Criteria weights: $w_j$, $j \in \\{1, 2, \ldots, n\\}$ where $n$ is the number of
+    ///   criteria.
+    /// * Decision matrix: An unnormalized $m \times n$ matrix $X = [x_{ij}]$ where $m$ is the
+    ///   number of alternatives, $n$ is the number of criteria, and $x_{ij}$ is the value of the
+    ///   $j$th criterion for the $i$th alternative.
+    /// * Criteria Range: $t_j = [t_j^{(\min)}, t_j^{(\max)}]$, $j \in \\{1, 2, \ldots, n\\}$. This
     ///   defines an artibrary bounds for each criterion.
-    /// * Reference Ideal: $s_j = [s_j^{(\min)}, s_j^{(\max)}]$, $j \in \\{1, 2, \ldots, N\\}$ where
+    /// * Reference Ideal: $s_j = [s_j^{(\min)}, s_j^{(\max)}]$, $j \in \\{1, 2, \ldots, n\\}$ where
     ///   $[s_j^{(\min)}, s_j^{(\max)}] \subset [t_j^{(\min)}, t_j^{(\max)}]$. The Reference Ideal
     ///   defines the most preferred interval of values for each criterion. It can be derived from
     ///   the criteria range or defined as the expected outcome of the decision process.
     ///
-    /// Now we need to normalize the decision matrix $X$ using the [`RIM`](crate::normalization::Normalize::normalize_rim) normalization function:
+    /// Start with an $m \times n$ decision matrix $X$:
     ///
-    /// $$ f(x, \[A,B\], \[C,D\]) = \begin{cases}
-    ///     1 & \text{if } x \in \[C,D\] \\\\
-    ///     1 - \frac{d_{\min}(x, \[C,D\])}{|A-C|} & \text{if } x \in \[A,C\] \land A \neq C \\\\
-    ///     1 - \frac{d_{\min}(x, \[C,D\])}{|D-B|} & \text{if } x \in \[D,B\] \land D \neq B
+    /// $$ X = [x_{ij}] =
+    /// \begin{bmatrix}
+    ///     x_{11} & x_{12} & \ldots & x_{1n} \\\\
+    ///     x_{21} & x_{22} & \ldots & x_{2n} \\\\
+    ///     \vdots & \vdots & \ddots & \vdots \\\\
+    ///     x_{m1} & x_{m2} & \ldots & x_{mn}
+    /// \end{bmatrix}
+    /// $$
+    ///
+    /// Next, normalize the decision matrix $X$ using the [`RIM`](crate::normalization::Normalize::normalize_rim)
+    /// normalization function:
+    ///
+    /// $$ f(x_{ij}, \[A,B\], \[C,D\]) = \begin{cases}
+    ///     1 & \text{if } x_{ij} \in \[C,D\] \\\\
+    ///     1 - \frac{d_{\min}(x_{ij}, \[C,D\])}{|A-C|} & \text{if } x_{ij} \in \[A,C\] \land A \neq C \\\\
+    ///     1 - \frac{d_{\min}(x_{ij}, \[C,D\])}{|D-B|} & \text{if } x_{ij} \in \[D,B\] \land D \neq B
     /// \end{cases} $$
     ///
-    /// where $\[A,B\]$ is the criteria range, $\[C,D\]$ is the reference ideal, and $x \in \[A,B\],\[C,D\] \subset \[A,B\]$.
-    /// The function $d_{\min}(x, \[C,D\])$ is defined as:
+    /// where $\[A,B\]$ is the criteria range, $\[C,D\]$ is the reference ideal, and $x_{ij} \in \[A,B\],\[C,D\] \subset \[A,B\]$.
+    /// The function $d_{\min}(x_{ij}, \[C,D\])$ is defined as:
     ///
-    /// $$ d_{\min}(x, \[C,D\]) = \min(|x - C|, |x - D|) $$
+    /// $$ d_{\min}(x_{ij}, \[C,D\]) = \min(|x_{ij} - C|, |x_{ij} - D|) $$
     ///
-    /// The normalization lets us map the value $x$ to the range $\[0,1\]$ in the criteria domain with
-    /// regard to the ideal reference value. The RIM normalization is calculated as:
+    /// The normalization lets us map the value $x_{ij}$ to the range $\[0,1\]$ in the criteria
+    /// domain with regard to the ideal reference value. The RIM normalization is calculated as:
     ///
-    /// $$ Y = \[y_{ij}\]_{M \times N} = \[f(x\_{ij}, t_j, s_j)\]\_{M \times N} $$
+    /// $$ Y = \[y_{ij}\]= \[f(x\_{ij}, t_j, s_j)\] $$
     ///
     /// Next, calculate the weighted normalized matrix $Y\prime$:
     ///
-    /// $$ Y^\prime = \[y^\prime_{ij}\]_{M \times N} = \[w_j y\_{ij}\]\_{M \times N} $$
+    /// $$ Y^\prime = \[y^\prime_{ij}\]= \[w_j y\_{ij}\] $$
     ///
     /// Next, calculate the variation to the normalized reference ideal for each alternative $A_i$:
     ///
@@ -1133,7 +1206,7 @@ pub trait Rank {
     ///
     /// $$ P_i = \frac{I^+_i}{I^+_i + I^-_i} $$
     ///
-    /// Higher values of $P_i$ indicate more preferred alternatives.
+    /// Alternatives with a higher $P_i$ value are more preferred.
     ///
     /// # Arguments
     ///
@@ -1187,14 +1260,24 @@ pub trait Rank {
     /// The SPOTIS method expects an un-normalized decision matrix. This method evaluates given
     /// decision alternatives using the distance from the best ideal solution.
     ///
-    /// Start with an $n \times m$ decision matrix of elements $x_{ij}$ where $n$ is the number of
-    /// alternatives and $m$ is the number of criteria.
+    /// Start with an $m \times n$ decision matrix of elements $x_{ij}$ where $m$ is the number of
+    /// alternatives and $n$ is the number of criteria.
     ///
-    /// Next, normalize the decision matrix using the [`SPOTIS`](crate::normalization::Normalize::normalize_spotis)-specific
-    /// method. This method define the bounds of the problem. Minimum and Maximum bounds of classical MCDM
-    /// MCDM problems must be defined to transform MCDM problems from ill-defined to well-defined.
+    /// $$ X = [x_{ij}] =
+    /// \begin{bmatrix}
+    ///     x_{11} & x_{12} & \ldots & x_{1n} \\\\
+    ///     x_{21} & x_{22} & \ldots & x_{2n} \\\\
+    ///     \vdots & \vdots & \ddots & \vdots \\\\
+    ///     x_{m1} & x_{m2} & \ldots & x_{mn}
+    /// \end{bmatrix}
+    /// $$
     ///
-    /// $$ \left[ S_j^{\min}, S_j^{\max}\right], j \in \\{1, 2, \ldots, m\\} $$
+    /// Next, normalize the decision matrix using the [`SPOTIS`](crate::normalization::Normalize::normalize_spotis)
+    /// normalization method. This method define the bounds of the problem. Minimum and Maximum
+    /// bounds of classical MCDM problems must be defined to transform MCDM problems from
+    /// ill-defined to well-defined.
+    ///
+    /// $$ \left[ S_j^{\min}, S_j^{\max}\right], j \in \\{1, 2, \ldots, n\\} $$
     ///
     /// $S_j^*$ is the ideal solution point. This is a vector which includes maximum or minimum
     /// values from the bounds or specific criterion depending on the crition type. Take the maximum
@@ -1205,18 +1288,17 @@ pub trait Rank {
     ///     S_j^{\max} & \text{if } j \text{th criteria is profit}
     /// \end{cases} $$
     ///
-    /// The normalized matrix, $d_{ij}$ is the normalized distance matrix. For each alternative
-    /// $A_i, i \in \\{1, 2, \ldots, n\\}$, calculate its normalized distance with respect to the
-    /// ideal solution for each criteria $C_j, j \in \\{1, 2, \ldots, m\\}$:
+    /// The normalized matrix, $r_{ij}$ is the normalized distance matrix. For each alternative
+    /// $A_i, i \in \\{1, 2, \ldots, m\\}$, calculate its normalized distance with respect to the
+    /// ideal solution for each criteria $C_j, j \in \\{1, 2, \ldots, n\\}$:
     ///
-    /// $$ d_{ij} = \frac{A_{ij} - S_j^*}{S_j^{\max} - S_j^{\min}} $$
+    /// $$ r_{ij} = \frac{A_{ij} - S_j^*}{S_j^{\max} - S_j^{\min}} $$
     ///
     /// Finally, calculate the performance score as:
     ///
-    /// $$ P_i = \sum_{j=1}^m w_j d_{ij} $$
+    /// $$ P_i = \sum_{j=1}^n w_j r_{ij} $$
     ///
-    /// Alternatives with lower $P_i$ values are more preferred because $P_i$ is interpreted as
-    /// distance from the ideal or expected solution.
+    /// Alternatives with a lower $P_i$ values are more preferred.
     ///
     /// # Arguments
     ///
@@ -1259,16 +1341,17 @@ pub trait Rank {
 
     /// Ranks the alternatives using the TOPSIS method.
     ///
-    /// The TOPSIS method expects the decision matrix is normalized using the [`MinMax`](crate::normalization::Normalize::normalize_min_max)
-    /// method. Then computes a weighted matrix $v_{ij}$ using
+    /// The TOPSIS method expects an $m \times n$ decision matrix normalized using the
+    /// [`MinMax`](crate::normalization::Normalize::normalize_min_max) method. Then computes a
+    /// weighted matrix $v_{ij}$ using
     ///
     /// $$ v_{ij} = r_{ij}{w_j} $$
     ///
-    /// where $r_{ij}$ is the $i$th element of the alternative (row), $j$th elements of the criterion
-    /// (column) of the normalized decision matrix, and $w_j$ is the weight of the $j$th criterion.
+    /// where $r_{ij}$ is the $i$th alternative (row), $j$th criterion (column) of the normalized
+    /// decision matrix, and $w_j$ is the weight of the $j$th criterion.
     ///
-    /// We then derive a positive ideal solution (PIS), $A_j^+$, and a negative ideal solution (NIS),
-    /// $A_j^-$.
+    /// Next, calculate a positive ideal solution (PIS), $A_j^+$, and a negative ideal solution
+    /// (NIS), $A_j^-$.
     ///
     /// $$ A^+ = \left\\{v_1^+, v_2^+, \dots, v_n^+\right\\} = \max_j v_{ij} $$
     /// $$ A^- = \left\\{v_1^-, v_2^-, \dots, v_n^-\right\\} = \min_j v_{ij} $$
@@ -1284,6 +1367,8 @@ pub trait Rank {
     /// Finally, calculate the relative closeness of each alternative ot the ideal solution.
     ///
     /// $$ \phi_i = \frac{S_i^-}{S_i^+ + S_i^-} $$
+    ///
+    /// Alternatives with a higher $\phi_i$ value are more preferred.
     ///
     /// # Arguments
     ///
@@ -1318,15 +1403,16 @@ pub trait Rank {
 
     /// Rank alternatives using the Weighted Aggregated Sum Product ASessment (WASPAS) method.
     ///
-    /// The WASPAS method expects the decision matrix is normalized using the [`Linear`](crate::normalization::Normalize::normalize_linear)
-    /// method. The WASPAS ranking method is a combination of the [`WeightedProduct`](Rank::rank_weighted_product)
-    /// and [`WeightedSum`](Rank::rank_weighted_sum) ranking methods.
+    /// The WASPAS method expects an $m \times n$ decision matrix normalized using the
+    /// [`Linear`](crate::normalization::Normalize::normalize_linear) method. The WASPAS ranking
+    /// method is a combination of the [`WeightedProduct`](Rank::rank_weighted_product) and
+    /// [`WeightedSum`](Rank::rank_weighted_sum) ranking methods.
     ///
-    /// We start by calculating the [`WeightedProduct`](Rank::rank_weighted_product), $WPM$, and
+    /// Start by calculating the [`WeightedProduct`](Rank::rank_weighted_product), $WPM$, and
     /// [`WeightedSum`](Rank::rank_weighted_sum), $WSM$.
     ///
-    /// $$ WPM = \prod_{j=1}^m(r_{ij})^{w_j} $$
-    /// $$ WSM = \sum_{j=1}^m r_{ij}{w_j} $$
+    /// $$ WPM = \prod_{j=1}^n(r_{ij})^{w_j} $$
+    /// $$ WSM = \sum_{j=1}^n r_{ij}{w_j} $$
     ///
     /// where $w_j$ is the weight of the $j$th criterion and $r_{ij}$ is the normalized decision
     /// matrix at the $i$th alternative and $j$th criterion.
@@ -1335,10 +1421,10 @@ pub trait Rank {
     ///
     /// $$ \begin{split}
     /// Q_i &= \lambda WSM + (1-\lambda)WPM \\\\
-    ///     &= \lambda \sum_{j=1}^m r_{ij}{w_j} + (1-\lambda) \prod_{j=1}^m(r_{ij})^{w_j}
+    ///     &= \lambda \sum_{j=1}^n r_{ij}{w_j} + (1-\lambda) \prod_{j=1}^n(r_{ij})^{w_j}
     /// \end{split} $$
     ///
-    /// Higher values of $Q_i$ are more preferred alternatives.
+    /// Alternatives with a higher $Q_i$ value are more preferred.
     ///
     /// # Arguments
     ///
@@ -1386,13 +1472,17 @@ pub trait Rank {
 
     /// Computes the Weighted Product Model (WPM) preference values for alternatives.
     ///
-    /// The WPM model expects the decision matrix is normalized using the [`Sum`](crate::normalization::Normalize::normalize_sum) method. Then computes
-    /// the ranking using:
+    /// The `WeightedProduct` model expects an $m \times n$ decision matrix normalized using the
+    /// [`Sum`](crate::normalization::Normalize::normalize_sum) method.
     ///
-    /// $$ WPM = \prod_{j=1}^n(x_{ij})^{w_j} $$
+    /// Next, calculate the ranking using:
     ///
-    /// where $x_{ij}$ is the $i$th element of the alternative (row), $j$th elements of the criterion
-    /// (column) with $n$ total criteria, and $w_j$ is the weight of the $j$th criterion.
+    /// $$ P_i = \prod_{j=1}^n(r_{ij})^{w_j} $$
+    ///
+    /// where $r_{ij}$ is the $i$th alternative (row) and $j$th criterion (column) of the normalized
+    /// decision matrix with $n$ criteria, and $w_j$ is the weight of the $j$th criterion.
+    ///
+    /// Alternatives with a higher $P_i$ value are more preferred.
     ///
     /// # Arguments
     ///
@@ -1432,15 +1522,17 @@ pub trait Rank {
 
     /// Rank the alternatives using the Weighted Sum Model.
     ///
-    /// The `WeightedSum` method ranks alternatives based on the weighted sum of their criteria values.
-    /// Each alternative's score is calculated by multiplying its criteria values by the corresponding
-    /// weights and summing the results. The decision matrix is expected to be normalized using the
-    /// [`Sum`](crate::normalization::Normalize::normalize_sum) method.
+    /// The `WeightedSum` method ranks alternatives based on the weighted sum of their criteria
+    /// values. Each alternative's score is calculated by multiplying its criteria values by the
+    /// corresponding weights and summing the results. This method expects an $m \times $ decision
+    /// matrix normalized using the [`Sum`](crate::normalization::Normalize::normalize_sum) method.
     ///
-    /// $$ WSM = \sum_{j=1}^n x_{ij}{w_j} $$
+    /// $$ P_i = \sum_{j=1}^n r_{ij}{w_j} $$
     ///
-    /// where $x_{ij}$ is the $i$th element of the alternative (row), $j$th elements of the criterion
-    /// (column) with $n$ total criteria, and $w_j$ is the weight of the $j$th criterion.
+    /// where $r_{ij}$ is the $i$th alternative (row) and $j$th criterion (column) with $n$ total
+    /// criteria, and $w_j$ is the weight of the $j$th criterion.
+    ///
+    /// Alternatives with a higher $P_i$ value are more preferred.
     ///
     /// # Arguments
     ///
@@ -2267,12 +2359,12 @@ impl Rank for DMatrix<f64> {
         let mut distance_to_pis = DVector::zeros(num_rows);
         let mut distance_to_nis = DVector::zeros(num_rows);
 
-        for (n, row) in weighted_matrix.row_iter().enumerate() {
+        for (i, row) in weighted_matrix.row_iter().enumerate() {
             let dp = (row - &pis).map(|x| x.powi(2)).sum().sqrt();
-            distance_to_pis[n] = dp;
+            distance_to_pis[i] = dp;
 
             let dn = (row - &nis).map(|x| x.powi(2)).sum().sqrt();
-            distance_to_nis[n] = dn;
+            distance_to_nis[i] = dn;
         }
 
         let closeness_to_ideal = DVector::from_vec(

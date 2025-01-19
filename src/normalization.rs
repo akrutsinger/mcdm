@@ -53,9 +53,9 @@ pub trait Normalize {
     /// For cost:
     /// $$r_{ij} = 1- \frac{x_{ij} - \min_j(x_{ij})}{\sum_{i=1}^m(x_{ij} - \min_j(x_{ij})}$$
     ///
-    /// where $x_{ij}$ is the $i$th element of the alternative (row) and $j$th elements of the criterion
-    /// (column), $\max_j$ is the maximum criterion value, and $\min_j$ is the minimum criterion value
-    /// in the decision matrix with $m$ total criteria.
+    /// where $x_{ij}$ is the $i$th element of the alternative (row) and $j$th elements of the
+    /// criterion (column), $\max_j$ is the maximum criterion value, and $\min_j$ is the minimum
+    /// criterion value in the decision matrix with $m$ alternatives and $n$ criteria.
     ///
     /// # Arguments
     ///
@@ -101,8 +101,8 @@ pub trait Normalize {
     /// For cost:
     /// $$r_{ij} = \frac{1 - \frac{\ln(x_{ij})}{\ln(\prod_{i=1}^m x_{ij})}}{m - 1}$$
     ///
-    /// where $x_{ij}$ is the $i$th element of the alternative (row) and $j$th elements of the criterion
-    /// (column) with $m$ total alternatives.
+    /// where $x_{ij}$ is the $i$th element of the alternative (row) and $j$th elements of the
+    /// criterion (column) with $m$ alternatives.
     ///
     /// # Arguments
     ///
@@ -216,21 +216,34 @@ pub trait Normalize {
     /// Normalization function specific to the [`RIM`](crate::ranking::Rank::rank_rim) ranking
     /// method.
     ///
-    /// $$ f(x, \[A,B\], \[C,D\]) = \begin{cases}
-    ///     1 & \text{if } x \in \[C,D\] \\\\
-    ///     1 - \frac{d_{\min}(x, \[C,D\])}{|A-C|} & \text{if } x \in \[A,C\] \land A \neq C \\\\
-    ///     1 - \frac{d_{\min}(x, \[C,D\])}{|D-B|} & \text{if } x \in \[D,B\] \land D \neq B
+    /// Start with an $m \times n$ decision matrix $X$:
+    ///
+    /// $$ X = [x_{ij}] =
+    /// \begin{bmatrix}
+    ///     x_{11} & x_{12} & \ldots & x_{1n} \\\\
+    ///     x_{21} & x_{22} & \ldots & x_{2n} \\\\
+    ///     \vdots & \vdots & \ddots & \vdots \\\\
+    ///     x_{m1} & x_{m2} & \ldots & x_{mn}
+    /// \end{bmatrix}
+    /// $$
+    ///
+    /// Next, normalize $x_{ij}$ based on the the following cases:
+    ///
+    /// $$ f(x_{ij}, \[A,B\], \[C,D\]) = \begin{cases}
+    ///     1 & \text{if } x_{ij} \in \[C,D\] \\\\
+    ///     1 - \frac{d_{\min}(x_{ij}, \[C,D\])}{|A-C|} & \text{if } x_{ij} \in \[A,C\] \land A \neq C \\\\
+    ///     1 - \frac{d_{\min}(x_{ij}, \[C,D\])}{|D-B|} & \text{if } x_{ij} \in \[D,B\] \land D \neq B
     /// \end{cases} $$
     ///
-    /// where $\[A,B\]$ is the criteria range, $\[C,D\]$ is the reference ideal, and $x \in \[A,B\],\[C,D\] \subset \[A,B\]$.
-    /// The function $d_{\min}(x, \[C,D\])$ is defined as:
+    /// where $\[A,B\]$ is the criteria range, $\[C,D\]$ is the reference ideal, and $x_{ij} \in \[A,B\],\[C,D\] \subset \[A,B\]$.
+    /// The function $d_{\min}(x_{ij}, \[C,D\])$ is defined as:
     ///
-    /// $$ d_{\min}(x, \[C,D\]) = \min(|x - C|, |x - D|) $$
+    /// $$ d_{\min}(x, \[C,D\]) = \min(|x_{ij} - C|, |x_{ij} - D|) $$
     ///
-    /// The normalization lets us map the value $x$ to the range $\[0,1\]$ in the criteria domain with
-    /// regard to the ideal reference value. The RIM normalization is calculated as:
+    /// The normalization lets us map the value $x$ to the range $\[0,1\]$ in the criteria domain
+    /// with regard to the ideal reference value. The RIM normalization is calculated as:
     ///
-    /// $$ Y = \[y_{ij}\]_{M \times N} = \[f(x\_{ij}, t_j, s_j)\]\_{M \times N} $$
+    /// $$ Y = \[y_{ij}\] = \[f(x\_{ij}, t_j, s_j)\] $$
     fn normalize_rim(
         &self,
         criteria_range: &DMatrix<f64>,
@@ -271,8 +284,8 @@ pub trait Normalize {
     /// For cost:
     /// $$r_{ij} = \frac{\frac{1}{x_{ij}}}{\sum_{i=1}^m \frac{1}{x_{ij}}}$$
     ///
-    /// where $x_{ij}$ is the $i$th element of the alternative (row) and $j$th elements of the criterion
-    /// (column) with $m$ total criteria.
+    /// where $x_{ij}$ is the $i$th element of the alternative (row) and $j$th elements of the
+    /// criterion (column) with $m$ alternatives.
     ///
     /// # Arguments
     ///
@@ -293,7 +306,7 @@ pub trait Normalize {
     /// $$r_{ij} = 1 - \frac{x_{ij}}{\sqrt{\sum_{i=1}^m x^2_{ij}}}$$
     ///
     /// where $x_{ij}$ is the $i$th element of the alternative (row) and $j$th elements of the criterion
-    /// (column) with $m$ total criteria.
+    /// (column) with $m$ alternatives.
     ///
     /// # Arguments
     ///
