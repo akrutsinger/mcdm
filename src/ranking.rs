@@ -1,7 +1,6 @@
 //! Techniques for ranking alternatives.
 
 use crate::errors::RankingError;
-use crate::is_reference_ideal_bounds_valid;
 use crate::normalization::Normalize;
 use crate::CriteriaType;
 use crate::DMatrixExt;
@@ -2183,7 +2182,7 @@ impl Rank for DMatrix<f64> {
             return Err(RankingError::DimensionMismatch);
         }
 
-        is_reference_ideal_bounds_valid(reference_ideal, criteria_range)?;
+        reference_ideal.is_reference_ideal_bounds_valid(criteria_range)?;
 
         let normalized_matrix = self.normalize_rim(criteria_range, reference_ideal)?;
 

@@ -1,8 +1,8 @@
 //! Normalization methods for normalizing a decision matrix.
 
 use crate::errors::NormalizationError;
-use crate::is_reference_ideal_bounds_valid;
 use crate::CriteriaType;
+use crate::MatrixValidate;
 use nalgebra::{DMatrix, DVector};
 
 /// A trait for normalizing decision matrices in Multiple-Criteria Decision Making (MCDM) problems.
@@ -635,7 +635,7 @@ impl Normalize for DMatrix<f64> {
         criteria_range: &DMatrix<f64>,
         reference_ideal: &DMatrix<f64>,
     ) -> Result<DMatrix<f64>, NormalizationError> {
-        is_reference_ideal_bounds_valid(reference_ideal, criteria_range)?;
+        reference_ideal.is_reference_ideal_bounds_valid(criteria_range)?;
 
         // Initialize a matrix to store the normalized values
         let mut normalized_matrix = DMatrix::<f64>::zeros(self.nrows(), self.ncols());
