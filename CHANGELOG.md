@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Working towards making the code more idiomatic and reducing unnecessary calculations inside of loops
+- Working towards making the code more idiomatic and reducing unnecessary calculations inside of loops.
+- Refactored `CriteriaType` code into its own module.
 
 ### Fixed
 
