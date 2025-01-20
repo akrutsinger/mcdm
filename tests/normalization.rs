@@ -1,5 +1,5 @@
 use approx::assert_relative_eq;
-use mcdm::{errors::McdmError, normalization::Normalize, CriteriaType};
+use mcdm::{errors::McdmError, normalization::Normalize, CriteriaTypes};
 use nalgebra::{dmatrix, DMatrix};
 
 mod enhanced_accuracy_tests {
@@ -12,7 +12,7 @@ mod enhanced_accuracy_tests {
             1.2, 1.34, 0.21, 2.48;
             0.3, 2.48, 1.75, 1.69
         ];
-        let criteria_types = CriteriaType::from(vec![-1, 1, 1, -1])?;
+        let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1])?;
         let normalized_matrix = matrix.normalize_enhanced_accuracy(&criteria_types)?;
         let expected_matrix = dmatrix![
             0.25714286, 0.87022901, 0.56410256, 0.7979798;
@@ -35,7 +35,7 @@ mod linear_tests {
             1.2, 1.34, 0.21, 2.48;
             0.3, 2.48, 1.75, 1.69
         ];
-        let criteria_types = CriteriaType::from(vec![-1, 1, 1, -1])?;
+        let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1])?;
         let normalized_matrix = matrix.normalize_linear(&criteria_types)?;
         let expected_matrix = dmatrix![
             0.10344828, 0.93145161, 0.32, 0.89417989;
@@ -58,7 +58,7 @@ mod logarithmic_tests {
             1.2, 1.34, 0.21, 2.48;
             0.3, 2.48, 1.75, 1.69
         ];
-        let criteria_types = CriteriaType::from(vec![-1, 1, 1, -1])?;
+        let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1])?;
         let normalized_matrix = matrix.normalize_logarithmic(&criteria_types)?;
         let expected_matrix = dmatrix![
             -11.86325315, 0.4107828, 0.36677631, 0.34620508;
@@ -81,7 +81,7 @@ mod nonlinear_tests {
             1.2, 1.34, 0.21, 2.48;
             0.3, 2.48, 1.75, 1.69
         ];
-        let criteria_types = CriteriaType::from(vec![-1, 1, 1, -1])?;
+        let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1])?;
         let normalized_matrix = matrix.normalize_nonlinear(&criteria_types)?;
         let expected_matrix = dmatrix![
             0.00110706, 0.86760211, 0.1024, 0.7149484;
@@ -104,7 +104,7 @@ mod max_tests {
             1.2, 1.34, 0.21, 2.48;
             0.3, 2.48, 1.75, 1.69
         ];
-        let criteria_types = CriteriaType::from(vec![-1, 1, 1, -1])?;
+        let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1])?;
         let normalized_matrix = matrix.normalize_max(&criteria_types)?;
         let expected_matrix = dmatrix![
             0.0, 0.93145161, 0.32, 0.23790323;
@@ -127,7 +127,7 @@ mod minmax_tests {
             1.2, 1.34, 0.21, 2.48;
             0.3, 2.48, 1.75, 1.69
         ];
-        let criteria_types = CriteriaType::from(vec![-1, 1, 1, -1])?;
+        let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1])?;
         let normalized_matrix = matrix.normalize_min_max(&criteria_types)?;
         let expected_matrix = dmatrix![
             0.0, 0.85087719, 0.22727273, 0.74683544;
@@ -150,7 +150,7 @@ mod ocra_tests {
             1.2, 1.34, 0.21, 2.48;
             0.3, 2.48, 1.75, 1.69
         ];
-        let criteria_types = CriteriaType::from(vec![-1, 1, 1, -1])?;
+        let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1])?;
         let normalized_matrix = matrix.normalize_ocra(&criteria_types)?;
         let expected_matrix = dmatrix![
             0.0, 0.7238806, 1.66666667, 0.34911243;
@@ -197,7 +197,7 @@ mod spotis_tests {
             1.2, 1.34, 0.21, 2.48;
             0.3, 2.48, 1.75, 1.69
         ];
-        let criteria_types = CriteriaType::from(vec![-1, 1, 1, -1])?;
+        let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1])?;
         let bounds = dmatrix![0.1, 3.0; 1.0, 2.48; 0.0, 1.9; 0.69, 3.1];
         let normalized_matrix = matrix.normalize_spotis(&criteria_types, &bounds)?;
         let expected_matrix = dmatrix![
@@ -222,7 +222,7 @@ mod sum_tests {
             1.2, 1.34, 0.21, 2.48;
             0.3, 2.48, 1.75, 1.69
         ];
-        let criteria_types = CriteriaType::from(vec![-1, 1, 1, -1])?;
+        let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1])?;
         let normalized_matrix = matrix.normalize_sum(&criteria_types)?;
         let expected_matrix = dmatrix![
             0.07643312, 0.37683524, 0.22222222, 0.34716919;
@@ -245,7 +245,7 @@ mod vector_tests {
             1.2, 1.34, 0.21, 2.48;
             0.3, 2.48, 1.75, 1.69
         ];
-        let criteria_types = CriteriaType::from(vec![-1, 1, 1, -1])?;
+        let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1])?;
         let normalized_matrix = matrix.normalize_vector(&criteria_types)?;
         let expected_matrix = dmatrix![
             0.08017585, 0.63383849, 0.30280447, 0.46710009;
@@ -268,7 +268,7 @@ mod zavadskas_turskis_tests {
             1.2, 1.34, 0.21, 2.48;
             0.3, 2.48, 1.75, 1.69
         ];
-        let criteria_types = CriteriaType::from(vec![-1, 1, 1, -1])?;
+        let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1])?;
         let normalized_matrix = matrix.normalize_zavadskas_turskis(&criteria_types)?;
         let expected_matrix = dmatrix![
             -7.66666667, 0.93145161, 0.32, 0.8816568;

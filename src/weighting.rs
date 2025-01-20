@@ -216,7 +216,7 @@ pub trait Weight {
     /// # Weight Calculation
     ///
     /// Normalize the decision matrix using the [`Linear`](crate::normalization::Normalize::normalize_linear)
-    /// method. When passing the `CriteriaType` to the `Linear` normalization method, you must
+    /// method. When passing the `CriteriaTypes` to the `Linear` normalization method, you must
     /// switch the criteria types so each cost becomes a profit and each profit becomes a cost.
     ///
     /// The MEREC weighting method is based on the following formula:
@@ -254,11 +254,11 @@ pub trait Weight {
     /// ```rust
     /// use mcdm::normalization::Normalize;
     /// use mcdm::weighting::Weight;
-    /// use mcdm::CriteriaType;
+    /// use mcdm::CriteriaTypes;
     /// use nalgebra::dmatrix;
     ///
     /// let matrix = dmatrix![0.2, 0.8; 0.5, 0.5; 0.9, 0.1];
-    /// let criteria_types = CriteriaType::from(vec![-1, 1]).unwrap();
+    /// let criteria_types = CriteriaTypes::from_slice(&[-1, 1]).unwrap();
     /// let normalized_matrix = matrix.normalize_linear(&criteria_types).unwrap();
     /// let weights = normalized_matrix.weight_merec().unwrap();
     /// ```

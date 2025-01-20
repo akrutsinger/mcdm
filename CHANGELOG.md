@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Working towards making the code more idiomatic and reducing unnecessary calculations inside of loops.
-- Refactored `CriteriaType` code into its own module.
+- Refactored `CriteriaType` code into its own module and type `CriteriaTypes`. Instead of being a `Vec`, `CriteriaTypes` is an alias to `DVector<CriterionType>`, where `CriterionType` is an enum of either `Cost` or `Profit`.
 
 ### Fixed
 

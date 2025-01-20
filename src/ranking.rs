@@ -2,9 +2,9 @@
 
 use crate::errors::RankingError;
 use crate::normalization::Normalize;
-use crate::CriteriaType;
 use crate::DMatrixExt;
 use crate::MatrixValidate;
+use crate::{CriteriaTypes, CriterionType};
 use nalgebra::{DMatrix, DVector};
 
 /// A trait for ranking alternatives in Multiple-Criteria Decision Making (MCDM).
@@ -24,6 +24,7 @@ use nalgebra::{DMatrix, DVector};
 ///
 /// ```rust
 /// use mcdm::ranking::Rank;
+/// use mcdm::CriteriaTypes;;
 /// use nalgebra::{dmatrix, dvector};
 ///
 /// let normalized_matrix = dmatrix![0.8, 0.6; 0.5, 0.9; 0.3, 0.7];
@@ -110,6 +111,7 @@ pub trait Rank {
     /// ```rust
     /// use approx::assert_relative_eq;
     /// use mcdm::ranking::Rank;
+    /// use mcdm::CriteriaTypes;
     /// use nalgebra::{dmatrix, dvector};
     ///
     /// let matrix = dmatrix![
@@ -118,13 +120,13 @@ pub trait Rank {
     ///     0.3, 2.48, 1.75, 1.69
     /// ];
     /// let weights = dvector![0.25, 0.25, 0.25, 0.25];
-    /// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
+    /// let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1]).unwrap();
     /// let ranking = matrix.rank_aras(&criteria_types, &weights).unwrap();
     /// assert_relative_eq!(ranking, dvector![0.49447117, 0.35767527, 1.0], epsilon = 1e-5);
     /// ```
     fn rank_aras(
         &self,
-        types: &[CriteriaType],
+        types: &CriteriaTypes,
         weights: &DVector<f64>,
     ) -> Result<DVector<f64>, RankingError>;
 
@@ -178,6 +180,7 @@ pub trait Rank {
     /// ```rust
     /// use approx::assert_relative_eq;
     /// use mcdm::ranking::Rank;
+    /// use mcdm::CriteriaTypes;
     /// use mcdm::normalization::Normalize;
     /// use nalgebra::{dmatrix, dvector};
     ///
@@ -187,7 +190,7 @@ pub trait Rank {
     ///     0.3, 2.48, 1.75, 1.69
     /// ];
     /// let weights = dvector![0.25, 0.25, 0.25, 0.25];
-    /// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
+    /// let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1]).unwrap();
     /// let normalized_matrix = matrix.normalize_min_max(&criteria_types).unwrap();
     /// let ranking = normalized_matrix.rank_cocoso(&weights).unwrap();
     /// assert_relative_eq!(ranking, dvector![3.24754746, 1.14396494, 5.83576765], epsilon = 1e-5);
@@ -248,6 +251,7 @@ pub trait Rank {
     /// ```rust
     /// use approx::assert_relative_eq;
     /// use mcdm::ranking::Rank;
+    /// use mcdm::CriteriaTypes;;
     /// use mcdm::normalization::Normalize;
     /// use nalgebra::{dmatrix, dvector};
     ///
@@ -257,7 +261,7 @@ pub trait Rank {
     ///     0.3, 2.48, 1.75, 1.69
     /// ];
     /// let weights = dvector![0.25, 0.25, 0.25, 0.25];
-    /// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
+    /// let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1]).unwrap();
     /// let normalized_matrix = matrix.normalize_linear(&criteria_types).unwrap();
     /// let ranking = normalized_matrix.rank_codas(&weights, 0.02).unwrap();
     /// assert_relative_eq!(ranking, dvector![-0.40977725, -1.15891275, 1.56869], epsilon = 1e-5);
@@ -323,6 +327,7 @@ pub trait Rank {
     /// ```rust
     /// use approx::assert_relative_eq;
     /// use mcdm::ranking::Rank;
+    /// use mcdm::CriteriaTypes;;
     /// use nalgebra::{dmatrix, dvector};
     ///
     /// let matrix = dmatrix![
@@ -331,13 +336,13 @@ pub trait Rank {
     ///     0.3, 2.48, 1.75, 1.69
     /// ];
     /// let weights = dvector![0.25, 0.25, 0.25, 0.25];
-    /// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
+    /// let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1]).unwrap();
     /// let ranking = matrix.rank_copras(&criteria_types, &weights).unwrap();
     /// assert_relative_eq!(ranking, dvector![1.0, 0.6266752, 0.92104753], epsilon = 1e-5);
     /// ```
     fn rank_copras(
         &self,
-        types: &[CriteriaType],
+        types: &CriteriaTypes,
         weights: &DVector<f64>,
     ) -> Result<DVector<f64>, RankingError>;
 
@@ -404,6 +409,7 @@ pub trait Rank {
     /// ```rust
     /// use approx::assert_relative_eq;
     /// use mcdm::ranking::Rank;
+    /// use mcdm::CriteriaTypes;;
     /// use nalgebra::{dmatrix, dvector};
     ///
     /// let matrix = dmatrix![
@@ -412,13 +418,13 @@ pub trait Rank {
     ///     0.3, 2.48, 1.75, 1.69
     /// ];
     /// let weights = dvector![0.25, 0.25, 0.25, 0.25];
-    /// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
+    /// let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1]).unwrap();
     /// let ranking = matrix.rank_edas(&criteria_types, &weights).unwrap();
     /// assert_relative_eq!(ranking, dvector![0.04747397, 0.04029913, 1.0], epsilon = 1e-5);
     /// ```
     fn rank_edas(
         &self,
-        types: &[CriteriaType],
+        types: &CriteriaTypes,
         weights: &DVector<f64>,
     ) -> Result<DVector<f64>, RankingError>;
 
@@ -511,6 +517,7 @@ pub trait Rank {
     /// ```rust
     /// use approx::assert_relative_eq;
     /// use mcdm::ranking::Rank;
+    /// use mcdm::CriteriaTypes;;
     /// use nalgebra::{dmatrix, dvector};
     ///
     /// let matrix = dmatrix![
@@ -520,13 +527,13 @@ pub trait Rank {
     /// ];
     /// let weights = dvector![0.25, 0.25, 0.25, 0.25];
     /// let reference_point = dvector![1.46666667, 2.04333333, 0.84, 2.02];
-    /// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
+    /// let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1]).unwrap();
     /// let ranking = matrix.rank_ervd(&criteria_types, &weights, &reference_point, 0.5, 0.5).unwrap();
     /// assert_relative_eq!(ranking, dvector![0.30321682, 0.216203469, 1.0], epsilon = 1e-5);
     /// ```
     fn rank_ervd(
         &self,
-        types: &[CriteriaType],
+        types: &CriteriaTypes,
         weights: &DVector<f64>,
         reference_point: &DVector<f64>,
         lambda: f64,
@@ -585,6 +592,7 @@ pub trait Rank {
     /// ```rust
     /// use approx::assert_relative_eq;
     /// use mcdm::ranking::Rank;
+    /// use mcdm::CriteriaTypes;;
     /// use mcdm::normalization::Normalize;
     /// use nalgebra::{dmatrix, dvector};
     ///
@@ -594,7 +602,7 @@ pub trait Rank {
     ///     0.3, 2.48, 1.75, 1.69
     /// ];
     /// let weights = dvector![0.25, 0.25, 0.25, 0.25];
-    /// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
+    /// let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1]).unwrap();
     /// let normalized_matrix = matrix.normalize_min_max(&criteria_types).unwrap();
     /// let ranking = normalized_matrix.rank_mabac(&weights).unwrap();
     /// assert_relative_eq!(ranking, dvector![-0.01955314, -0.31233795,  0.52420052], epsilon = 1e-5);
@@ -693,6 +701,7 @@ pub trait Rank {
     /// ```rust
     /// use approx::assert_relative_eq;
     /// use mcdm::ranking::Rank;
+    /// use mcdm::CriteriaTypes;;
     /// use mcdm::normalization::Normalize;
     /// use nalgebra::{dmatrix, dvector};
     ///
@@ -702,7 +711,7 @@ pub trait Rank {
     ///     0.3, 2.48, 1.75, 1.69
     /// ];
     /// let weights = dvector![0.25, 0.25, 0.25, 0.25];
-    /// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
+    /// let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1]).unwrap();
     /// let normalized_matrix = matrix.normalize_min_max(&criteria_types).unwrap();
     /// let ranking = normalized_matrix.rank_mairca(&weights).unwrap();
     /// assert_relative_eq!(ranking, dvector![0.18125122, 0.27884615, 0.0], epsilon = 1e-5);
@@ -800,6 +809,7 @@ pub trait Rank {
     /// ```rust
     /// use approx::assert_relative_eq;
     /// use mcdm::ranking::Rank;
+    /// use mcdm::CriteriaTypes;;
     /// use nalgebra::{dmatrix, dvector};
     ///
     /// let matrix = dmatrix![
@@ -808,13 +818,13 @@ pub trait Rank {
     ///     0.3, 2.48, 1.75, 1.69
     /// ];
     /// let weights = dvector![0.25, 0.25, 0.25, 0.25];
-    /// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
+    /// let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1]).unwrap();
     /// let ranking = matrix.rank_marcos(&criteria_types, &weights).unwrap();
     /// assert_relative_eq!(ranking, dvector![0.51306940, 0.36312213, 0.91249658], epsilon = 1e-5);
     /// ```
     fn rank_marcos(
         &self,
-        types: &[CriteriaType],
+        types: &CriteriaTypes,
         weights: &DVector<f64>,
     ) -> Result<DVector<f64>, RankingError>;
 
@@ -872,6 +882,7 @@ pub trait Rank {
     /// ```rust
     /// use approx::assert_relative_eq;
     /// use mcdm::ranking::Rank;
+    /// use mcdm::CriteriaTypes;;
     /// use nalgebra::{dmatrix, dvector};
     ///
     /// let matrix = dmatrix![
@@ -880,13 +891,13 @@ pub trait Rank {
     ///     0.3, 2.48, 1.75, 1.69
     /// ];
     /// let weights = dvector![0.25, 0.25, 0.25, 0.25];
-    /// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
+    /// let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1]).unwrap();
     /// let ranking = matrix.rank_moora(&criteria_types, &weights).unwrap();
     /// assert_relative_eq!(ranking, dvector![-0.12902028, -0.14965973,  0.26377149], epsilon = 1e-5);
     /// ```
     fn rank_moora(
         &self,
-        types: &[CriteriaType],
+        types: &CriteriaTypes,
         weights: &DVector<f64>,
     ) -> Result<DVector<f64>, RankingError>;
 
@@ -937,6 +948,7 @@ pub trait Rank {
     /// ```rust
     /// use approx::assert_relative_eq;
     /// use mcdm::ranking::Rank;
+    /// use mcdm::CriteriaTypes;;
     /// use nalgebra::{dmatrix, dvector};
     ///
     /// let matrix = dmatrix![
@@ -945,13 +957,13 @@ pub trait Rank {
     ///     0.3, 2.48, 1.75, 1.69
     /// ];
     /// let weights = dvector![0.25, 0.25, 0.25, 0.25];
-    /// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
+    /// let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1]).unwrap();
     /// let ranking = matrix.rank_ocra(&criteria_types, &weights).unwrap();
     /// assert_relative_eq!(ranking, dvector![0.0, 0.73175174, 3.64463555], epsilon = 1e-5);
     /// ```
     fn rank_ocra(
         &self,
-        types: &[CriteriaType],
+        types: &CriteriaTypes,
         weights: &DVector<f64>,
     ) -> Result<DVector<f64>, RankingError>;
 
@@ -1060,6 +1072,7 @@ pub trait Rank {
     /// ```rust
     /// use approx::assert_relative_eq;
     /// use mcdm::ranking::Rank;
+    /// use mcdm::CriteriaTypes;;
     /// use nalgebra::{dmatrix, dvector};
     ///
     /// let matrix = dmatrix![
@@ -1068,7 +1081,7 @@ pub trait Rank {
     ///     0.3, 2.48, 1.75, 1.69
     /// ];
     /// let weights = dvector![0.25, 0.25, 0.25, 0.25];
-    /// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
+    /// let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1]).unwrap();
     /// let ranking = matrix.rank_probid(&criteria_types, &weights, false).unwrap();
     /// assert_relative_eq!(ranking, dvector![0.31041914, 0.39049427, 1.1111652], epsilon = 1e-5);
     /// let ranking = matrix.rank_probid(&criteria_types, &weights, true).unwrap();
@@ -1076,7 +1089,7 @@ pub trait Rank {
     /// ```
     fn rank_probid(
         &self,
-        types: &[CriteriaType],
+        types: &CriteriaTypes,
         weights: &DVector<f64>,
         simpler_probid: bool,
     ) -> Result<DVector<f64>, RankingError>;
@@ -1125,6 +1138,7 @@ pub trait Rank {
     /// ```rust
     /// use approx::assert_relative_eq;
     /// use mcdm::ranking::Rank;
+    /// use mcdm::CriteriaTypes;;
     /// use nalgebra::{dmatrix, dvector};
     ///
     /// let matrix = dmatrix![
@@ -1133,13 +1147,13 @@ pub trait Rank {
     ///     0.3, 2.48, 1.75, 1.69
     /// ];
     /// let weights = dvector![0.25, 0.25, 0.25, 0.25];
-    /// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
+    /// let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1]).unwrap();
     /// let ranking = matrix.rank_ram(&criteria_types, &weights).unwrap();
     /// assert_relative_eq!(ranking, dvector![1.40671879, 1.39992479, 1.48267751], epsilon = 1e-5);
     /// ```
     fn rank_ram(
         &self,
-        types: &[CriteriaType],
+        types: &CriteriaTypes,
         weights: &DVector<f64>,
     ) -> Result<DVector<f64>, RankingError>;
 
@@ -1231,6 +1245,7 @@ pub trait Rank {
     /// ```rust
     /// use approx::assert_relative_eq;
     /// use mcdm::ranking::Rank;
+    /// use mcdm::CriteriaTypes;;
     /// use nalgebra::{dmatrix, dvector};
     ///
     /// let matrix = dmatrix![
@@ -1239,7 +1254,7 @@ pub trait Rank {
     ///     0.3, 2.48, 1.75, 1.69
     /// ];
     /// let weights = dvector![0.25, 0.25, 0.25, 0.25];
-    /// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
+    /// let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1]).unwrap();
     /// let criteria_range = dmatrix![0.1, 3.0; 1.0, 2.48; 0.0, 1.9; 0.69, 3.1];
     /// let reference_ideal = dmatrix![0.1, 0.1; 2.48, 2.48; 1.9, 1.9; 0.69, 0.69];
     /// let ranking =
@@ -1248,7 +1263,7 @@ pub trait Rank {
     /// ```
     fn rank_rim(
         &self,
-        types: &[CriteriaType],
+        types: &CriteriaTypes,
         weights: &DVector<f64>,
         criteria_range: &DMatrix<f64>,
         reference_ideal: &DMatrix<f64>,
@@ -1319,6 +1334,7 @@ pub trait Rank {
     /// ```rust
     /// use approx::assert_relative_eq;
     /// use mcdm::ranking::Rank;
+    /// use mcdm::CriteriaTypes;;
     /// use nalgebra::{dmatrix, dvector};
     ///
     /// let matrix = dmatrix![
@@ -1328,13 +1344,13 @@ pub trait Rank {
     /// ];
     /// let weights = dvector![0.25, 0.25, 0.25, 0.25];
     /// let bounds = dmatrix![0.1, 3.0; 1.0, 2.48; 0.0, 1.9; 0.69, 3.1];
-    /// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
+    /// let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1]).unwrap();
     /// let ranking = matrix.rank_spotis(&criteria_types, &weights, &bounds).unwrap();
     /// assert_relative_eq!(ranking, dvector![0.57089264, 0.69544822, 0.14071266], epsilon = 1e-5);
     /// ```
     fn rank_spotis(
         &self,
-        types: &[CriteriaType],
+        types: &CriteriaTypes,
         weights: &DVector<f64>,
         bounds: &DMatrix<f64>,
     ) -> Result<DVector<f64>, RankingError>;
@@ -1385,6 +1401,7 @@ pub trait Rank {
     /// ```rust
     /// use approx::assert_relative_eq;
     /// use mcdm::ranking::Rank;
+    /// use mcdm::CriteriaTypes;;
     /// use mcdm::normalization::Normalize;
     /// use nalgebra::{dmatrix, dvector};
     ///
@@ -1394,7 +1411,7 @@ pub trait Rank {
     ///     0.3, 2.48, 1.75, 1.69
     /// ];
     /// let weights = dvector![0.25, 0.25, 0.25, 0.25];
-    /// let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
+    /// let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1]).unwrap();
     /// let normalized_matrix = matrix.normalize_min_max(&criteria_types).unwrap();
     /// let ranking = normalized_matrix.rank_topsis(&weights).unwrap();
     /// assert_relative_eq!(ranking, dvector![0.52910451, 0.72983217, 0.0], epsilon = 1e-5);
@@ -1443,9 +1460,9 @@ pub trait Rank {
     ///
     /// ```rust
     /// use approx::assert_relative_eq;
-    /// use mcdm::ranking::Rank;
     /// use mcdm::normalization::Normalize;
-    /// use mcdm::CriteriaType;
+    /// use mcdm::ranking::Rank;
+    /// use mcdm::CriteriaTypes;
     /// use nalgebra::{dmatrix, dvector};
     ///
     /// let matrix = dmatrix![
@@ -1454,7 +1471,7 @@ pub trait Rank {
     ///     0.3, 2.48, 1.75, 1.69
     /// ];
     /// let weights = dvector![0.25, 0.25, 0.25, 0.25];
-    /// let criteria_type = CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
+    /// let criteria_type = CriteriaTypes::from_slice(&[-1, 1, 1, -1]).unwrap();
     /// let lambda = 0.5;
     /// let normalized_matrix = matrix.normalize_linear(&criteria_type).unwrap();
     /// let ranking = normalized_matrix.rank_waspas(&weights, lambda).unwrap();
@@ -1498,9 +1515,9 @@ pub trait Rank {
     ///
     /// ```rust
     /// use approx::assert_relative_eq;
-    /// use mcdm::ranking::Rank;
     /// use mcdm::normalization::Normalize;
-    /// use mcdm::CriteriaType;
+    /// use mcdm::ranking::Rank;
+    /// use mcdm::CriteriaTypes;
     /// use nalgebra::{dmatrix, dvector};
     ///
     /// let matrix = dmatrix![
@@ -1509,7 +1526,7 @@ pub trait Rank {
     ///     0.3, 2.48, 1.75, 1.69
     /// ];
     /// let weights = dvector![0.25, 0.25, 0.25, 0.25];
-    /// let criteria_type = CriteriaType::from(vec![-1, 1, 1, -1]).unwrap();
+    /// let criteria_type = CriteriaTypes::from_slice(&[-1, 1, 1, -1]).unwrap();
     /// let normalized_matrix = matrix.normalize_sum(&criteria_type).unwrap();
     /// let ranking = normalized_matrix.rank_weighted_product(&weights).unwrap();
     /// assert_relative_eq!(
@@ -1524,7 +1541,7 @@ pub trait Rank {
     ///
     /// The `WeightedSum` method ranks alternatives based on the weighted sum of their criteria
     /// values. Each alternative's score is calculated by multiplying its criteria values by the
-    /// corresponding weights and summing the results. This method expects an $m \times $ decision
+    /// corresponding weights and summing the results. This method expects an $m \times n$ decision
     /// matrix normalized using the [`Sum`](crate::normalization::Normalize::normalize_sum) method.
     ///
     /// $$ P_i = \sum_{j=1}^n r_{ij}{w_j} $$
@@ -1549,6 +1566,7 @@ pub trait Rank {
     /// ```rust
     /// use approx::assert_relative_eq;
     /// use mcdm::ranking::Rank;
+    /// use mcdm::CriteriaTypes;;
     /// use nalgebra::{dmatrix, dvector};
     ///
     /// let matrix = dmatrix![0.2, 0.8; 0.5, 0.5; 0.9, 0.1];
@@ -1560,9 +1578,36 @@ pub trait Rank {
 }
 
 impl Rank for DMatrix<f64> {
+    /// Rank the alternatives using the Additive Ratio Assessment (ARAS) method.
+    ///
+    /// The `ARAS` method evaluates alternatives by comparing their overall performance
+    /// relative to an ideal (best) alternative. Each alternative's performance is assessed
+    /// by the sum of its weighted, normalized criteria values divided by the performance
+    /// of the ideal alternative. This method requires a decision matrix and a set of weights
+    /// for the criteria, as well as the type (Profit or Cost) of each criterion.
+    ///
+    /// The ideal alternative is constructed using the best value for each criterion.
+    ///
+    /// # Arguments
+    ///
+    /// * `types` - A vector indicating whether each criterion is a `Profit` or `Cost`.
+    /// * `weights` - A vector of weights corresponding to the relative importance of each criterion.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<DVector<f64>, RankingError>` - A 1D array of preference values, or an error
+    ///   if the ranking process fails.
+    ///
+    /// Alternatives with higher preference values are more preferred.
+    ///
+    /// # Errors
+    ///
+    /// Returns `RankingError::EmptyMatrix` if the decision matrix is empty, or
+    /// `RankingError::DimensionMismatch` if the lengths of `types` or `weights` do not match
+    /// the number of criteria.
     fn rank_aras(
         &self,
-        types: &[CriteriaType],
+        types: &CriteriaTypes,
         weights: &DVector<f64>,
     ) -> Result<DVector<f64>, RankingError> {
         let (num_alternatives, num_criteria) = self.shape();
@@ -1580,8 +1625,8 @@ impl Rank for DMatrix<f64> {
 
         for (i, criteria_type) in types.iter().enumerate() {
             exmatrix[(0, i)] = match criteria_type {
-                CriteriaType::Profit => self.column(i).max(),
-                CriteriaType::Cost => self.column(i).min(),
+                CriterionType::Profit => self.column(i).max(),
+                CriterionType::Cost => self.column(i).min(),
             };
         }
 
@@ -1703,7 +1748,7 @@ impl Rank for DMatrix<f64> {
 
     fn rank_copras(
         &self,
-        types: &[CriteriaType],
+        types: &CriteriaTypes,
         weights: &DVector<f64>,
     ) -> Result<DVector<f64>, RankingError> {
         let (num_alternatives, num_criteria) = self.shape();
@@ -1716,7 +1761,7 @@ impl Rank for DMatrix<f64> {
             return Err(RankingError::DimensionMismatch);
         }
 
-        let normalized_matrix = self.normalize_sum(&CriteriaType::profits(types.len()))?;
+        let normalized_matrix = self.normalize_sum(&CriteriaTypes::all_profits(types.len()))?;
 
         let weighted_matrix = normalized_matrix.scale_columns(weights);
 
@@ -1725,7 +1770,7 @@ impl Rank for DMatrix<f64> {
             weighted_matrix.row_iter().map(|row| {
                 row.iter()
                     .zip(types.iter())
-                    .filter(|&(_, c_type)| *c_type == CriteriaType::Profit)
+                    .filter(|&(_, c_type)| *c_type == CriterionType::Profit)
                     .map(|(&val, _)| val)
                     .sum::<f64>()
             }),
@@ -1736,7 +1781,7 @@ impl Rank for DMatrix<f64> {
             weighted_matrix.row_iter().map(|row| {
                 row.iter()
                     .zip(types.iter())
-                    .filter(|&(_, c_type)| *c_type == CriteriaType::Cost)
+                    .filter(|&(_, c_type)| *c_type == CriterionType::Cost)
                     .map(|(&val, _)| val)
                     .sum::<f64>()
             }),
@@ -1759,7 +1804,7 @@ impl Rank for DMatrix<f64> {
 
     fn rank_edas(
         &self,
-        types: &[CriteriaType],
+        types: &CriteriaTypes,
         weights: &DVector<f64>,
     ) -> Result<DVector<f64>, RankingError> {
         let (num_alternatives, num_criteria) = self.shape();
@@ -1782,11 +1827,11 @@ impl Rank for DMatrix<f64> {
 
             for (i, val) in col.iter().enumerate() {
                 match types[j] {
-                    CriteriaType::Profit => {
+                    CriterionType::Profit => {
                         positive_distance_matrix[(i, j)] = (val - avg) / avg;
                         negative_distance_matrix[(i, j)] = (avg - val) / avg;
                     }
-                    CriteriaType::Cost => {
+                    CriterionType::Cost => {
                         positive_distance_matrix[(i, j)] = (avg - val) / avg;
                         negative_distance_matrix[(i, j)] = (val - avg) / avg;
                     }
@@ -1816,13 +1861,13 @@ impl Rank for DMatrix<f64> {
 
     fn rank_ervd(
         &self,
-        types: &[CriteriaType],
+        types: &CriteriaTypes,
         weights: &DVector<f64>,
         reference_point: &DVector<f64>,
         lambda: f64,
         alpha: f64,
     ) -> Result<DVector<f64>, RankingError> {
-        let criteria_profits = CriteriaType::profits(types.len());
+        let criteria_profits = CriteriaTypes::all_profits(types.len());
         let normalized_matrix = self.normalize_sum(&criteria_profits)?;
         let reference_point = reference_point.component_div(&self.row_sum().transpose());
 
@@ -1832,14 +1877,14 @@ impl Rank for DMatrix<f64> {
         for (i, row) in normalized_matrix.row_iter().enumerate() {
             for (j, value) in row.iter().enumerate() {
                 value_matrix[(i, j)] = match types[j] {
-                    CriteriaType::Profit => {
+                    CriterionType::Profit => {
                         if *value > reference_point[j] {
                             (value - reference_point[j]).powf(alpha)
                         } else {
                             (-1.0 * lambda) * (reference_point[j] - value).powf(alpha)
                         }
                     }
-                    CriteriaType::Cost => {
+                    CriterionType::Cost => {
                         if *value < reference_point[j] {
                             (reference_point[j] - value).powf(alpha)
                         } else {
@@ -1939,7 +1984,7 @@ impl Rank for DMatrix<f64> {
 
     fn rank_marcos(
         &self,
-        types: &[CriteriaType],
+        types: &CriteriaTypes,
         weights: &DVector<f64>,
     ) -> Result<DVector<f64>, RankingError> {
         let (num_alternatives, num_criteria) = self.shape();
@@ -1962,11 +2007,11 @@ impl Rank for DMatrix<f64> {
 
         for (j, criteria_type) in types.iter().enumerate() {
             match criteria_type {
-                CriteriaType::Profit => {
+                CriterionType::Profit => {
                     exmatrix[(num_alternatives, j)] = max_criteria_values[j];
                     exmatrix[(num_alternatives + 1, j)] = min_criteria_values[j];
                 }
-                CriteriaType::Cost => {
+                CriterionType::Cost => {
                     exmatrix[(num_alternatives, j)] = min_criteria_values[j];
                     exmatrix[(num_alternatives + 1, j)] = max_criteria_values[j];
                 }
@@ -1999,7 +2044,7 @@ impl Rank for DMatrix<f64> {
 
     fn rank_moora(
         &self,
-        types: &[CriteriaType],
+        types: &CriteriaTypes,
         weights: &DVector<f64>,
     ) -> Result<DVector<f64>, RankingError> {
         let (num_alternatives, num_criteria) = self.shape();
@@ -2012,7 +2057,7 @@ impl Rank for DMatrix<f64> {
             return Err(RankingError::DimensionMismatch);
         }
 
-        let normalized_matrix = self.normalize_vector(&CriteriaType::profits(types.len()))?;
+        let normalized_matrix = self.normalize_vector(&CriteriaTypes::all_profits(types.len()))?;
         let weighted_matrix = normalized_matrix.scale_columns(weights);
 
         let sum_normalized_profit = DVector::from_iterator(
@@ -2020,7 +2065,7 @@ impl Rank for DMatrix<f64> {
             weighted_matrix.row_iter().map(|row| {
                 row.iter()
                     .zip(types.iter())
-                    .filter(|&(_, c_type)| *c_type == CriteriaType::Profit)
+                    .filter(|&(_, c_type)| *c_type == CriterionType::Profit)
                     .map(|(&val, _)| val)
                     .sum::<f64>()
             }),
@@ -2031,7 +2076,7 @@ impl Rank for DMatrix<f64> {
             weighted_matrix.row_iter().map(|row| {
                 row.iter()
                     .zip(types.iter())
-                    .filter(|&(_, c_type)| *c_type == CriteriaType::Cost)
+                    .filter(|&(_, c_type)| *c_type == CriterionType::Cost)
                     .map(|(&val, _)| val)
                     .sum::<f64>()
             }),
@@ -2044,7 +2089,7 @@ impl Rank for DMatrix<f64> {
 
     fn rank_ocra(
         &self,
-        types: &[CriteriaType],
+        types: &CriteriaTypes,
         weights: &DVector<f64>,
     ) -> Result<DVector<f64>, RankingError> {
         let (num_alternatives, num_criteria) = self.shape();
@@ -2063,10 +2108,10 @@ impl Rank for DMatrix<f64> {
         let mut o = DVector::zeros(num_alternatives);
         for (j, col) in normalized_matrix.column_iter().enumerate() {
             match types[j] {
-                CriteriaType::Profit => {
+                CriterionType::Profit => {
                     i += weights[j] * col;
                 }
-                CriteriaType::Cost => {
+                CriterionType::Cost => {
                     o += weights[j] * col;
                 }
             }
@@ -2086,7 +2131,7 @@ impl Rank for DMatrix<f64> {
 
     fn rank_probid(
         &self,
-        types: &[CriteriaType],
+        types: &CriteriaTypes,
         weights: &DVector<f64>,
         simpler_probid: bool,
     ) -> Result<DVector<f64>, RankingError> {
@@ -2100,19 +2145,19 @@ impl Rank for DMatrix<f64> {
             return Err(RankingError::DimensionMismatch);
         }
 
-        let normalized_matrix = self.normalize_vector(&CriteriaType::profits(num_criteria))?;
+        let normalized_matrix = self.normalize_vector(&CriteriaTypes::all_profits(num_criteria))?;
         let weighted_matrix = normalized_matrix.scale_columns(weights);
 
         let mut pis_matrix = weighted_matrix.clone();
         for (j, column) in weighted_matrix.column_iter().enumerate() {
             let mut column_vec: Vec<f64> = column.iter().cloned().collect();
             match types[j] {
-                CriteriaType::Profit => {
+                CriterionType::Profit => {
                     column_vec
                         .sort_by(|a, b| b.partial_cmp(a).unwrap_or(core::cmp::Ordering::Equal));
                     // Descending order
                 }
-                CriteriaType::Cost => {
+                CriterionType::Cost => {
                     column_vec
                         .sort_by(|a, b| a.partial_cmp(b).unwrap_or(core::cmp::Ordering::Equal));
                     // Ascending order
@@ -2188,7 +2233,7 @@ impl Rank for DMatrix<f64> {
 
     fn rank_ram(
         &self,
-        types: &[CriteriaType],
+        types: &CriteriaTypes,
         weights: &DVector<f64>,
     ) -> Result<DVector<f64>, RankingError> {
         let (num_alternatives, num_criteria) = self.shape();
@@ -2201,7 +2246,7 @@ impl Rank for DMatrix<f64> {
             return Err(RankingError::DimensionMismatch);
         }
 
-        let normalized_matrix = &self.normalize_sum(&CriteriaType::profits(num_criteria))?;
+        let normalized_matrix = &self.normalize_sum(&CriteriaTypes::all_profits(num_criteria))?;
         let weighted_matrix = normalized_matrix.scale_columns(weights);
 
         // Vectors of PIS and NIS
@@ -2210,7 +2255,7 @@ impl Rank for DMatrix<f64> {
             weighted_matrix.row_iter().map(|row| {
                 row.iter()
                     .zip(types.iter())
-                    .filter(|&(_, c_type)| *c_type == CriteriaType::Profit)
+                    .filter(|&(_, c_type)| *c_type == CriterionType::Profit)
                     .map(|(&val, _)| val)
                     .sum::<f64>()
             }),
@@ -2220,7 +2265,7 @@ impl Rank for DMatrix<f64> {
             weighted_matrix.row_iter().map(|row| {
                 row.iter()
                     .zip(types.iter())
-                    .filter(|&(_, c_type)| *c_type == CriteriaType::Cost)
+                    .filter(|&(_, c_type)| *c_type == CriterionType::Cost)
                     .map(|(&val, _)| val)
                     .sum()
             }),
@@ -2237,7 +2282,7 @@ impl Rank for DMatrix<f64> {
 
     fn rank_rim(
         &self,
-        types: &[CriteriaType],
+        types: &CriteriaTypes,
         weights: &DVector<f64>,
         criteria_range: &DMatrix<f64>,
         reference_ideal: &DMatrix<f64>,
@@ -2282,7 +2327,7 @@ impl Rank for DMatrix<f64> {
 
     fn rank_spotis(
         &self,
-        types: &[CriteriaType],
+        types: &CriteriaTypes,
         weights: &DVector<f64>,
         bounds: &DMatrix<f64>,
     ) -> Result<DVector<f64>, RankingError> {

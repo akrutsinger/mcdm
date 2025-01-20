@@ -2,6 +2,7 @@ use approx::assert_relative_eq;
 use mcdm::errors::McdmError;
 use mcdm::normalization::Normalize;
 use mcdm::ranking::Rank;
+use mcdm::CriteriaTypes;
 use nalgebra::{dmatrix, dvector};
 
 mod aras_tests {
@@ -15,7 +16,7 @@ mod aras_tests {
             0.3, 2.48, 1.75, 1.69
         ];
         let weights = dvector![0.25, 0.25, 0.25, 0.25];
-        let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1])?;
+        let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1])?;
         let ranking = matrix.rank_aras(&criteria_types, &weights)?;
         assert_relative_eq!(
             ranking,
@@ -38,7 +39,7 @@ mod cocoso_tests {
             0.3, 2.48, 1.75, 1.69
         ];
         let weights = dvector![0.25, 0.25, 0.25, 0.25];
-        let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1])?;
+        let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1])?;
         let normalized_matrix = matrix.normalize_min_max(&criteria_types)?;
         let ranking = normalized_matrix.rank_cocoso(&weights)?;
         assert_relative_eq!(
@@ -83,7 +84,7 @@ mod codas_tests {
             0.3, 2.48, 1.75, 1.69
         ];
         let weights = dvector![0.25, 0.25, 0.25, 0.25];
-        let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1])?;
+        let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1])?;
         let normalized_matrix = matrix.normalize_linear(&criteria_types)?;
         let ranking = normalized_matrix.rank_codas(&weights, 0.02)?;
         assert_relative_eq!(
@@ -107,7 +108,7 @@ mod copras_tests {
             0.3, 2.48, 1.75, 1.69
         ];
         let weights = dvector![0.25, 0.25, 0.25, 0.25];
-        let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1])?;
+        let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1])?;
         let ranking = matrix.rank_copras(&criteria_types, &weights)?;
         assert_relative_eq!(
             ranking,
@@ -130,7 +131,7 @@ mod edas_tests {
             0.3, 2.48, 1.75, 1.69
         ];
         let weights = dvector![0.25, 0.25, 0.25, 0.25];
-        let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1])?;
+        let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1])?;
         let ranking = matrix.rank_edas(&criteria_types, &weights)?;
         assert_relative_eq!(
             ranking,
@@ -167,7 +168,7 @@ mod ervd_tests {
             86.0, 87.0, 80.0, 70.0, 72.0, 80.0, 85.0;
         ];
         let weights = dvector![0.066, 0.196, 0.066, 0.130, 0.130, 0.216, 0.196];
-        let criteria_types = mcdm::CriteriaType::profits(weights.len());
+        let criteria_types = CriteriaTypes::all_profits(weights.len());
         let reference_point = dvector![80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0];
         let ranking = matrix.rank_ervd(&criteria_types, &weights, &reference_point, 2.25, 0.88)?;
         let expected = dvector![
@@ -216,7 +217,7 @@ mod ervd_tests {
             86.0, 87.0, 80.0, 70.0, 72.0, 80.0, 85.0;
         ];
         let weights = dvector![0.066, 0.196, 0.066, 0.130, 0.130, 0.216, 0.196];
-        let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, -1, 1, -1, 1, -1])?;
+        let criteria_types = CriteriaTypes::from_slice(&[-1, 1, -1, 1, -1, 1, -1])?;
         let reference_point = dvector![80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0];
         let ranking = matrix.rank_ervd(&criteria_types, &weights, &reference_point, 2.25, 0.88)?;
         let expected = dvector![
@@ -255,7 +256,7 @@ mod mabac_tests {
             0.3, 2.48, 1.75, 1.69
         ];
         let weights = dvector![0.25, 0.25, 0.25, 0.25];
-        let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1])?;
+        let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1])?;
         let normalized_matrix = matrix.normalize_min_max(&criteria_types)?;
         let ranking = normalized_matrix.rank_mabac(&weights)?;
         assert_relative_eq!(
@@ -299,7 +300,7 @@ mod mairca_tests {
             0.3, 2.48, 1.75, 1.69
         ];
         let weights = dvector![0.25, 0.25, 0.25, 0.25];
-        let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1])?;
+        let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1])?;
         let normalized_matrix = matrix.normalize_min_max(&criteria_types)?;
         let ranking = normalized_matrix.rank_mairca(&weights)?;
         assert_relative_eq!(
@@ -323,7 +324,7 @@ mod marcos_tests {
             0.3, 2.48, 1.75, 1.69
         ];
         let weights = dvector![0.25, 0.25, 0.25, 0.25];
-        let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1])?;
+        let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1])?;
         let ranking = matrix.rank_marcos(&criteria_types, &weights)?;
         assert_relative_eq!(
             ranking,
@@ -346,7 +347,7 @@ mod moora_tests {
             0.3, 2.48, 1.75, 1.69
         ];
         let weights = dvector![0.25, 0.25, 0.25, 0.25];
-        let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1])?;
+        let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1])?;
         let ranking = matrix.rank_moora(&criteria_types, &weights)?;
         assert_relative_eq!(
             ranking,
@@ -369,7 +370,7 @@ mod ocra_tests {
             0.3, 2.48, 1.75, 1.69
         ];
         let weights = dvector![0.25, 0.25, 0.25, 0.25];
-        let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1])?;
+        let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1])?;
         let ranking = matrix.rank_ocra(&criteria_types, &weights)?;
         assert_relative_eq!(
             ranking,
@@ -392,7 +393,7 @@ mod probid_tests {
             0.3, 2.48, 1.75, 1.69
         ];
         let weights = dvector![0.25, 0.25, 0.25, 0.25];
-        let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1])?;
+        let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1])?;
         let ranking = matrix.rank_probid(&criteria_types, &weights, false)?;
         assert_relative_eq!(
             ranking,
@@ -412,7 +413,7 @@ mod probid_tests {
             1.3, 1.48, 1.2, 0.69
         ];
         let weights = dvector![0.25, 0.25, 0.25, 0.25];
-        let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1])?;
+        let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1])?;
         let ranking = matrix.rank_probid(&criteria_types, &weights, false)?;
         assert_relative_eq!(
             ranking,
@@ -431,7 +432,7 @@ mod probid_tests {
             0.3, 2.48, 1.75, 1.69
         ];
         let weights = dvector![0.25, 0.25, 0.25, 0.25];
-        let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1])?;
+        let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1])?;
         let ranking = matrix.rank_probid(&criteria_types, &weights, true)?;
         assert_relative_eq!(
             ranking,
@@ -451,7 +452,7 @@ mod probid_tests {
             1.3, 1.48, 1.2, 0.69
         ];
         let weights = dvector![0.25, 0.25, 0.25, 0.25];
-        let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1])?;
+        let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1])?;
         let ranking = matrix.rank_probid(&criteria_types, &weights, true)?;
         assert_relative_eq!(
             ranking,
@@ -474,7 +475,7 @@ mod ram_tests {
             0.3, 2.48, 1.75, 1.69
         ];
         let weights = dvector![0.25, 0.25, 0.25, 0.25];
-        let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1])?;
+        let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1])?;
         let ranking = matrix.rank_ram(&criteria_types, &weights)?;
         assert_relative_eq!(
             ranking,
@@ -497,7 +498,7 @@ mod rim_tests {
             0.3, 2.48, 1.75, 1.69
         ];
         let weights = dvector![0.25, 0.25, 0.25, 0.25];
-        let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1])?;
+        let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1])?;
         let criteria_range = dmatrix![0.1, 3.0; 1.0, 2.48; 0.0, 1.9; 0.69, 3.1];
         let reference_ideal = dmatrix![0.1, 0.1; 2.48, 2.48; 1.9, 1.9; 0.69, 0.69];
         let ranking =
@@ -524,7 +525,7 @@ mod spotis_tests {
         ];
         let weights = dvector![0.25, 0.25, 0.25, 0.25];
         let bounds = dmatrix![0.1, 3.0; 1.0, 2.48; 0.0, 1.9; 0.69, 3.1];
-        let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1])?;
+        let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1])?;
         let ranking = matrix.rank_spotis(&criteria_types, &weights, &bounds)?;
         assert_relative_eq!(
             ranking,
@@ -547,7 +548,7 @@ mod topsis_tests {
             0.3, 2.48, 1.75, 1.69
         ];
         let weights = dvector![0.25, 0.25, 0.25, 0.25];
-        let criteria_types = mcdm::CriteriaType::from(vec![-1, 1, 1, -1])?;
+        let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1])?;
         let normalized_matrix = matrix.normalize_min_max(&criteria_types)?;
         let ranking = normalized_matrix.rank_topsis(&weights)?;
         assert_relative_eq!(
@@ -582,7 +583,6 @@ mod topsis_tests {
 
 mod waspas_tests {
     use super::*;
-    use mcdm::CriteriaType;
 
     #[test]
     fn test_rank() -> Result<(), McdmError> {
@@ -592,7 +592,7 @@ mod waspas_tests {
             0.3, 2.48, 1.75, 1.69
         ];
         let weights = dvector![0.25, 0.25, 0.25, 0.25];
-        let criteria_type = CriteriaType::from(vec![-1, 1, 1, -1])?;
+        let criteria_type = CriteriaTypes::from_slice(&[-1, 1, 1, -1])?;
         let lambda = 0.5;
         let normalized_matrix = matrix.normalize_linear(&criteria_type)?;
         let ranking = normalized_matrix.rank_waspas(&weights, lambda)?;
@@ -634,7 +634,6 @@ mod waspas_tests {
 }
 mod weighted_product_tests {
     use super::*;
-    use mcdm::CriteriaType;
 
     #[test]
     fn test_rank() -> Result<(), McdmError> {
@@ -644,7 +643,7 @@ mod weighted_product_tests {
             0.3, 2.48, 1.75, 1.69
         ];
         let weights = dvector![0.25, 0.25, 0.25, 0.25];
-        let criteria_type = CriteriaType::from(vec![-1, 1, 1, -1])?;
+        let criteria_type = CriteriaTypes::from_slice(&[-1, 1, 1, -1])?;
         let normalized_matrix = matrix.normalize_sum(&criteria_type)?;
         let ranking = normalized_matrix.rank_weighted_product(&weights)?;
         assert_relative_eq!(
@@ -670,7 +669,7 @@ mod weighted_product_tests {
     fn test_rank_with_zero_weights() -> Result<(), McdmError> {
         let matrix = dmatrix![0.3, 0.5; 0.6, 0.9; 0.1, 0.2];
         let weights = dvector![0.0, 0.0];
-        let criteria_type = CriteriaType::from(vec![1, -1])?;
+        let criteria_type = CriteriaTypes::from_slice(&[1, -1])?;
         let normalized_matrix = matrix.normalize_sum(&criteria_type)?;
         let ranking = normalized_matrix.rank_weighted_product(&weights)?;
         assert_eq!(ranking, dvector![1.0, 1.0, 1.0]);

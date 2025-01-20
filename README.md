@@ -84,14 +84,15 @@ Here’s an example demonstrating how to use the mcdm library for decision-makin
 
 ```rust
 use mcdm::{
-    errors::McdmError, normalization::Normalize, ranking::Rank, weighting::Weight, CriteriaType,
+    errors::McdmError, normalization::Normalize, ranking::Rank, weighting::Weight, CriteriaTypes,
 };
 use nalgebra::dmatrix;
 
 fn main() -> Result<(), McdmError> {
     // Define the decision matrix (alternatives x criteria)
     let alternatives = dmatrix![4.0, 7.0, 8.0; 2.0, 9.0, 6.0; 3.0, 6.0, 9.0];
-    let criteria_types = CriteriaType::from(vec![-1, 1, 1])?;
+    //let criteria_types = CriteriaType::from(vec![-1, 1, 1])?;
+    let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1])?;
 
     // Apply normalization using Min-Max
     let normalized_matrix = alternatives.normalize_min_max(&criteria_types)?;
