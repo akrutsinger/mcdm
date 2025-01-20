@@ -26,7 +26,6 @@ Normalization ensures that criteria with different units of measurement can be c
 | Sum				 | Uses the sum of each alternatives criterion. |
 | Vector             | Considers the root of the sum of squares for each criterion. |
 | Zavadskas-Turskis  | Convert different criteria into comparable units. |
-|  |  |
 
 ### ⚖️ Weighting
 
@@ -76,7 +75,7 @@ To start using `mcdm`, add this to your `Cargo.toml`:
 ```toml
 [dependencies]
 # TODO: replace the * with the latest version
-mcdm = "0.*"
+mcdm = "*"
 ```
 
 ### 🧪 Example
