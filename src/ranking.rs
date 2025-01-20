@@ -1579,18 +1579,16 @@ impl Rank for DMatrix<f64> {
         exmatrix.rows_mut(1, num_alternatives).copy_from(self);
 
         for (i, criteria_type) in types.iter().enumerate() {
-            if *criteria_type == CriteriaType::Profit {
-                exmatrix[(0, i)] = self.column(i).max();
-            } else if *criteria_type == CriteriaType::Cost {
-                exmatrix[(0, i)] = self.column(i).min();
-            }
+            exmatrix[(0, i)] = match criteria_type {
+                CriteriaType::Profit => self.column(i).max(),
+                CriteriaType::Cost => self.column(i).min(),
+            };
         }
 
         let normalized_matrix = exmatrix.normalize_sum(types)?;
         let weighted_matrix = normalized_matrix.scale_columns(weights);
 
         let s = weighted_matrix.column_sum();
-
         let k = s
             .rows_range(1..)
             .component_div(&DVector::from_element(num_alternatives, s[0]));
@@ -1599,7 +1597,13 @@ impl Rank for DMatrix<f64> {
     }
 
     fn rank_cocoso(&self, weights: &DVector<f64>) -> Result<DVector<f64>, RankingError> {
-        if weights.len() != self.ncols() {
+        let (num_alternatives, num_criteria) = self.shape();
+
+        if num_alternatives == 0 || num_criteria == 0 {
+            return Err(RankingError::EmptyMatrix);
+        }
+
+        if weights.len() != num_criteria {
             return Err(RankingError::DimensionMismatch);
         }
 
@@ -1642,13 +1646,17 @@ impl Rank for DMatrix<f64> {
     }
 
     fn rank_codas(&self, weights: &DVector<f64>, tau: f64) -> Result<DVector<f64>, RankingError> {
-        if weights.len() != self.ncols() {
+        let (num_alternatives, num_criteria) = self.shape();
+
+        if num_alternatives == 0 || num_criteria == 0 {
+            return Err(RankingError::EmptyMatrix);
+        }
+
+        if weights.len() != num_criteria {
             return Err(RankingError::DimensionMismatch);
         }
 
         let weighted_matrix = self.scale_columns(weights);
-
-        let nrows = self.nrows();
 
         // Compute the Negative Ideal Solution (NIS)
         let nis = weighted_matrix
@@ -1680,13 +1688,13 @@ impl Rank for DMatrix<f64> {
         let euclidean_distances = DVector::from_vec(euclidean_distances);
         let taxicab_distances = DVector::from_vec(taxicab_distances);
 
-        let mut assessment_matrix = DMatrix::zeros(nrows, nrows);
+        let mut assessment_matrix = DMatrix::zeros(num_alternatives, num_alternatives);
 
-        for i in 0..nrows {
-            for j in 0..nrows {
+        for (i, mut row) in assessment_matrix.row_iter_mut().enumerate() {
+            for (j, elem) in row.iter_mut().enumerate() {
                 let e_diff = euclidean_distances[i] - euclidean_distances[j];
                 let t_diff = taxicab_distances[i] - taxicab_distances[j];
-                assessment_matrix[(i, j)] = (e_diff) + (psi(e_diff, tau) * t_diff);
+                *elem = (e_diff) + (psi(e_diff, tau) * t_diff);
             }
         }
 
@@ -1734,11 +1742,7 @@ impl Rank for DMatrix<f64> {
             }),
         );
 
-        let min_sm = sum_normalized_cost
-            .iter()
-            .cloned()
-            .reduce(f64::min)
-            .unwrap_or(0.0);
+        let min_sm = sum_normalized_cost.min();
 
         let q = DVector::from_iterator(
             num_alternatives,
@@ -1748,7 +1752,7 @@ impl Rank for DMatrix<f64> {
                 .map(|(&sp_i, &sm_i)| sp_i + ((min_sm * sm_i) / (sm_i * (min_sm / sm_i)))),
         );
 
-        let max_q = q.iter().cloned().reduce(f64::max).unwrap_or(1.0);
+        let max_q = q.max();
 
         Ok(&q / max_q)
     }
@@ -1773,11 +1777,10 @@ impl Rank for DMatrix<f64> {
         let mut positive_distance_matrix = DMatrix::zeros(num_alternatives, num_criteria);
         let mut negative_distance_matrix = DMatrix::zeros(num_alternatives, num_criteria);
 
-        for j in 0..num_criteria {
-            for i in 0..num_alternatives {
-                let val = self[(i, j)];
-                let avg = average_criteria[j];
+        for (j, col) in self.column_iter().enumerate() {
+            let avg = average_criteria[j];
 
+            for (i, val) in col.iter().enumerate() {
                 match types[j] {
                     CriteriaType::Profit => {
                         positive_distance_matrix[(i, j)] = (val - avg) / avg;
@@ -1828,21 +1831,19 @@ impl Rank for DMatrix<f64> {
 
         for (i, row) in normalized_matrix.row_iter().enumerate() {
             for (j, value) in row.iter().enumerate() {
-                match types[j] {
+                value_matrix[(i, j)] = match types[j] {
                     CriteriaType::Profit => {
                         if *value > reference_point[j] {
-                            value_matrix[(i, j)] = (value - reference_point[j]).powf(alpha);
+                            (value - reference_point[j]).powf(alpha)
                         } else {
-                            value_matrix[(i, j)] =
-                                (-1.0 * lambda) * (reference_point[j] - value).powf(alpha);
+                            (-1.0 * lambda) * (reference_point[j] - value).powf(alpha)
                         }
                     }
                     CriteriaType::Cost => {
                         if *value < reference_point[j] {
-                            value_matrix[(i, j)] = (reference_point[j] - value).powf(alpha);
+                            (reference_point[j] - value).powf(alpha)
                         } else {
-                            value_matrix[(i, j)] =
-                                (-1.0 * lambda) * (value - reference_point[j]).powf(alpha);
+                            (-1.0 * lambda) * (value - reference_point[j]).powf(alpha)
                         }
                     }
                 }
@@ -1873,11 +1874,7 @@ impl Rank for DMatrix<f64> {
             }
         }
 
-        let mut ranking = DVector::zeros(self.nrows());
-
-        for i in 0..ranking.nrows() {
-            ranking[i] = s_minus[i] / (s_plus[i] + s_minus[i]);
-        }
+        let ranking = s_minus.clone().component_div(&(s_plus + s_minus));
 
         Ok(ranking)
     }
@@ -1895,7 +1892,11 @@ impl Rank for DMatrix<f64> {
         // Border approximation area matrix
         let g = weighted_matrix
             .column_iter()
-            .map(|col| col.iter().product::<f64>().powf(1.0 / self.nrows() as f64))
+            .map(|col| {
+                col.iter()
+                    .product::<f64>()
+                    .powf(1.0 / num_alternatives as f64)
+            })
             .collect::<Vec<f64>>();
 
         let g = DVector::from_column_slice(&g).transpose();
@@ -1903,8 +1904,8 @@ impl Rank for DMatrix<f64> {
         // Distance border approximation area
         let mut q = DMatrix::zeros(num_alternatives, num_criteria);
         for (i, row) in weighted_matrix.row_iter().enumerate() {
-            for (j, value) in row.iter().enumerate() {
-                q[(i, j)] = value - g[j];
+            for (j, val) in row.iter().enumerate() {
+                q[(i, j)] = val - g[j];
             }
         }
 
@@ -1959,8 +1960,8 @@ impl Rank for DMatrix<f64> {
         let mut exmatrix = DMatrix::zeros(num_alternatives + 2, num_criteria);
         exmatrix.rows_mut(0, num_alternatives).copy_from(self);
 
-        for j in 0..num_criteria {
-            match types[j] {
+        for (j, criteria_type) in types.iter().enumerate() {
+            match criteria_type {
                 CriteriaType::Profit => {
                     exmatrix[(num_alternatives, j)] = max_criteria_values[j];
                     exmatrix[(num_alternatives + 1, j)] = min_criteria_values[j];
@@ -1973,7 +1974,6 @@ impl Rank for DMatrix<f64> {
         }
 
         let normalized_exmatrix = exmatrix.normalize_marcos(types)?;
-
         let weighted_matrix = normalized_exmatrix.scale_columns(weights);
 
         // Utility degree
@@ -2008,11 +2008,7 @@ impl Rank for DMatrix<f64> {
             return Err(RankingError::EmptyMatrix);
         }
 
-        if types.len() != num_criteria {
-            return Err(RankingError::DimensionMismatch);
-        }
-
-        if weights.len() != self.ncols() {
+        if types.len() != num_criteria || weights.len() != num_criteria {
             return Err(RankingError::DimensionMismatch);
         }
 
@@ -2057,11 +2053,7 @@ impl Rank for DMatrix<f64> {
             return Err(RankingError::EmptyMatrix);
         }
 
-        if types.len() != num_criteria {
-            return Err(RankingError::DimensionMismatch);
-        }
-
-        if weights.len() != num_criteria {
+        if types.len() != num_criteria || weights.len() != num_criteria {
             return Err(RankingError::DimensionMismatch);
         }
 
@@ -2104,11 +2096,7 @@ impl Rank for DMatrix<f64> {
             return Err(RankingError::EmptyMatrix);
         }
 
-        if types.len() != num_criteria {
-            return Err(RankingError::DimensionMismatch);
-        }
-
-        if weights.len() != num_criteria {
+        if types.len() != num_criteria || weights.len() != num_criteria {
             return Err(RankingError::DimensionMismatch);
         }
 
@@ -2138,19 +2126,18 @@ impl Rank for DMatrix<f64> {
 
         let average_pis = pis_matrix.row_mean();
 
-        let mut si = DMatrix::zeros(num_alternatives, num_alternatives);
-        for i in 0..num_alternatives {
-            let alt = weighted_matrix.row(i);
-            for j in 0..num_alternatives {
-                si[(i, j)] = (alt - pis_matrix.row(j)).map(|x| x.powi(2)).sum().sqrt();
-            }
-        }
+        let si = DMatrix::from_fn(num_alternatives, num_alternatives, |i, j| {
+            (weighted_matrix.row(i) - pis_matrix.row(j))
+                .map(|x| x.powi(2))
+                .sum()
+                .sqrt()
+        });
 
-        let si_average: DVector<f64> = DVector::from_vec(
+        let si_average = DVector::from_iterator(
+            num_alternatives,
             weighted_matrix
                 .row_iter()
-                .map(|row| (row - average_pis.clone()).map(|x| x.powi(2)).sum().sqrt())
-                .collect(),
+                .map(|row| (row - average_pis.clone()).map(|x| x.powi(2)).sum().sqrt()),
         );
 
         let m = num_alternatives;
@@ -2210,16 +2197,11 @@ impl Rank for DMatrix<f64> {
             return Err(RankingError::EmptyMatrix);
         }
 
-        if types.len() != num_criteria {
-            return Err(RankingError::DimensionMismatch);
-        }
-
-        if weights.len() != num_criteria {
+        if types.len() != num_criteria || weights.len() != num_criteria {
             return Err(RankingError::DimensionMismatch);
         }
 
         let normalized_matrix = &self.normalize_sum(&CriteriaType::profits(num_criteria))?;
-
         let weighted_matrix = normalized_matrix.scale_columns(weights);
 
         // Vectors of PIS and NIS
@@ -2277,7 +2259,6 @@ impl Rank for DMatrix<f64> {
         reference_ideal.is_reference_ideal_bounds_valid(criteria_range)?;
 
         let normalized_matrix = self.normalize_rim(criteria_range, reference_ideal)?;
-
         let weighted_normalized_matrix = normalized_matrix.scale_columns(weights);
 
         let mut variation_to_pis = DVector::zeros(num_alternatives);
@@ -2285,7 +2266,6 @@ impl Rank for DMatrix<f64> {
 
         for (i, row) in weighted_normalized_matrix.row_iter().enumerate() {
             variation_to_pis[i] = (row - weights.transpose()).map(|x| x.powi(2)).sum().sqrt();
-
             variation_to_nis[i] = row.map(|x| x.powi(2)).sum().sqrt();
         }
 
@@ -2299,6 +2279,7 @@ impl Rank for DMatrix<f64> {
 
         Ok(variation_to_ideal)
     }
+
     fn rank_spotis(
         &self,
         types: &[CriteriaType],
@@ -2329,7 +2310,9 @@ impl Rank for DMatrix<f64> {
     }
 
     fn rank_topsis(&self, weights: &DVector<f64>) -> Result<DVector<f64>, RankingError> {
-        if weights.len() != self.ncols() {
+        let (num_alternatives, num_criteria) = self.shape();
+
+        if weights.len() != num_criteria {
             return Err(RankingError::DimensionMismatch);
         }
 
@@ -2337,9 +2320,8 @@ impl Rank for DMatrix<f64> {
             return Err(RankingError::InvalidValue);
         }
 
-        let (num_rows, num_cols) = self.shape();
-
-        let broadcasted_weights = DMatrix::from_fn(num_rows, num_cols, |_, col| weights[col]);
+        let broadcasted_weights =
+            DMatrix::from_fn(num_alternatives, num_criteria, |_, col| weights[col]);
         let weighted_matrix = self.component_mul(&broadcasted_weights);
 
         // Compute the Positive Ideal Solution (PIS) and Negative Ideal Solution (NIS)
@@ -2356,8 +2338,8 @@ impl Rank for DMatrix<f64> {
         let nis = DVector::from_vec(nis).transpose();
 
         // Calculate the distance to PIS (Dp) and NIS (Dm)
-        let mut distance_to_pis = DVector::zeros(num_rows);
-        let mut distance_to_nis = DVector::zeros(num_rows);
+        let mut distance_to_pis = DVector::zeros(num_alternatives);
+        let mut distance_to_nis = DVector::zeros(num_alternatives);
 
         for (i, row) in weighted_matrix.row_iter().enumerate() {
             let dp = (row - &pis).map(|x| x.powi(2)).sum().sqrt();

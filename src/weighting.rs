@@ -338,13 +338,16 @@ impl Weight for DMatrix<f64> {
             return Err(WeightingError::EmptyMatrix);
         }
 
+        let inv_num_criteria = 1.0 / num_criteria as f64;
+
         let mut weights = DVector::zeros(num_criteria);
-        let add_col = DVector::from_element(num_alternatives, 1.0 / num_criteria as f64);
+        let add_col = DVector::from_element(num_alternatives, inv_num_criteria);
+
+        let add_col_norm = add_col.norm();
 
         for (i, vec) in self.column_iter().enumerate() {
-            let numerator = vec.sum() / num_criteria as f64;
-            let norm_vec = vec.dot(&vec).sqrt();
-            let add_col_norm = add_col.dot(&add_col).sqrt();
+            let numerator = vec.sum() * inv_num_criteria;
+            let norm_vec = vec.norm();
             weights[i] = (numerator / (norm_vec * add_col_norm)).acos();
         }
 
@@ -401,15 +404,17 @@ impl Weight for DMatrix<f64> {
     fn weight_entropy(&self) -> Result<DVector<f64>, WeightingError> {
         let (num_alternatives, num_criteria) = self.shape();
 
+        if num_alternatives == 0 || num_criteria == 0 {
+            return Err(WeightingError::EmptyMatrix);
+        }
+
         let mut entropies = DVector::zeros(num_criteria);
 
         // Iterate over all criteria in the normalized matrix
         for (j, col) in self.column_iter().enumerate() {
-            if col.iter().all(|&x| x != 0.0) {
-                let col_entropy = col.iter().map(|&x| x * x.ln()).sum();
+            let col_entropy: f64 = col.iter().filter(|&x| *x != 0.0).map(|&x| x * x.ln()).sum();
 
-                entropies[j] = col_entropy;
-            }
+            entropies[j] = col_entropy;
         }
 
         let scale_factor = 1.0 / -(num_alternatives as f64).ln();
@@ -422,20 +427,23 @@ impl Weight for DMatrix<f64> {
     fn weight_gini(&self) -> Result<DVector<f64>, WeightingError> {
         let (num_alternatives, num_criteria) = self.shape();
 
+        if num_alternatives == 0 || num_criteria == 0 {
+            return Err(WeightingError::EmptyMatrix);
+        }
+
         // Initialize weights as a zero vector
         let mut weights = DVector::zeros(num_criteria);
 
         for (j, column) in self.column_iter().enumerate() {
-            let mut values = DVector::zeros(num_alternatives);
             let column_mean = column.sum() / num_alternatives as f64;
 
-            for i in 0..num_alternatives {
-                let numerator: f64 = column.iter().map(|&x| (self[(i, j)] - x).abs()).sum();
-                let denominator = 2.0 * (num_alternatives as f64).powi(2) * column_mean;
-                values[i] = numerator / denominator;
-            }
+            let numerator: f64 = column
+                .iter()
+                .map(|&x| column.iter().map(|&y| (x - y).abs()).sum::<f64>())
+                .sum();
 
-            weights[j] = values.sum();
+            let denominator = 2.0 * (num_alternatives as f64).powi(2) * column_mean;
+            weights[j] = numerator / denominator;
         }
 
         // Normalize weights: weights / sum(weights)
@@ -445,6 +453,10 @@ impl Weight for DMatrix<f64> {
 
     fn weight_merec(&self) -> Result<DVector<f64>, WeightingError> {
         let (num_alternatives, num_criteria) = self.shape();
+
+        if num_alternatives == 0 || num_criteria == 0 {
+            return Err(WeightingError::EmptyMatrix);
+        }
 
         let s = DVector::from_iterator(
             num_alternatives,
@@ -456,7 +468,7 @@ impl Weight for DMatrix<f64> {
 
         let mut s_prim = DMatrix::zeros(num_alternatives, num_criteria);
 
-        for (j, _) in self.column_iter().enumerate() {
+        for j in 0..num_criteria {
             let ex_nmatrix = self.clone().remove_column(j); // Remove column `j`
 
             for (i, row) in ex_nmatrix.row_iter().enumerate() {
@@ -482,6 +494,12 @@ impl Weight for DMatrix<f64> {
     }
 
     fn weight_standard_deviation(&self) -> Result<DVector<f64>, WeightingError> {
+        let (num_alternatives, num_criteria) = self.shape();
+
+        if num_alternatives == 0 || num_criteria == 0 {
+            return Err(WeightingError::EmptyMatrix);
+        }
+
         let std = self.row_variance().map(|v| v.sqrt()).transpose();
 
         // Sum of the standard deviations
@@ -494,8 +512,15 @@ impl Weight for DMatrix<f64> {
     }
 
     fn weight_variance(&self) -> Result<DVector<f64>, WeightingError> {
+        let (num_alternatives, num_criteria) = self.shape();
+
+        if num_alternatives == 0 || num_criteria == 0 {
+            return Err(WeightingError::EmptyMatrix);
+        }
+
         let var = self.row_variance().transpose();
-        let weights = var.clone() / var.sum();
+        let var_sum = var.sum();
+        let weights = var / var_sum;
 
         Ok(weights)
     }

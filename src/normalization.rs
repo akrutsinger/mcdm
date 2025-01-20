@@ -430,32 +430,34 @@ impl Normalize for DMatrix<f64> {
         &self,
         types: &[CriteriaType],
     ) -> Result<DMatrix<f64>, NormalizationError> {
+        let (num_alternatives, num_criteria) = self.shape();
+
         // Check if the matrix is not empty
         if self.is_empty() {
             return Err(NormalizationError::EmptyMatrix);
         }
 
         // Ensure enough criteria types for all criteria
-        if types.len() != self.ncols() {
+        if types.len() != num_criteria {
             return Err(NormalizationError::NormalizationCriteraTypeMismatch);
         }
 
         // Initialize a matrix to store the normalized values
-        let mut normalized_matrix = DMatrix::<f64>::zeros(self.nrows(), self.ncols());
+        let mut normalized_matrix = DMatrix::<f64>::zeros(num_alternatives, num_criteria);
 
         // Iterate over each column (criterion)
         for (j, col) in self.column_iter().enumerate() {
-            let col_prod = col.product();
+            let col_prod_ln = col.product().ln();
 
             for (i, value) in col.iter().enumerate() {
                 if value.abs() < f64::EPSILON {
                     return Err(NormalizationError::ZeroRange);
                 }
 
-                let ln_ratio = (value).ln() / col_prod.ln();
+                let ln_ratio = (value).ln() / col_prod_ln;
 
                 normalized_matrix[(i, j)] = match types[j] {
-                    CriteriaType::Cost => (1.0 - ln_ratio) / (self.nrows() as f64 - 1.0),
+                    CriteriaType::Cost => (1.0 - ln_ratio) / (num_alternatives as f64 - 1.0),
                     CriteriaType::Profit => ln_ratio,
                 };
             }
@@ -465,19 +467,22 @@ impl Normalize for DMatrix<f64> {
     }
 
     fn normalize_marcos(&self, types: &[CriteriaType]) -> Result<DMatrix<f64>, NormalizationError> {
+        let (num_alternatives, num_criteria) = self.shape();
+
         if self.is_empty() {
             return Err(NormalizationError::EmptyMatrix);
         }
 
-        if types.len() != self.ncols() {
+        if types.len() != num_criteria {
             return Err(NormalizationError::NormalizationCriteraTypeMismatch);
         }
 
         // Initialize a matrix to store the normalized values
-        let mut normalized_matrix = DMatrix::<f64>::zeros(self.nrows(), self.ncols());
+        let mut normalized_matrix = DMatrix::<f64>::zeros(num_alternatives, num_criteria);
 
         for (j, col) in self.column_iter().enumerate() {
-            let next_to_last_row_value = self[(self.nrows() - 3, j)];
+            let next_to_last_row_value = self[(num_alternatives - 3, j)];
+
             // Avoid division by zero
             if next_to_last_row_value.abs() < f64::EPSILON {
                 return Err(NormalizationError::ZeroRange);
@@ -495,18 +500,20 @@ impl Normalize for DMatrix<f64> {
     }
 
     fn normalize_max(&self, types: &[CriteriaType]) -> Result<DMatrix<f64>, NormalizationError> {
+        let (num_alternatives, num_criteria) = self.shape();
+
         // Check if the matrix is not empty
         if self.is_empty() {
             return Err(NormalizationError::EmptyMatrix);
         }
 
         // Ensure enough criteria types for all criteria
-        if types.len() != self.ncols() {
+        if types.len() != num_criteria {
             return Err(NormalizationError::NormalizationCriteraTypeMismatch);
         }
 
         // Initialize a matrix to store the normalized values
-        let mut normalized_matrix = DMatrix::<f64>::zeros(self.nrows(), self.ncols());
+        let mut normalized_matrix = DMatrix::<f64>::zeros(num_alternatives, num_criteria);
 
         // Iterate over each column (criterion)
         for (j, col) in self.column_iter().enumerate() {
@@ -532,33 +539,36 @@ impl Normalize for DMatrix<f64> {
         &self,
         types: &[CriteriaType],
     ) -> Result<DMatrix<f64>, NormalizationError> {
+        let (num_alternatives, num_criteria) = self.shape();
+
         // Check if the matrix is not empty
         if self.is_empty() {
             return Err(NormalizationError::EmptyMatrix);
         }
 
         // Ensure enough criteria types for all criteria
-        if types.len() != self.ncols() {
+        if types.len() != num_criteria {
             return Err(NormalizationError::NormalizationCriteraTypeMismatch);
         }
 
         // Initialize a matrix to store the normalized values
-        let mut normalized_matrix = DMatrix::<f64>::zeros(self.nrows(), self.ncols());
+        let mut normalized_matrix = DMatrix::<f64>::zeros(num_alternatives, num_criteria);
 
         // Iterate over each column (criterion)
         for (j, col) in self.column_iter().enumerate() {
             let min_value = col.min();
             let max_value = col.max();
+            let range = max_value - min_value;
 
             // Avoid division by zero
-            if (max_value - min_value).abs() < f64::EPSILON {
+            if range.abs() < f64::EPSILON {
                 return Err(NormalizationError::ZeroRange);
             }
 
             for (i, value) in col.iter().enumerate() {
                 normalized_matrix[(i, j)] = match types[j] {
-                    CriteriaType::Cost => (max_value - value) / (max_value - min_value),
-                    CriteriaType::Profit => (value - min_value) / (max_value - min_value),
+                    CriteriaType::Cost => (max_value - value) / range,
+                    CriteriaType::Profit => (value - min_value) / range,
                 };
             }
         }
@@ -570,18 +580,20 @@ impl Normalize for DMatrix<f64> {
         &self,
         types: &[CriteriaType],
     ) -> Result<DMatrix<f64>, NormalizationError> {
+        let (num_alternatives, num_criteria) = self.shape();
+
         // Check if the matrix is not empty
         if self.is_empty() {
             return Err(NormalizationError::EmptyMatrix);
         }
 
         // Ensure enough criteria types for all criteria
-        if types.len() != self.ncols() {
+        if types.len() != num_criteria {
             return Err(NormalizationError::NormalizationCriteraTypeMismatch);
         }
 
         // Initialize a matrix to store the normalized values
-        let mut normalized_matrix = DMatrix::<f64>::zeros(self.nrows(), self.ncols());
+        let mut normalized_matrix = DMatrix::<f64>::zeros(num_alternatives, num_criteria);
 
         // Iterate over each column (criterion)
         for (j, col) in self.column_iter().enumerate() {
@@ -609,18 +621,20 @@ impl Normalize for DMatrix<f64> {
     }
 
     fn normalize_ocra(&self, types: &[CriteriaType]) -> Result<DMatrix<f64>, NormalizationError> {
+        let (num_alternatives, num_criteria) = self.shape();
+
         // Check if the matrix is not empty
         if self.is_empty() {
             return Err(NormalizationError::EmptyMatrix);
         }
 
         // Ensure enough criteria types for all criteria
-        if types.len() != self.ncols() {
+        if types.len() != num_criteria {
             return Err(NormalizationError::NormalizationCriteraTypeMismatch);
         }
 
         // Initialize a matrix to store the normalized values
-        let mut normalized_matrix = DMatrix::<f64>::zeros(self.nrows(), self.ncols());
+        let mut normalized_matrix = DMatrix::<f64>::zeros(num_alternatives, num_criteria);
 
         // Iterate over each column (criterion)
         for (j, col) in self.column_iter().enumerate() {
@@ -648,27 +662,29 @@ impl Normalize for DMatrix<f64> {
         criteria_range: &DMatrix<f64>,
         reference_ideal: &DMatrix<f64>,
     ) -> Result<DMatrix<f64>, NormalizationError> {
+        let (num_alternatives, num_criteria) = self.shape();
+
         reference_ideal.is_reference_ideal_bounds_valid(criteria_range)?;
 
         // Initialize a matrix to store the normalized values
-        let mut normalized_matrix = DMatrix::<f64>::zeros(self.nrows(), self.ncols());
+        let mut normalized_matrix = DMatrix::<f64>::zeros(num_alternatives, num_criteria);
 
         fn _dmin(x: f64, c: f64, d: f64) -> f64 {
             f64::min(f64::abs(x - c), f64::abs(x - d))
         }
 
         for (i, row) in self.row_iter().enumerate() {
-            for (j, x) in row.iter().enumerate() {
+            for (j, &x) in row.iter().enumerate() {
                 let a = criteria_range[(j, 0)];
                 let b = criteria_range[(j, 1)];
                 let c = reference_ideal[(j, 0)];
                 let d = reference_ideal[(j, 1)];
-                normalized_matrix[(i, j)] = if c <= *x && *x <= d {
+                normalized_matrix[(i, j)] = if c <= x && x <= d {
                     1.0
-                } else if (a <= *x && *x < c) && (a != c) {
-                    1.0 - (_dmin(*x, c, d) / f64::abs(a - c))
-                } else if (d < *x && *x <= b) && (d != b) {
-                    1.0 - (_dmin(*x, c, d) / f64::abs(d - b))
+                } else if (a <= x && x < c) && (a != c) {
+                    1.0 - (_dmin(x, c, d) / f64::abs(a - c))
+                } else if (d < x && x <= b) && (d != b) {
+                    1.0 - (_dmin(x, c, d) / f64::abs(d - b))
                 } else {
                     0.0
                 }
@@ -683,17 +699,19 @@ impl Normalize for DMatrix<f64> {
         types: &[CriteriaType],
         bounds: &DMatrix<f64>,
     ) -> Result<DMatrix<f64>, NormalizationError> {
+        let (num_alternatives, num_criteria) = self.shape();
+
         // Check if the matrix is not empty
         if self.is_empty() {
             return Err(NormalizationError::EmptyMatrix);
         }
 
         // Ensure enough criteria types for all criteria
-        if types.len() != self.ncols() {
+        if types.len() != num_criteria {
             return Err(NormalizationError::NormalizationCriteraTypeMismatch);
         }
 
-        let mut expected_solution_point = DVector::zeros(self.ncols());
+        let mut expected_solution_point = DVector::zeros(num_criteria);
 
         for (i, row) in bounds.row_iter().enumerate() {
             expected_solution_point[i] = match types[i] {
@@ -702,9 +720,9 @@ impl Normalize for DMatrix<f64> {
             }
         }
 
-        let range = bounds.column(0) - bounds.column(1);
+        let range = bounds.column(1) - bounds.column(0);
 
-        let mut normalized_matrix = DMatrix::zeros(self.nrows(), self.ncols());
+        let mut normalized_matrix = DMatrix::zeros(num_alternatives, num_criteria);
 
         for (i, row) in self.row_iter().enumerate() {
             let normalized_row = (row - &expected_solution_point.transpose())
@@ -717,18 +735,20 @@ impl Normalize for DMatrix<f64> {
     }
 
     fn normalize_sum(&self, types: &[CriteriaType]) -> Result<DMatrix<f64>, NormalizationError> {
+        let (num_alternatives, num_criteria) = self.shape();
+
         // Check if the matrix is not empty
         if self.is_empty() {
             return Err(NormalizationError::EmptyMatrix);
         }
 
         // Ensure enough criteria types for all criteria
-        if types.len() != self.ncols() {
+        if types.len() != num_criteria {
             return Err(NormalizationError::NormalizationCriteraTypeMismatch);
         }
 
         // Initialize a matrix to store the normalized values
-        let mut normalized_matrix = DMatrix::<f64>::zeros(self.nrows(), self.ncols());
+        let mut normalized_matrix = DMatrix::<f64>::zeros(num_alternatives, num_criteria);
 
         // Iterate over each column (criterion)
         for (j, col) in self.column_iter().enumerate() {
@@ -753,18 +773,20 @@ impl Normalize for DMatrix<f64> {
     }
 
     fn normalize_vector(&self, types: &[CriteriaType]) -> Result<DMatrix<f64>, NormalizationError> {
+        let (num_alternatives, num_criteria) = self.shape();
+
         // Check if the matrix is not empty
         if self.is_empty() {
             return Err(NormalizationError::EmptyMatrix);
         }
 
         // Ensure enough criteria types for all criteria
-        if types.len() != self.ncols() {
+        if types.len() != num_criteria {
             return Err(NormalizationError::NormalizationCriteraTypeMismatch);
         }
 
         // Initialize a matrix to store the normalized values
-        let mut normalized_matrix = DMatrix::<f64>::zeros(self.nrows(), self.ncols());
+        let mut normalized_matrix = DMatrix::<f64>::zeros(num_alternatives, num_criteria);
 
         // Iterate over each column (criterion)
         for (j, col) in self.column_iter().enumerate() {
@@ -789,18 +811,20 @@ impl Normalize for DMatrix<f64> {
         &self,
         types: &[CriteriaType],
     ) -> Result<DMatrix<f64>, NormalizationError> {
+        let (num_alternatives, num_criteria) = self.shape();
+
         // Check if the matrix is not empty
         if self.is_empty() {
             return Err(NormalizationError::EmptyMatrix);
         }
 
         // Ensure enough criteria types for all criteria
-        if types.len() != self.ncols() {
+        if types.len() != num_criteria {
             return Err(NormalizationError::NormalizationCriteraTypeMismatch);
         }
 
         // Initialize a matrix to store the normalized values
-        let mut normalized_matrix = DMatrix::<f64>::zeros(self.nrows(), self.ncols());
+        let mut normalized_matrix = DMatrix::<f64>::zeros(num_alternatives, num_criteria);
 
         // Iterate over each column (criterion)
         for (j, col) in self.column_iter().enumerate() {

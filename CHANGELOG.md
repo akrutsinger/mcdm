@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Working towards making the code more idiomatic and reducing unnecessary calculations inside of loops
+
+### Fixed
+
+- Bug fixes
+
 ## [0.3.1] - 2024-01-19
 
 ### Fixed
