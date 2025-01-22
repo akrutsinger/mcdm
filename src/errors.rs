@@ -54,7 +54,7 @@ error_set! {
         /// An empty matrix was provided where a non-empty matrix was expected (e.g., in weight
         /// calculation).
         EmptyMatrix,
-        /// The shape of the array is invalid (e.g., a 1D array where a 2D array was expected).
+        /// The shape of the array is invalid (e.g., a 1D vector where a 2D array was expected).
         InvalidShape,
         /// Input contains an invalid value (e.g., a criterion type that is neither -1 nor 1).
         InvalidValue,

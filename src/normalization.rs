@@ -14,15 +14,13 @@ use nalgebra::{DMatrix, DVector};
 ///
 /// # Criteria Types
 ///
-/// The normalization process requires an array of criteria types to indicate whether each criterion
-/// is a **profit** or a **cost** criterion:
+/// The normalization process requires [`CriteriaTypes`], a vector of [`CriterionType`]s to indicate
+/// whether each criterion is a **profit** or a **cost** criterion:
 ///
 /// - [`CriterionType::Profit`]: Higher values are preferred.
 /// - [`CriterionType::Cost`]: Lower values are preferred.
 ///
 /// # Example
-///
-/// Here's an example of normalizing a decision matrix:
 ///
 /// ```rust
 /// use approx::assert_relative_eq;
@@ -59,12 +57,18 @@ pub trait Normalize {
     ///
     /// # Arguments
     ///
-    /// * `types` - An array slice indicating if each criterion is a profit or cost.
+    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
     ///
     /// # Returns
     ///
-    /// * `Result<DMatrix<f64>, NormalizationError>` - A normalized decision matrix, or an error
-    ///   if the normalization fails (e.g., due to mismatched dimensions or invalid types).
+    /// * `Result<DMatrix<f64>, NormalizationError>` - A normalized decision matrix if successful.
+    ///
+    /// # Errors
+    ///
+    /// * [`NormalizationError::NormalizationCriteraTypeMismatch`] - If the number of criteria types
+    ///   does not match the number of criteria.
+    /// * [`NormalizationError::EmptyMatrix`] - If the decision matrix is empty.
+    /// * [`NormalizationError::ZeroRange`] - If any of the decision matrix elements are zero.
     fn normalize_enhanced_accuracy(
         &self,
         types: &CriteriaTypes,
@@ -79,18 +83,24 @@ pub trait Normalize {
     /// For cost:
     /// $$r_{ij} = \frac{\min_j(x_{ij})}{x_{ij}}$$
     ///
-    /// where $x_{ij}$ is the $i$th element of the alternative (row), $j$th elements of the criterion
-    /// (column), $\max_j$ is the maximum criterion value, and $\min_j$ is the minimum criterion value
-    /// in the decision matrix.
+    /// where $x_{ij}$ is the $i$th element of the alternative (row), $j$th elements of the
+    /// criterion (column), $\max_j$ is the maximum criterion value, and $\min_j$ is the minimum
+    /// criterion value in the decision matrix.
     ///
     /// # Arguments
     ///
-    /// * `types` - An array slice indicating if each criterion is a profit or cost.
+    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
     ///
     /// # Returns
     ///
-    /// * `Result<DMatrix<f64>, NormalizationError>` - A normalized decision matrix, or an error
-    ///   if the normalization fails.
+    /// * `Result<DMatrix<f64>, NormalizationError>` - A normalized decision matrix if successful.
+    ///
+    /// # Errors
+    ///
+    /// * [`NormalizationError::NormalizationCriteraTypeMismatch`] - If the number of criteria types
+    ///   does not match the number of criteria.
+    /// * [`NormalizationError::EmptyMatrix`] - If the decision matrix is empty.
+    /// * [`NormalizationError::ZeroRange`] - If any of the decision matrix elements are zero.
     fn normalize_linear(&self, types: &CriteriaTypes) -> Result<DMatrix<f64>, NormalizationError>;
 
     /// Considers the natural logarithm of the product of the criterion values.
@@ -106,12 +116,18 @@ pub trait Normalize {
     ///
     /// # Arguments
     ///
-    /// * `types` - An array slice indicating if each criterion is a profit or cost.
+    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
     ///
     /// # Returns
     ///
-    /// * `Result<DMatrix<f64>, NormalizationError>` - A normalized decision matrix, or an error
-    ///   if the normalization fails.
+    /// * `Result<DMatrix<f64>, NormalizationError>` - A normalized decision matrix if successful.
+    ///
+    /// # Errors
+    ///
+    /// * [`NormalizationError::NormalizationCriteraTypeMismatch`] - If the number of criteria types
+    ///   does not match the number of criteria.
+    /// * [`NormalizationError::EmptyMatrix`] - If the decision matrix is empty.
+    /// * [`NormalizationError::ZeroRange`] - If any of the decision matrix elements are zero.
     fn normalize_logarithmic(
         &self,
         types: &CriteriaTypes,
@@ -119,6 +135,21 @@ pub trait Normalize {
 
     /// Normalization function specific to the [`MARCOS`](crate::ranking::Rank::rank_marcos) ranking
     /// method.
+    ///
+    /// # Arguments
+    ///
+    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<DMatrix<f64>, NormalizationError>` - A normalized decision matrix if successful.
+    ///
+    /// # Errors
+    ///
+    /// * [`NormalizationError::NormalizationCriteraTypeMismatch`] - If the number of criteria types
+    ///   does not match the number of criteria.
+    /// * [`NormalizationError::EmptyMatrix`] - If the decision matrix is empty.
+    /// * [`NormalizationError::ZeroRange`] - If any of the decision matrix elements are zero.
     fn normalize_marcos(&self, types: &CriteriaTypes) -> Result<DMatrix<f64>, NormalizationError>;
 
     /// Consider maximum rating of criterion for a given criteria.
@@ -134,12 +165,18 @@ pub trait Normalize {
     ///
     /// # Arguments
     ///
-    /// * `types` - An array slice indicating if each criterion is a profit or cost.
+    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
     ///
     /// # Returns
     ///
-    /// * `Result<DMatrix<f64>, NormalizationError>` - A normalized decision matrix, or an error
-    ///   if the normalization fails.
+    /// * `Result<DMatrix<f64>, NormalizationError>` - A normalized decision matrix if successful.
+    ///
+    /// # Errors
+    ///
+    /// * [`NormalizationError::NormalizationCriteraTypeMismatch`] - If the number of criteria types
+    ///   does not match the number of criteria.
+    /// * [`NormalizationError::EmptyMatrix`] - If the decision matrix is empty.
+    /// * [`NormalizationError::ZeroRange`] - If any of the decision matrix elements are zero.
     fn normalize_max(&self, types: &CriteriaTypes) -> Result<DMatrix<f64>, NormalizationError>;
 
     /// Considers the criterion's minimum and maximum value for normalization.
@@ -156,12 +193,18 @@ pub trait Normalize {
     ///
     /// # Arguments
     ///
-    /// * `types` - An array slice indicating if each criterion is a profit or cost.
+    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
     ///
     /// # Returns
     ///
-    /// * `Result<DMatrix<f64>, NormalizationError>` - A normalized decision matrix, or an error
-    ///   if the normalization fails.
+    /// * `Result<DMatrix<f64>, NormalizationError>` - A normalized decision matrix if successful.
+    ///
+    /// # Errors
+    ///
+    /// * [`NormalizationError::NormalizationCriteraTypeMismatch`] - If the number of criteria types
+    ///   does not match the number of criteria.
+    /// * [`NormalizationError::EmptyMatrix`] - If the decision matrix is empty.
+    /// * [`NormalizationError::ZeroRange`] - If any of the decision matrix elements are zero.
     fn normalize_min_max(&self, types: &CriteriaTypes) -> Result<DMatrix<f64>, NormalizationError>;
 
     /// Considers exponentiation of criterion's minimum and maximum value for normalization.
@@ -178,12 +221,18 @@ pub trait Normalize {
     ///
     /// # Arguments
     ///
-    /// * `types` - An array slice indicating if each criterion is a profit or cost.
+    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
     ///
     /// # Returns
     ///
-    /// * `Result<DMatrix<f64>, NormalizationError>` - A normalized decision matrix, or an error
-    ///   if the normalization fails.
+    /// * `Result<DMatrix<f64>, NormalizationError>` - A normalized decision matrix if successful.
+    ///
+    /// # Errors
+    ///
+    /// * [`NormalizationError::NormalizationCriteraTypeMismatch`] - If the number of criteria types
+    ///   does not match the number of criteria.
+    /// * [`NormalizationError::EmptyMatrix`] - If the decision matrix is empty.
+    /// * [`NormalizationError::ZeroRange`] - If any of the decision matrix elements are zero.
     fn normalize_nonlinear(
         &self,
         types: &CriteriaTypes,
@@ -204,12 +253,18 @@ pub trait Normalize {
     ///
     /// # Arguments
     ///
-    /// * `types` - An array slice indicating if each criterion is a profit or cost.
+    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
     ///
     /// # Returns
     ///
-    /// * `Result<DMatrix<f64>, NormalizationError>` - A normalized decision matrix, or an error
-    ///   if the normalization fails.
+    /// * `Result<DMatrix<f64>, NormalizationError>` - A normalized decision matrix if successful.
+    ///
+    /// # Errors
+    ///
+    /// * [`NormalizationError::NormalizationCriteraTypeMismatch`] - If the number of criteria types
+    ///   does not match the number of criteria.
+    /// * [`NormalizationError::EmptyMatrix`] - If the decision matrix is empty.
+    /// * [`NormalizationError::ZeroRange`] - If any of the decision matrix elements are zero.
     fn normalize_ocra(&self, types: &CriteriaTypes) -> Result<DMatrix<f64>, NormalizationError>;
 
     /// Normalization function specific to the [`RIM`](crate::ranking::Rank::rank_rim) ranking
@@ -243,6 +298,18 @@ pub trait Normalize {
     /// with regard to the ideal reference value. The RIM normalization is calculated as:
     ///
     /// $$ Y = \[y_{ij}\] = \[f(x\_{ij}, t_j, s_j)\] $$
+    ///
+    /// # Arguments
+    ///
+    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<DMatrix<f64>, NormalizationError>` - A normalized decision matrix if successful.
+    ///
+    /// # Errors
+    ///
+    /// * [`NormalizationError::EmptyMatrix`] - If the decision matrix is empty.
     fn normalize_rim(
         &self,
         criteria_range: &DMatrix<f64>,
@@ -260,15 +327,20 @@ pub trait Normalize {
     ///
     /// # Arguments
     ///
-    /// * `types` - An array slice indicating if each criterion is a profit or cost.
+    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
     /// * `bounds` - A 2D array that defines the decision problembounds of the criteria. Each row
     ///   represent the bounds for a given criterion. The first value is the lower bound and the
     ///   second value is the upper bound. Row one corresponds to criterion one, and so on.
     ///
     /// # Returns
     ///
-    /// * `Result<DMatrix<f64>, NormalizationError>` - A normalized decision matrix, or an error
-    ///   if the normalization fails.
+    /// * `Result<DMatrix<f64>, NormalizationError>` - A normalized decision matrix if successful.
+    ///
+    /// # Errors
+    ///
+    /// * [`NormalizationError::NormalizationCriteraTypeMismatch`] - If the number of criteria types
+    ///   does not match the number of criteria.
+    /// * [`NormalizationError::EmptyMatrix`] - If the decision matrix is empty.
     fn normalize_spotis(
         &self,
         types: &CriteriaTypes,
@@ -288,12 +360,18 @@ pub trait Normalize {
     ///
     /// # Arguments
     ///
-    /// * `types` - An array slice indicating if each criterion is a profit or cost.
+    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
     ///
     /// # Returns
     ///
-    /// * `Result<DMatrix<f64>, NormalizationError>` - A normalized decision matrix, or an error
-    ///   if the normalization fails.
+    /// * `Result<DMatrix<f64>, NormalizationError>` - A normalized decision matrix if successful.
+    ///
+    /// # Errors
+    ///
+    /// * [`NormalizationError::NormalizationCriteraTypeMismatch`] - If the number of criteria types
+    ///   does not match the number of criteria.
+    /// * [`NormalizationError::EmptyMatrix`] - If the decision matrix is empty.
+    /// * [`NormalizationError::ZeroRange`] - If any of the decision matrix elements are zero.
     fn normalize_sum(&self, types: &CriteriaTypes) -> Result<DMatrix<f64>, NormalizationError>;
 
     /// Considers the root of the sum of the squares of the criteria values for normalization.
@@ -309,12 +387,18 @@ pub trait Normalize {
     ///
     /// # Arguments
     ///
-    /// * `types` - An array slice indicating if each criterion is a profit or cost.
+    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
     ///
     /// # Returns
     ///
-    /// * `Result<DMatrix<f64>, NormalizationError>` - A normalized decision matrix, or an error
-    ///   if the normalization fails.
+    /// * `Result<DMatrix<f64>, NormalizationError>` - A normalized decision matrix if successful.
+    ///
+    /// # Errors
+    ///
+    /// * [`NormalizationError::NormalizationCriteraTypeMismatch`] - If the number of criteria types
+    ///   does not match the number of criteria.
+    /// * [`NormalizationError::EmptyMatrix`] - If the decision matrix is empty.
+    /// * [`NormalizationError::ZeroRange`] - If any of the decision matrix elements are zero.
     fn normalize_vector(&self, types: &CriteriaTypes) -> Result<DMatrix<f64>, NormalizationError>;
 
     /// Normalization method proposed by Zavadskas and Turskis in 2008.
@@ -331,12 +415,18 @@ pub trait Normalize {
     ///
     /// # Arguments
     ///
-    /// * `types` - An array slice indicating if each criterion is a profit or cost.
+    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
     ///
     /// # Returns
     ///
-    /// * `Result<DMatrix<f64>, NormalizationError>` - A normalized decision matrix, or an error
-    ///   if the normalization fails.
+    /// * `Result<DMatrix<f64>, NormalizationError>` - A normalized decision matrix if successful.
+    ///
+    /// # Errors
+    ///
+    /// * [`NormalizationError::NormalizationCriteraTypeMismatch`] - If the number of criteria types
+    ///   does not match the number of criteria.
+    /// * [`NormalizationError::EmptyMatrix`] - If the decision matrix is empty.
+    /// * [`NormalizationError::ZeroRange`] - If any of the decision matrix elements are zero.
     fn normalize_zavadskas_turskis(
         &self,
         types: &CriteriaTypes,
@@ -658,16 +748,20 @@ impl Normalize for DMatrix<f64> {
         criteria_range: &DMatrix<f64>,
         reference_ideal: &DMatrix<f64>,
     ) -> Result<DMatrix<f64>, NormalizationError> {
+        fn dmin(x: f64, c: f64, d: f64) -> f64 {
+            f64::min(f64::abs(x - c), f64::abs(x - d))
+        }
+
+        if self.is_empty() {
+            return Err(NormalizationError::EmptyMatrix);
+        }
+
         let (num_alternatives, num_criteria) = self.shape();
 
         reference_ideal.is_reference_ideal_bounds_valid(criteria_range)?;
 
         // Initialize a matrix to store the normalized values
         let mut normalized_matrix = DMatrix::<f64>::zeros(num_alternatives, num_criteria);
-
-        fn _dmin(x: f64, c: f64, d: f64) -> f64 {
-            f64::min(f64::abs(x - c), f64::abs(x - d))
-        }
 
         for (i, row) in self.row_iter().enumerate() {
             for (j, &x) in row.iter().enumerate() {
@@ -678,9 +772,9 @@ impl Normalize for DMatrix<f64> {
                 normalized_matrix[(i, j)] = if c <= x && x <= d {
                     1.0
                 } else if (a <= x && x < c) && (a != c) {
-                    1.0 - (_dmin(x, c, d) / f64::abs(a - c))
+                    1.0 - (dmin(x, c, d) / f64::abs(a - c))
                 } else if (d < x && x <= b) && (d != b) {
-                    1.0 - (_dmin(x, c, d) / f64::abs(d - b))
+                    1.0 - (dmin(x, c, d) / f64::abs(d - b))
                 } else {
                     0.0
                 }

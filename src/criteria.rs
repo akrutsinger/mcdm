@@ -50,7 +50,7 @@ impl CriteriaTypes {
     ///
     /// # Errors
     ///
-    /// * [`ValidationError`](crate::errors::ValidationError) - If the slice contains values other
+    /// * [`ValidationError`] - If the slice contains values other
     ///   than `-1` or `1`.
     pub fn from_slice(values: &[i8]) -> Result<Self, ValidationError> {
         let mut criteria = DVector::from_element(values.len(), CriterionType::Cost);

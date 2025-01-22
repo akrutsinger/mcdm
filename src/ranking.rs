@@ -75,7 +75,7 @@ pub trait Rank {
     /// \end{cases}
     /// $$
     ///
-    /// Next, obtain the normalized matrix, $s_{ij}$ by using the [`Sum`](crate::normalization::Normalize::normalize_sum)
+    /// Next, obtain the normalized matrix, $s_{ij}$ by using the [`Sum`](Normalize::normalize_sum)
     /// normalization method on $E$. Then compute the weighted matrix $v_{ij}$ using
     ///
     /// $$ v_{ij} = w_j s_{ij} $$
@@ -97,14 +97,18 @@ pub trait Rank {
     ///
     /// # Arguments
     ///
-    /// * `types` - A 1D array of criterion types.
-    /// * `weights` - A 1D array of weights corresponding to the relative importance of each
-    ///   criterion.
+    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
+    /// * `weights` - A vector of weights representing the relative importance of each criterion.
     ///
     /// # Returns
     ///
-    /// * `Result<DVector<f64>, RankingError>` - A 1D array of preference values, or an error if the
-    ///   ranking process fails.
+    /// * `Result<DVector<f64>, RankingError>` - A vector of preference values if successful.
+    ///
+    /// # Errors
+    ///
+    /// * [`RankingError::DimensionMismatch`] - If the number of criteria types or number of weights
+    ///   do not match the number of criteria.
+    /// * [`RankingError::EmptyMatrix`] - If the decision matrix is empty.
     ///
     /// # Example
     ///
@@ -132,7 +136,7 @@ pub trait Rank {
 
     /// Ranks the alternatives using the COmbined Compromise SOlution (COCOSO) method.
     ///
-    /// The COCOSO method expects the decision matrix is normalized using the [`MinMax`](crate::normalization::Normalize::normalize_min_max)
+    /// The COCOSO method expects the decision matrix is normalized using the [`MinMax`](Normalize::normalize_min_max)
     /// method. Then calculates the weighted sum of the comparision sequence and the total power
     /// weight of the comparison sequence for each alternative. The values of $S_i$ are based on the
     /// grey relationship generation method and the values for $P_i$ are based on the multiplicative
@@ -151,13 +155,12 @@ pub trait Rank {
     /// $$ k_{ib} = \frac{S_i}{\min_i(S_i)} + \frac{P_i}{\min_i(P_i)} $$
     /// $$ k_{ic} = \frac{\lambda(S_i) + (1 - \lambda)(P_i)}{\lambda \max_i(S_i) + (1 - \lambda) \max_i(P_i)} \quad 0 \leq \lambda \leq 1 $$
     ///
-    /// where $k_{ia}$ represents the average of the sums of [`WeightedSum`](crate::ranking::Rank::rank_weighted_sum)
-    /// and [`WeightedProduct`](crate::ranking::Rank::rank_weighted_product) scores, $k_{ib}$
-    /// represents the [`WeightedSum`](crate::ranking::Rank::rank_weighted_sum) and
-    /// [`WeightedProduct`](crate::ranking::Rank::rank_weighted_product) scores over the best scores
-    /// for each each method respectfully, and $k_{ic}$ represents the [`WeightedSum`](crate::ranking::Rank::rank_weighted_sum)
-    /// and [`WeightedProduct`](crate::ranking::Rank::rank_weighted_product) scores using the
-    /// compromise strategy, and $m$ is the number of alternatives.
+    /// where $k_{ia}$ represents the average of the sums of [`WeightedSum`](Rank::rank_weighted_sum)
+    /// and [`WeightedProduct`](Rank::rank_weighted_product) scores, $k_{ib}$ represents the
+    /// [`WeightedSum`](Rank::rank_weighted_sum) and [`WeightedProduct`](Rank::rank_weighted_product)
+    /// scores over the best scores for each each method respectfully, and $k_{ic}$ represents the
+    /// [`WeightedSum`](Rank::rank_weighted_sum) and [`WeightedProduct`](Rank::rank_weighted_product)
+    /// scores using the compromise strategy, and $m$ is the number of alternatives.
     ///
     /// Lastly, we rank the alternatives as follows:
     ///
@@ -167,13 +170,17 @@ pub trait Rank {
     ///
     /// # Arguments
     ///
-    /// * `weights` - A 1D array of weights corresponding to the relative importance of each
-    ///   criterion.
+    /// * `weights` - A vector of weights representing the relative importance of each criterion.
     ///
     /// # Returns
     ///
-    /// * `Result<DVector<f64>, RankingError>` - A 1D array of preference values, or an error if the
-    ///   ranking process fails.
+    /// * `Result<DVector<f64>, RankingError>` - A vector of preference values if successful.
+    ///
+    /// # Errors
+    ///
+    /// * [`RankingError::DimensionMismatch`] - If the number of weights does not match the number
+    ///   of criteria.
+    /// * [`RankingError::EmptyMatrix`] - If the decision matrix is empty.
     ///
     /// # Example
     ///
@@ -199,7 +206,7 @@ pub trait Rank {
 
     /// Ranks the alternatives using the COmbinative Distance-based ASessment (CODAS) method.
     ///
-    /// The CODAS method expects the decision matrix is normalized using the [`Linear`](crate::normalization::Normalize::normalize_linear)
+    /// The CODAS method expects the decision matrix is normalized using the [`Linear`](Normalize::normalize_linear)
     /// method. Then calculates an assessment matrix based on the euclidean distance and taxicab
     /// distance from the negative ideal solution.
     ///
@@ -237,14 +244,18 @@ pub trait Rank {
     ///
     /// # Arguments
     ///
-    /// * `weights` - A 1D array of weights corresponding to the relative importance of each
-    ///   criterion.
+    /// * `weights` - A vector of weights representing the relative importance of each criterion.
     /// * `tau` - The threshold value for the threshold function. Default is 0.02.
     ///
     /// # Returns
     ///
-    /// * `Result<DVector<f64>, RankingError>` - A 1D array of preference values, or an error if the
-    ///   ranking process fails.
+    /// * `Result<DVector<f64>, RankingError>` - A vector of preference values if successful.
+    ///
+    /// # Errors
+    ///
+    /// * [`RankingError::DimensionMismatch`] - If the number of weights does not match the number
+    ///   of criteria.
+    /// * [`RankingError::EmptyMatrix`] - If the decision matrix is empty.
     ///
     /// # Example
     ///
@@ -278,8 +289,8 @@ pub trait Rank {
     /// accurate assessment of each alternative.
     ///
     /// Start by calculating the normalized decision matrix, $r_{ij}$, using the
-    /// [`Sum`](crate::normalization::Normalize::normalize_sum) method, but treat each criterion as
-    /// a profit. The normalization is caclculated as:
+    /// [`Sum`](Normalize::normalize_sum) method, but treat each criterion as a profit. The
+    /// normalization is caclculated as:
     ///
     /// $$ r_{ij} = \frac{x_{ij}}{\sum_{i=1}^m x_{ij}} $$
     ///
@@ -313,14 +324,18 @@ pub trait Rank {
     ///
     /// # Arguments
     ///
-    /// * `types` - A 1D array of criterion types.
-    /// * `weights` - A 1D array of weights corresponding to the relative importance of each
-    ///   criterion.
+    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
+    /// * `weights` - A vector of weights representing the relative importance of each criterion.
     ///
     /// # Returns
     ///
-    /// * `Result<DVector<f64>, RankingError>` - A 1D array of preference values, or an error if the
-    ///   ranking process fails.
+    /// * `Result<DVector<f64>, RankingError>` - A vector of preference values if successful.
+    ///
+    /// # Errors
+    ///
+    /// * [`RankingError::DimensionMismatch`] - If the number of criteria types or number of weights
+    ///   do not match the number of criteria.
+    /// * [`RankingError::EmptyMatrix`] - If the decision matrix is empty.
     ///
     /// # Example
     ///
@@ -395,14 +410,18 @@ pub trait Rank {
     ///
     /// # Arguments
     ///
-    /// * `types` - A 1D array of criterion types.
-    /// * `weights` - A 1D array of weights corresponding to the relative importance of each
-    ///   criterion.
+    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
+    /// * `weights` - A vector of weights representing the relative importance of each criterion.
     ///
     /// # Returns
     ///
-    /// * `Result<DVector<f64>, RankingError>` - A 1D array of preference values, or an error if the
-    ///   ranking process fails.
+    /// * `Result<DVector<f64>, RankingError>` - A vector of preference values if successful.
+    ///
+    /// # Errors
+    ///
+    /// * [`RankingError::DimensionMismatch`] - If the number of criteria types or number of weights
+    ///   do not match the number of criteria.
+    /// * [`RankingError::EmptyMatrix`] - If the decision matrix is empty.
     ///
     /// # Example
     ///
@@ -446,8 +465,8 @@ pub trait Rank {
     ///
     /// Then, define the reference points $\mu,j=1,\ldots,n$ for each decision criterion.
     ///
-    /// Next, normalize the decision matrix using the [`Sum`](crate::normalization::Normalize::normalize_sum)
-    /// method treating all criteria as profits to get the normalized decision matrix $r_{ij}$.
+    /// Next, normalize the decision matrix using the [`Sum`](Normalize::normalize_sum) method
+    /// treating all criteria as profits to get the normalized decision matrix $r_{ij}$.
     ///
     /// $$r_{ij} = \frac{x_{ij}}{\sum_{i=1}^m x_{ij}}$$
     ///
@@ -497,10 +516,9 @@ pub trait Rank {
     ///
     /// # Arguments
     ///
-    /// * `types` - A 1D array of criterion types.
-    /// * `weights` - A 1D array of weights corresponding to the relative importance of each
-    ///   criterion.
-    /// * `reference_point` - A 1D array of reference points corresponding to the relative importance
+    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
+    /// * `weights` - A vector of weights representing the relative importance of each criterion.
+    /// * `reference_point` - A vector of reference points representing to the relative importance
     ///   of each criterion.
     /// * `lambda` - A scalar value representing attenuation factor for the losses. Suggested to be
     ///   between 2.0 and 2.5.Default is 2.25.
@@ -509,8 +527,13 @@ pub trait Rank {
     ///
     /// # Returns
     ///
-    /// * `Result<DVector<f64>, RankingError>` - A 1D array of preference values, or an error if the
-    ///   ranking process fails.
+    /// * `Result<DVector<f64>, RankingError>` - A vector of preference values if successful.
+    ///
+    /// # Errors
+    ///
+    /// * [`RankingError::DimensionMismatch`] - If the number of criteria types or number of weights
+    ///   do not match the number of criteria.
+    /// * [`RankingError::EmptyMatrix`] - If the decision matrix is empty.
     ///
     /// # Example
     ///
@@ -545,7 +568,7 @@ pub trait Rank {
     /// method.
     ///
     /// The MABAC method expects an $m \times n$ decision matrix that is normalized using the
-    /// [`MinMax`](crate::normalization::Normalize::normalize_min_max) method. Then computes a
+    /// [`MinMax`](Normalize::normalize_min_max) method. Then computes a
     /// weighted matrix $v_{ij}$ using
     ///
     /// $$ v_{ij} = {w_j}(r_{ij} + 1) $$
@@ -579,13 +602,17 @@ pub trait Rank {
     ///
     /// # Arguments
     ///
-    /// * `weights` - A 1D array of weights corresponding to the relative importance of each
-    ///   criterion.
+    /// * `weights` - A vector of weights representing the relative importance of each criterion.
     ///
     /// # Returns
     ///
-    /// * `Result<DVector<f64>, RankingError>` - A 1D array of preference values, or an error if the
-    ///   ranking process fails.
+    /// * `Result<DVector<f64>, RankingError>` - A vector of preference values if successful.
+    ///
+    /// # Errors
+    ///
+    /// * [`RankingError::DimensionMismatch`] - If the number of criteria types or number of weights
+    ///   do not match the number of criteria.
+    /// * [`RankingError::EmptyMatrix`] - If the decision matrix is empty.
     ///
     /// # Example
     ///
@@ -613,7 +640,7 @@ pub trait Rank {
     /// method.
     ///
     /// The MAIRCA method operates on a normalized decision matrix. The typical normalization method
-    /// used is the [`MinMax`](crate::normalization::Normalize::normalize_min_max) method.
+    /// used is the [`MinMax`](Normalize::normalize_min_max) method.
     ///
     /// Start with a normalied $m \times n$ decision matrix where $m$ is the number of alternatives
     /// and $n$ is the number of criteria.
@@ -688,13 +715,17 @@ pub trait Rank {
     ///
     /// # Arguments
     ///
-    /// * `weights` - A 1D array of weights corresponding to the relative importance of each
-    ///   criterion.
+    /// * `weights` - A vector of weights representing the relative importance of each criterion.
     ///
     /// # Returns
     ///
-    /// * `Result<DVector<f64>, RankingError>` - A 1D array of preference values, or an error if the
-    ///   ranking process fails.
+    /// * `Result<DVector<f64>, RankingError>` - A vector of preference values if successful.
+    ///
+    /// # Errors
+    ///
+    /// * [`RankingError::DimensionMismatch`] - If the number of weights does not match the number
+    ///   of criteria.
+    /// * [`RankingError::EmptyMatrix`] - If the decision matrix is empty.
     ///
     /// # Example
     ///
@@ -795,14 +826,18 @@ pub trait Rank {
     ///
     /// # Arguments
     ///
-    /// * `types` - A 1D array of criterion types.
-    /// * `weights` - A 1D array of weights corresponding to the relative importance of each
-    ///   criterion.
+    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
+    /// * `weights` - A vector of weights representing the relative importance of each criterion.
     ///
     /// # Returns
     ///
-    /// * `Result<DVector<f64>, RankingError>` - A 1D array of preference values, or an error if the
-    ///   ranking process fails.
+    /// * `Result<DVector<f64>, RankingError>` - A vector of preference values if successful.
+    ///
+    /// # Errors
+    ///
+    /// * [`RankingError::DimensionMismatch`] - If the number of criteria types or number of weights
+    ///   do not match the number of criteria.
+    /// * [`RankingError::EmptyMatrix`] - If the decision matrix is empty.
     ///
     /// # Example
     ///
@@ -845,7 +880,7 @@ pub trait Rank {
     /// $$
     ///
     /// Next, treat all criteria types as profit and normalize the decision matrix using the
-    /// [`Vector`](crate::normalization::Normalize::normalize_vector) method:
+    /// [`Vector`](Normalize::normalize_vector) method:
     ///
     /// $$ r_{ij} = \frac{x_{ij}}{\sqrt{\sum_{i=1}^m x^2_{ij}}} $$
     ///
@@ -868,14 +903,18 @@ pub trait Rank {
     ///
     /// # Arguments
     ///
-    /// * `types` - A 1D array of criterion types.
-    /// * `weights` - A 1D array of weights corresponding to the relative importance of each
-    ///   criterion.
+    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
+    /// * `weights` - A vector of weights representing the relative importance of each criterion.
     ///
     /// # Returns
     ///
-    /// * `Result<DVector<f64>, RankingError>` - A 1D array of preference values, or an error if the
-    ///   ranking process fails.
+    /// * `Result<DVector<f64>, RankingError>` - A vector of preference values if successful.
+    ///
+    /// # Errors
+    ///
+    /// * [`RankingError::DimensionMismatch`] - If the number of criteria types or number of weights
+    ///   do not match the number of criteria.
+    /// * [`RankingError::EmptyMatrix`] - If the decision matrix is empty.
     ///
     /// # Example
     ///
@@ -908,7 +947,7 @@ pub trait Rank {
     /// to handle both beneficial critieria (those to be maximized, such as profits or quality)
     /// and non-beneficial criteria (those to be minimized, such as costs or environmental impact).
     ///
-    /// Start by normalizing the decision matrix, $x_{ij}$, using the [`OCRA`](crate::normalization::Normalize::normalize_ocra)
+    /// Start by normalizing the decision matrix, $x_{ij}$, using the [`OCRA`](Normalize::normalize_ocra)
     /// method:
     ///
     /// For profit:
@@ -934,14 +973,18 @@ pub trait Rank {
     ///
     /// # Arguments
     ///
-    /// * `types` - A 1D array of criterion types.
-    /// * `weights` - A 1D array of weights corresponding to the relative importance of each
-    ///   criterion.
+    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
+    /// * `weights` - A vector of weights representing the relative importance of each criterion.
     ///
     /// # Returns
     ///
-    /// * `Result<DVector<f64>, RankingError>` - A 1D array of preference values, or an error if the
-    ///   ranking process fails.
+    /// * `Result<DVector<f64>, RankingError>` - A vector of preference values if successful.
+    ///
+    /// # Errors
+    ///
+    /// * [`RankingError::DimensionMismatch`] - If the number of criteria types or number of weights
+    ///   do not match the number of criteria.
+    /// * [`RankingError::EmptyMatrix`] - If the decision matrix is empty.
     ///
     /// # Example
     ///
@@ -986,8 +1029,8 @@ pub trait Rank {
     /// \end{bmatrix}
     /// $$
     ///
-    /// Normalize the decision matrix using the [`Vector`](crate::normalization::Normalize::normalize_vector)
-    /// method to get the normalized matrix, $r_{ij}$.
+    /// Normalize the decision matrix using the [`Vector`](Normalize::normalize_vector) method to
+    /// get the normalized matrix, $r_{ij}$.
     ///
     /// Next, calculate the normalized weighted decision matrix, $v_{ij}$:
     ///
@@ -1004,8 +1047,8 @@ pub trait Rank {
     ///         &= \left\\{ v_{(k)1}, v_{(k)2}, \ldots, v_{(k)n} \right\\}
     /// \end{split} $$
     ///
-    /// where $k \in \\{1, 2, \ldots, m\\}$, $J$ is the set of profit criteria, and $J^\prime$ is the
-    /// set of cost criteria.
+    /// where $k \in \\{1, 2, \ldots, m\\}$, $J$ is the set of profit criteria, and $J^\prime$ is
+    /// the set of cost criteria.
     ///
     /// Next, find the average value of each objective column as:
     ///
@@ -1057,15 +1100,19 @@ pub trait Rank {
     ///
     /// # Arguments
     ///
-    /// * `types` - A 1D array of criterion types.
-    /// * `weights` - A 1D array of weights corresponding to the relative importance of each
-    ///   criterion.
+    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
+    /// * `weights` - A vector of weights representing the relative importance of each criterion.
     /// * `simpler_probid` - A boolean value indicating whether to use the simpler PROBID method.
     ///
     /// # Returns
     ///
-    /// * `Result<DVector<f64>, RankingError>` - A 1D array of preference values, or an error if the
-    ///   ranking process fails.
+    /// * `Result<DVector<f64>, RankingError>` - A vector of preference values if successful.
+    ///
+    /// # Errors
+    ///
+    /// * [`RankingError::DimensionMismatch`] - If the number of criteria types or number of weights
+    ///   do not match the number of criteria.
+    /// * [`RankingError::EmptyMatrix`] - If the decision matrix is empty.
     ///
     /// # Example
     ///
@@ -1097,12 +1144,12 @@ pub trait Rank {
     /// Rank alternatives using the Root Assessment Method (RAM).
     ///
     /// The RAM method expects an $m \times n$ decision matrix normalized using the
-    /// [`Sum`](crate::normalization::Normalize::normalize_sum) method. This method ranks
-    /// alternatives by comparing them to a root or reference alternative. RAM considers both the
-    /// relative performance of alternatives and their deviation from the reference point, ensuring
-    /// a balanced evaluation across multiple criteria.
+    /// [`Sum`](Normalize::normalize_sum) method. This method ranks alternatives by comparing them
+    /// to a root or reference alternative. RAM considers both the relative performance of
+    /// alternatives and their deviation from the reference point, ensuring a balanced evaluation
+    /// across multiple criteria.
     ///
-    /// Start with a normalized decision matrix $r_{ij}$. The [`Sum`](crate::normalization::Normalize::normalize_sum)
+    /// Start with a normalized decision matrix $r_{ij}$. The [`Sum`](Normalize::normalize_sum)
     /// method is typically used to normalize the decision matrix.
     ///
     /// Next, calculate the weighted decision matrix:
@@ -1124,14 +1171,18 @@ pub trait Rank {
     ///
     /// # Arguments
     ///
-    /// * `types` - A 1D array of criterion types.
-    /// * `weights` - A 1D array of weights corresponding to the relative importance of each
-    ///   criterion.
+    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
+    /// * `weights` - A vector of weights representing the relative importance of each criterion.
     ///
     /// # Returns
     ///
-    /// * `Result<DVector<f64>, RankingError>` - A 1D array of preference values, or an error if the
-    ///   ranking process fails.
+    /// * `Result<DVector<f64>, RankingError>` - A vector of preference values if successful.
+    ///
+    /// # Errors
+    ///
+    /// * [`RankingError::DimensionMismatch`] - If the number of criteria types or number of weights
+    ///   do not match the number of criteria.
+    /// * [`RankingError::EmptyMatrix`] - If the decision matrix is empty.
     ///
     /// # Example
     ///
@@ -1187,7 +1238,7 @@ pub trait Rank {
     /// \end{bmatrix}
     /// $$
     ///
-    /// Next, normalize the decision matrix $X$ using the [`RIM`](crate::normalization::Normalize::normalize_rim)
+    /// Next, normalize the decision matrix $X$ using the [`RIM`](Normalize::normalize_rim)
     /// normalization function:
     ///
     /// $$ f(x_{ij}, \[A,B\], \[C,D\]) = \begin{cases}
@@ -1224,9 +1275,8 @@ pub trait Rank {
     ///
     /// # Arguments
     ///
-    /// * `types` - A 1D array of criterion types.
-    /// * `weights` - A 1D array of weights corresponding to the relative importance of each
-    ///   criterion.
+    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
+    /// * `weights` - A vector of weights representing the relative importance of each criterion.
     /// * `criteria_range` - A 2D array that defines the arbitrarily chosen bounds of the criteria.
     ///   Each row represent the bounds for a given criterion. The first value is the lower bound
     ///   and the second value is the upper bound. Row one corresponds to criterion one, and so on.
@@ -1237,8 +1287,13 @@ pub trait Rank {
     ///
     /// # Returns
     ///
-    /// * `Result<DVector<f64>, RankingError>` - A 1D array of preference values, or an error if the
-    ///   ranking process fails.
+    /// * `Result<DVector<f64>, RankingError>` - A vector of preference values if successful.
+    ///
+    /// # Errors
+    ///
+    /// * [`RankingError::DimensionMismatch`] - If the number of criteria types or number of weights
+    ///   do not match the number of criteria.
+    /// * [`RankingError::EmptyMatrix`] - If the decision matrix is empty.
     ///
     /// # Example
     ///
@@ -1287,7 +1342,7 @@ pub trait Rank {
     /// \end{bmatrix}
     /// $$
     ///
-    /// Next, normalize the decision matrix using the [`SPOTIS`](crate::normalization::Normalize::normalize_spotis)
+    /// Next, normalize the decision matrix using the [`SPOTIS`](Normalize::normalize_spotis)
     /// normalization method. This method define the bounds of the problem. Minimum and Maximum
     /// bounds of classical MCDM problems must be defined to transform MCDM problems from
     /// ill-defined to well-defined.
@@ -1317,17 +1372,21 @@ pub trait Rank {
     ///
     /// # Arguments
     ///
-    /// * `types` - A 1D array of criterion types.
-    /// * `weights` - A 1D array of weights corresponding to the relative importance of each
-    ///   criterion.
+    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
+    /// * `weights` - A vector of weights representing the relative importance of each criterion.
     /// * `bounds` - A 2D array that defines the decision problembounds of the criteria. Each row
     ///   represent the bounds for a given criterion. The first value is the lower bound and the
     ///   second value is the upper bound. Row one corresponds to criterion one, and so on.
     ///
     /// # Returns
     ///
-    /// * `Result<DVector<f64>, RankingError>` - A 1D array of preference values, or an error if the
-    ///   ranking process fails.
+    /// * `Result<DVector<f64>, RankingError>` - A vector of preference values if successful.
+    ///
+    /// # Errors
+    ///
+    /// * [`RankingError::DimensionMismatch`] - If the number of criteria types or number of weights
+    ///   do not match the number of criteria.
+    /// * [`RankingError::EmptyMatrix`] - If the decision matrix is empty.
     ///
     /// # Example
     ///
@@ -1358,8 +1417,8 @@ pub trait Rank {
     /// Ranks the alternatives using the TOPSIS method.
     ///
     /// The TOPSIS method expects an $m \times n$ decision matrix normalized using the
-    /// [`MinMax`](crate::normalization::Normalize::normalize_min_max) method. Then computes a
-    /// weighted matrix $v_{ij}$ using
+    /// [`MinMax`](Normalize::normalize_min_max) method. Then computes a weighted matrix $v_{ij}$
+    /// using
     ///
     /// $$ v_{ij} = r_{ij}{w_j} $$
     ///
@@ -1388,13 +1447,18 @@ pub trait Rank {
     ///
     /// # Arguments
     ///
-    /// * `weights` - A 1D array of weights corresponding to the relative importance of each
-    ///   criterion.
+    /// * `weights` - A vector of weights representing the relative importance of each criterion.
     ///
     /// # Returns
     ///
-    /// * `Result<DVector<f64>, RankingError>` - A 1D array of preference values, or an error if the
-    ///   ranking process fails.
+    /// * `Result<DVector<f64>, RankingError>` - A vector of preference values if successful.
+    ///
+    /// # Errors
+    ///
+    /// * [`RankingError::DimensionMismatch`] - If the number of weights does not match the number
+    ///   of criteria.
+    /// * [`RankingError::EmptyMatrix`] - If the decision matrix is empty.
+    /// * [`RankingError::InvalidValue`] - If any of the weights are zero.
     ///
     /// # Example
     ///
@@ -1421,8 +1485,8 @@ pub trait Rank {
     /// Rank alternatives using the Weighted Aggregated Sum Product ASessment (WASPAS) method.
     ///
     /// The WASPAS method expects an $m \times n$ decision matrix normalized using the
-    /// [`Linear`](crate::normalization::Normalize::normalize_linear) method. The WASPAS ranking
-    /// method is a combination of the [`WeightedProduct`](Rank::rank_weighted_product) and
+    /// [`Linear`](Normalize::normalize_linear) method. The WASPAS ranking method is a combination
+    /// of the [`WeightedProduct`](Rank::rank_weighted_product) and
     /// [`WeightedSum`](Rank::rank_weighted_sum) ranking methods.
     ///
     /// Start by calculating the [`WeightedProduct`](Rank::rank_weighted_product), $WPM$, and
@@ -1445,16 +1509,21 @@ pub trait Rank {
     ///
     /// # Arguments
     ///
-    /// * `weights` - A 1D array of weights corresponding to the relative importance of each
-    ///   criterion.
+    /// * `weights` - A vector of weights representing the relative importance of each criterion.
     /// * `lambda` - Preferance value between 0.0 and 1.0. The default value is 0.5. A value of 0.5
     ///   means equal preferance between WPM and WSM ranking. A value less than 0.5 shift preference
     ///   in favor of WPM. A value greater than 0.5 shift preference in favor of WSM ranking.
     ///
     /// # Returns
     ///
-    /// * `Result<DVector<f64>, RankingError>` - A 1D array of preference values, or an error if the
-    ///   ranking process fails.
+    /// * `Result<DVector<f64>, RankingError>` - A vector of preference values if successful.
+    ///
+    /// # Errors
+    ///
+    /// * [`RankingError::DimensionMismatch`] - If the number of weights does not match the number
+    ///   of criteria.
+    /// * [`RankingError::EmptyMatrix`] - If the decision matrix is empty.
+    /// * [`RankingError::InvalidValue`] - If the lambda value is not between 0.0 and 1.0.
     ///
     /// # Example
     ///
@@ -1490,7 +1559,7 @@ pub trait Rank {
     /// Computes the Weighted Product Model (WPM) preference values for alternatives.
     ///
     /// The `WeightedProduct` model expects an $m \times n$ decision matrix normalized using the
-    /// [`Sum`](crate::normalization::Normalize::normalize_sum) method.
+    /// [`Sum`](Normalize::normalize_sum) method.
     ///
     /// Next, calculate the ranking using:
     ///
@@ -1503,13 +1572,17 @@ pub trait Rank {
     ///
     /// # Arguments
     ///
-    /// * `weights` - A 1D array of weights corresponding to the relative importance of each
-    ///   criterion.
+    /// * `weights` - A vector of weights representing the relative importance of each criterion.
     ///
     /// # Returns
     ///
-    /// * `Result<DVector<f64>, RankingError>` - A 1D array of preference values, or an error if the
-    ///   ranking process fails.
+    /// * `Result<DVector<f64>, RankingError>` - A vector of preference values if successful.
+    ///
+    /// # Errors
+    ///
+    /// * [`RankingError::DimensionMismatch`] - If the number of weights does not match the number
+    ///   of criteria.
+    /// * [`RankingError::EmptyMatrix`] - If the decision matrix is empty.
     ///
     /// # Example
     ///
@@ -1542,7 +1615,7 @@ pub trait Rank {
     /// The `WeightedSum` method ranks alternatives based on the weighted sum of their criteria
     /// values. Each alternative's score is calculated by multiplying its criteria values by the
     /// corresponding weights and summing the results. This method expects an $m \times n$ decision
-    /// matrix normalized using the [`Sum`](crate::normalization::Normalize::normalize_sum) method.
+    /// matrix normalized using the [`Sum`](Normalize::normalize_sum) method.
     ///
     /// $$ P_i = \sum_{j=1}^n r_{ij}{w_j} $$
     ///
@@ -1553,13 +1626,17 @@ pub trait Rank {
     ///
     /// # Arguments
     ///
-    /// * `weights` - A 1D array of weights corresponding to the relative importance of each
-    ///   criterion.
+    /// * `weights` - A vector of weights representing the relative importance of each criterion.
     ///
     /// # Returns
     ///
-    /// * `Result<DVector<f64>, RankingError>` - A 1D array of preference values, or an error if the
-    ///   ranking process fails.
+    /// * `Result<DVector<f64>, RankingError>` - A vector of preference values if successful.
+    ///
+    /// # Errors
+    ///
+    /// * [`RankingError::DimensionMismatch`] - If the number of weights does not match the number
+    ///   of criteria.
+    /// * [`RankingError::EmptyMatrix`] - If the decision matrix is empty.
     ///
     /// # Example
     ///
@@ -1578,43 +1655,16 @@ pub trait Rank {
 }
 
 impl Rank for DMatrix<f64> {
-    /// Rank the alternatives using the Additive Ratio Assessment (ARAS) method.
-    ///
-    /// The `ARAS` method evaluates alternatives by comparing their overall performance
-    /// relative to an ideal (best) alternative. Each alternative's performance is assessed
-    /// by the sum of its weighted, normalized criteria values divided by the performance
-    /// of the ideal alternative. This method requires a decision matrix and a set of weights
-    /// for the criteria, as well as the type (Profit or Cost) of each criterion.
-    ///
-    /// The ideal alternative is constructed using the best value for each criterion.
-    ///
-    /// # Arguments
-    ///
-    /// * `types` - A vector indicating whether each criterion is a `Profit` or `Cost`.
-    /// * `weights` - A vector of weights corresponding to the relative importance of each criterion.
-    ///
-    /// # Returns
-    ///
-    /// * `Result<DVector<f64>, RankingError>` - A 1D array of preference values, or an error
-    ///   if the ranking process fails.
-    ///
-    /// Alternatives with higher preference values are more preferred.
-    ///
-    /// # Errors
-    ///
-    /// Returns `RankingError::EmptyMatrix` if the decision matrix is empty, or
-    /// `RankingError::DimensionMismatch` if the lengths of `types` or `weights` do not match
-    /// the number of criteria.
     fn rank_aras(
         &self,
         types: &CriteriaTypes,
         weights: &DVector<f64>,
     ) -> Result<DVector<f64>, RankingError> {
-        let (num_alternatives, num_criteria) = self.shape();
-
-        if num_alternatives == 0 || num_criteria == 0 {
+        if self.is_empty() {
             return Err(RankingError::EmptyMatrix);
         }
+
+        let (num_alternatives, num_criteria) = self.shape();
 
         if types.len() != num_criteria {
             return Err(RankingError::DimensionMismatch);
@@ -1642,11 +1692,11 @@ impl Rank for DMatrix<f64> {
     }
 
     fn rank_cocoso(&self, weights: &DVector<f64>) -> Result<DVector<f64>, RankingError> {
-        let (num_alternatives, num_criteria) = self.shape();
-
-        if num_alternatives == 0 || num_criteria == 0 {
+        if self.is_empty() {
             return Err(RankingError::EmptyMatrix);
         }
+
+        let num_criteria = self.ncols();
 
         if weights.len() != num_criteria {
             return Err(RankingError::DimensionMismatch);
@@ -1691,11 +1741,11 @@ impl Rank for DMatrix<f64> {
     }
 
     fn rank_codas(&self, weights: &DVector<f64>, tau: f64) -> Result<DVector<f64>, RankingError> {
-        let (num_alternatives, num_criteria) = self.shape();
-
-        if num_alternatives == 0 || num_criteria == 0 {
+        if self.is_empty() {
             return Err(RankingError::EmptyMatrix);
         }
+
+        let (num_alternatives, num_criteria) = self.shape();
 
         if weights.len() != num_criteria {
             return Err(RankingError::DimensionMismatch);
@@ -1751,13 +1801,13 @@ impl Rank for DMatrix<f64> {
         types: &CriteriaTypes,
         weights: &DVector<f64>,
     ) -> Result<DVector<f64>, RankingError> {
-        let (num_alternatives, num_criteria) = self.shape();
-
-        if num_alternatives == 0 || num_criteria == 0 {
+        if self.is_empty() {
             return Err(RankingError::EmptyMatrix);
         }
 
-        if types.len() != num_criteria {
+        let (num_alternatives, num_criteria) = self.shape();
+
+        if types.len() != num_criteria || weights.len() != num_criteria {
             return Err(RankingError::DimensionMismatch);
         }
 
@@ -1807,13 +1857,13 @@ impl Rank for DMatrix<f64> {
         types: &CriteriaTypes,
         weights: &DVector<f64>,
     ) -> Result<DVector<f64>, RankingError> {
-        let (num_alternatives, num_criteria) = self.shape();
-
-        if num_alternatives == 0 || num_criteria == 0 {
+        if self.is_empty() {
             return Err(RankingError::EmptyMatrix);
         }
 
-        if types.len() != num_criteria {
+        let (num_alternatives, num_criteria) = self.shape();
+
+        if types.len() != num_criteria || weights.len() != num_criteria {
             return Err(RankingError::DimensionMismatch);
         }
 
@@ -1867,6 +1917,14 @@ impl Rank for DMatrix<f64> {
         lambda: f64,
         alpha: f64,
     ) -> Result<DVector<f64>, RankingError> {
+        if self.is_empty() {
+            return Err(RankingError::EmptyMatrix);
+        }
+
+        if types.len() != self.ncols() || weights.len() != self.ncols() {
+            return Err(RankingError::DimensionMismatch);
+        }
+
         let criteria_profits = CriteriaTypes::all_profits(types.len());
         let normalized_matrix = self.normalize_sum(&criteria_profits)?;
         let reference_point = reference_point.component_div(&self.row_sum().transpose());
@@ -1925,6 +1983,10 @@ impl Rank for DMatrix<f64> {
     }
 
     fn rank_mabac(&self, weights: &DVector<f64>) -> Result<DVector<f64>, RankingError> {
+        if self.is_empty() {
+            return Err(RankingError::EmptyMatrix);
+        }
+
         let (num_alternatives, num_criteria) = self.shape();
 
         if weights.len() != num_criteria {
@@ -1960,12 +2022,18 @@ impl Rank for DMatrix<f64> {
     }
 
     fn rank_mairca(&self, weights: &DVector<f64>) -> Result<DVector<f64>, RankingError> {
-        if weights.len() != self.ncols() {
+        if self.is_empty() {
+            return Err(RankingError::EmptyMatrix);
+        }
+
+        let (num_alternatives, num_criteria) = self.shape();
+
+        if weights.len() != num_criteria {
             return Err(RankingError::DimensionMismatch);
         }
 
         // Theoretical ranking matrix
-        let tp = weights / self.nrows() as f64;
+        let tp = weights / num_alternatives as f64;
 
         // Real rating matrix
         let tr = self.scale_columns(&tp);
@@ -1987,11 +2055,11 @@ impl Rank for DMatrix<f64> {
         types: &CriteriaTypes,
         weights: &DVector<f64>,
     ) -> Result<DVector<f64>, RankingError> {
-        let (num_alternatives, num_criteria) = self.shape();
-
-        if num_alternatives == 0 || num_criteria == 0 {
+        if self.is_empty() {
             return Err(RankingError::EmptyMatrix);
         }
+
+        let (num_alternatives, num_criteria) = self.shape();
 
         if types.len() != num_criteria || weights.len() != num_criteria {
             return Err(RankingError::DimensionMismatch);
@@ -2047,11 +2115,11 @@ impl Rank for DMatrix<f64> {
         types: &CriteriaTypes,
         weights: &DVector<f64>,
     ) -> Result<DVector<f64>, RankingError> {
-        let (num_alternatives, num_criteria) = self.shape();
-
-        if num_alternatives == 0 || num_criteria == 0 {
+        if self.is_empty() {
             return Err(RankingError::EmptyMatrix);
         }
+
+        let (num_alternatives, num_criteria) = self.shape();
 
         if types.len() != num_criteria || weights.len() != num_criteria {
             return Err(RankingError::DimensionMismatch);
@@ -2092,11 +2160,11 @@ impl Rank for DMatrix<f64> {
         types: &CriteriaTypes,
         weights: &DVector<f64>,
     ) -> Result<DVector<f64>, RankingError> {
-        let (num_alternatives, num_criteria) = self.shape();
-
-        if num_alternatives == 0 || num_criteria == 0 {
+        if self.is_empty() {
             return Err(RankingError::EmptyMatrix);
         }
+
+        let (num_alternatives, num_criteria) = self.shape();
 
         if types.len() != num_criteria || weights.len() != num_criteria {
             return Err(RankingError::DimensionMismatch);
@@ -2135,11 +2203,11 @@ impl Rank for DMatrix<f64> {
         weights: &DVector<f64>,
         simpler_probid: bool,
     ) -> Result<DVector<f64>, RankingError> {
-        let (num_alternatives, num_criteria) = self.shape();
-
-        if num_alternatives == 0 || num_criteria == 0 {
+        if self.is_empty() {
             return Err(RankingError::EmptyMatrix);
         }
+
+        let (num_alternatives, num_criteria) = self.shape();
 
         if types.len() != num_criteria || weights.len() != num_criteria {
             return Err(RankingError::DimensionMismatch);
@@ -2236,11 +2304,11 @@ impl Rank for DMatrix<f64> {
         types: &CriteriaTypes,
         weights: &DVector<f64>,
     ) -> Result<DVector<f64>, RankingError> {
-        let (num_alternatives, num_criteria) = self.shape();
-
-        if num_alternatives == 0 || num_criteria == 0 {
+        if self.is_empty() {
             return Err(RankingError::EmptyMatrix);
         }
+
+        let (num_alternatives, num_criteria) = self.shape();
 
         if types.len() != num_criteria || weights.len() != num_criteria {
             return Err(RankingError::DimensionMismatch);
@@ -2287,11 +2355,11 @@ impl Rank for DMatrix<f64> {
         criteria_range: &DMatrix<f64>,
         reference_ideal: &DMatrix<f64>,
     ) -> Result<DVector<f64>, RankingError> {
-        let (num_alternatives, num_criteria) = self.shape();
-
-        if num_alternatives == 0 || num_criteria == 0 {
+        if self.is_empty() {
             return Err(RankingError::EmptyMatrix);
         }
+
+        let (num_alternatives, num_criteria) = self.shape();
 
         if (types.len() != num_criteria)
             || (weights.len() != num_criteria)
@@ -2331,11 +2399,11 @@ impl Rank for DMatrix<f64> {
         weights: &DVector<f64>,
         bounds: &DMatrix<f64>,
     ) -> Result<DVector<f64>, RankingError> {
-        let (num_alternatives, num_criteria) = self.shape();
-
-        if num_alternatives == 0 || num_criteria == 0 {
+        if self.is_empty() {
             return Err(RankingError::EmptyMatrix);
         }
+
+        let num_criteria = self.ncols();
 
         if (types.len() != num_criteria)
             || (weights.len() != num_criteria)
@@ -2355,6 +2423,10 @@ impl Rank for DMatrix<f64> {
     }
 
     fn rank_topsis(&self, weights: &DVector<f64>) -> Result<DVector<f64>, RankingError> {
+        if self.is_empty() {
+            return Err(RankingError::EmptyMatrix);
+        }
+
         let (num_alternatives, num_criteria) = self.shape();
 
         if weights.len() != num_criteria {
@@ -2410,6 +2482,10 @@ impl Rank for DMatrix<f64> {
         weights: &DVector<f64>,
         lambda: f64,
     ) -> Result<DVector<f64>, RankingError> {
+        if self.is_empty() {
+            return Err(RankingError::EmptyMatrix);
+        }
+
         if weights.len() != self.ncols() {
             return Err(RankingError::DimensionMismatch);
         }
@@ -2427,6 +2503,10 @@ impl Rank for DMatrix<f64> {
     }
 
     fn rank_weighted_product(&self, weights: &DVector<f64>) -> Result<DVector<f64>, RankingError> {
+        if self.is_empty() {
+            return Err(RankingError::EmptyMatrix);
+        }
+
         if weights.len() != self.ncols() {
             return Err(RankingError::DimensionMismatch);
         }
@@ -2447,6 +2527,10 @@ impl Rank for DMatrix<f64> {
     }
 
     fn rank_weighted_sum(&self, weights: &DVector<f64>) -> Result<DVector<f64>, RankingError> {
+        if self.is_empty() {
+            return Err(RankingError::EmptyMatrix);
+        }
+
         if weights.len() != self.ncols() {
             return Err(RankingError::DimensionMismatch);
         }

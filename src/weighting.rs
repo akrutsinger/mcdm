@@ -5,8 +5,8 @@ use nalgebra::{DMatrix, DVector};
 
 /// A trait for calculating weights in Multiple-Criteria Decision Making (MCDM) problems.
 ///
-/// The [`Weight`] trait defines the method used to calculate the weight vector for the criteria in a
-/// decision matrix. Weights represent the relative importance of each criterion in the
+/// The [`Weight`] trait defines the method used to calculate the weight vector for the criteria in
+/// a decision matrix. Weights represent the relative importance of each criterion in the
 /// decision-making process and are used in conjunction with other MCDM techniques like
 /// normalization and ranking.
 ///
@@ -15,12 +15,12 @@ use nalgebra::{DMatrix, DVector};
 ///
 /// # Required Methods
 ///
-/// The [`Weight`] trait requires the implementation of the `weight` method, which generates a weight
-/// vector based on the decision matrix provided.
+/// The [`Weight`] trait requires the implementation of the `weight` method, which generates a
+/// weight vector based on the decision matrix provided.
 ///
 /// # Example
 ///
-/// Here's an example of how to use the [`Weight`] trait with an [`Equal`](crate::weighting::Weight::weight_equal)
+/// Here's an example of how to use the [`Weight`] trait with an [`Equal`](Weight::weight_equal)
 /// weighting scheme:
 ///
 /// ```rust
@@ -62,8 +62,12 @@ pub trait Weight {
     ///
     /// # Returns
     ///
-    /// * `Result<DVector<f64>, WeightingError>` - A vector of weights for each criterion, or error
-    ///   if the weighting calculation fails.
+    /// * `Result<DVector<f64>, WeightingError>` - A vector of weights for each criterion if
+    ///   successful.
+    ///
+    /// # Errors
+    ///
+    /// * [`WeightingError::EmptyMatrix`] - If the decision matrix is empty.
     fn weight_angular(&self) -> Result<DVector<f64>, WeightingError>;
 
     /// Calculates the weights for the given decision matrix using CRiteria Importance Through
@@ -86,18 +90,18 @@ pub trait Weight {
     ///
     /// $$ \sigma_j = \sqrt{\frac{\sum_{i=1}^m (x_{ij} - x_j)^2}{m}} \quad \text{for} \quad j=1, \ldots, n $$
     ///
-    /// where $x_{ij}$ is the $i$th element of the alternative (row) and $j$th elements of the criterion
-    /// (column) with $m$ alternatives and $n$ criteria.
+    /// where $x_{ij}$ is the $i$th element of the alternative (row) and $j$th elements of the
+    /// criterion (column) with $m$ alternatives and $n$ criteria.
     ///
     /// Next, compute the pearson correlation between the criteria:
     ///
     /// $$ r_{jk} = \frac{\sum_{i=1}^m (x_{ij} - x_j)(x_{ik} - x_k)}{\sqrt{\sum_{i=1}^m (x_{ij} - x_j)^2}\sqrt{\sum_{i=1}^m (x_{jk} - x_k)^2}} $$
     ///
-    /// where $x_{ij}$ is the $i$th element of the alternative (row) and $j$th elements of the criterion
-    /// (column) with $m$ alternatives and $n$ criteria.
+    /// where $x_{ij}$ is the $i$th element of the alternative (row) and $j$th elements of the
+    /// criterion (column) with $m$ alternatives and $n$ criteria.
     ///
-    /// Next, compute the information content using both contrast intesity (standard devision) and its
-    /// relationship with the other criteria (correlation):
+    /// Next, compute the information content using both contrast intesity (standard devision) and
+    /// its relationship with the other criteria (correlation):
     ///
     /// $$ C_j = \sigma_j \sum_{k=1}^n \left(1-r_{jk}\right) $$
     ///
@@ -112,8 +116,12 @@ pub trait Weight {
     ///
     /// # Returns
     ///
-    /// * `Result<DVector<f64>, WeightingError>` - A vector of weights for each criterion, or error
-    ///   if the weighting calculation fails.
+    /// * `Result<DVector<f64>, WeightingError>` - A vector of weights for each criterion if
+    ///   successful.
+    ///
+    /// # Errors
+    ///
+    /// * [`WeightingError::EmptyMatrix`] - If the decision matrix is empty.
     fn weight_critic(&self) -> Result<DVector<f64>, WeightingError>;
 
     /// A weighting method that assigns equal weights to all criteria in the decision matrix.
@@ -139,8 +147,12 @@ pub trait Weight {
     ///
     /// # Returns
     ///
-    /// * `Result<DVector<f64>, WeightingError>` - A vector of weights for each criterion, or error
-    ///   if the weighting calculation fails.
+    /// * `Result<DVector<f64>, WeightingError>` - A vector of weights for each criterion if
+    ///   successful.
+    ///
+    /// # Errors
+    ///
+    /// * [`WeightingError::EmptyMatrix`] - If the decision matrix is empty.
     fn weight_equal(&self) -> Result<DVector<f64>, WeightingError>;
 
     /// Calculates the entropy-based weights for the given decision matrix.
@@ -172,8 +184,12 @@ pub trait Weight {
     ///
     /// # Returns
     ///
-    /// * `Result<DVector<f64>, WeightingError>` - A vector of weights for each criterion, or error
-    ///   if the weighting calculation fails.
+    /// * `Result<DVector<f64>, WeightingError>` - A vector of weights for each criterion if
+    ///   successful.
+    ///
+    /// # Errors
+    ///
+    /// * [`WeightingError::EmptyMatrix`] - If the decision matrix is empty.
     fn weight_entropy(&self) -> Result<DVector<f64>, WeightingError>;
 
     /// The Gini coefficient weighting method measures inequality or dispersion of a distribution.
@@ -207,8 +223,12 @@ pub trait Weight {
     ///
     /// # Returns
     ///
-    /// * `Result<DVector<f64>, WeightingError>` - A vector of weights for each criterion, or error
-    ///   if the weighting calculation fails.
+    /// * `Result<DVector<f64>, WeightingError>` - A vector of weights for each criterion if
+    ///   successful.
+    ///
+    /// # Errors
+    ///
+    /// * [`WeightingError::EmptyMatrix`] - If the decision matrix is empty.
     fn weight_gini(&self) -> Result<DVector<f64>, WeightingError>;
 
     /// Calculate weights using the Method Based on the Removal Effects of Criiteria (MEREC) method.
@@ -223,9 +243,9 @@ pub trait Weight {
     ///
     /// $$ S_i = \ln \left( 1 + \left ( \frac{1}{n}\sum_{j=1}^n \ln(r_{ij}) \right) \right) $$
     ///
-    /// where $S_i$ is the overall performance of alternative $i$, $m$ is the number of alternatives,
-    /// and $r_{ij}$ is the value of normalized decision matrix for alternative $i$ andcriterion
-    /// $j$.
+    /// where $S_i$ is the overall performance of alternative $i$, $m$ is the number of
+    /// alternatives, and $r_{ij}$ is the value of normalized decision matrix for alternative $i$
+    /// andcriterion $j$.
     ///
     /// Next, calculate the performance of alternatives after removal of each criterion:
     ///
@@ -246,8 +266,12 @@ pub trait Weight {
     ///
     /// # Returns
     ///
-    /// * `Result<DVector<f64>, WeightingError>` - A vector of weights for each criterion, or error
-    ///   if the weighting calculation fails.
+    /// * `Result<DVector<f64>, WeightingError>` - A vector of weights for each criterion if
+    ///   successful.
+    ///
+    /// # Errors
+    ///
+    /// * [`WeightingError::EmptyMatrix`] - If the decision matrix is empty.
     ///
     /// # Example
     ///
@@ -286,8 +310,12 @@ pub trait Weight {
     ///
     /// # Returns
     ///
-    /// * `Result<DVector<f64>, WeightingError>` - A vector of weights for each criterion, or error
-    ///   if the weighting calculation fails.
+    /// * `Result<DVector<f64>, WeightingError>` - A vector of weights for each criterion if
+    ///   successful.
+    ///
+    /// # Errors
+    ///
+    /// * [`WeightingError::EmptyMatrix`] - If the decision matrix is empty.
     fn weight_standard_deviation(&self) -> Result<DVector<f64>, WeightingError>;
 
     /// Calculates the weights for the given decision matrix using variance.
@@ -300,8 +328,8 @@ pub trait Weight {
     ///
     /// # Weight Calculation
     ///
-    /// Normalize the decision matrix using the [`MinMax`](crate::normalization::Normalize::normalize_min_max) normalization
-    /// method.
+    /// Normalize the decision matrix using the [`MinMax`](crate::normalization::Normalize::normalize_min_max)
+    /// normalization method.
     ///
     /// Then calculate the variance measure for all of the criteria using:
     ///
@@ -325,18 +353,22 @@ pub trait Weight {
     ///
     /// # Returns
     ///
-    /// * `Result<DVector<f64>, WeightingError>` - A vector of weights for each criterion, or error
-    ///   if the weighting calculation fails.
+    /// * `Result<DVector<f64>, WeightingError>` - A vector of weights for each criterion if
+    ///   successful.
+    ///
+    /// # Errors
+    ///
+    /// * [`WeightingError::EmptyMatrix`] - If the decision matrix is empty.
     fn weight_variance(&self) -> Result<DVector<f64>, WeightingError>;
 }
 
 impl Weight for DMatrix<f64> {
     fn weight_angular(&self) -> Result<DVector<f64>, WeightingError> {
-        let (num_alternatives, num_criteria) = self.shape();
-
-        if num_alternatives == 0 || num_criteria == 0 {
+        if self.is_empty() {
             return Err(WeightingError::EmptyMatrix);
         }
+
+        let (num_alternatives, num_criteria) = self.shape();
 
         let inv_num_criteria = 1.0 / num_criteria as f64;
 
@@ -358,11 +390,11 @@ impl Weight for DMatrix<f64> {
     }
 
     fn weight_critic(&self) -> Result<DVector<f64>, WeightingError> {
-        let (num_alternatives, num_criteria) = self.shape();
-
-        if num_alternatives == 0 || num_criteria == 0 {
+        if self.is_empty() {
             return Err(WeightingError::EmptyMatrix);
         }
+
+        let (num_alternatives, num_criteria) = self.shape();
 
         let column_means = self.row_mean();
         let column_stds = self.row_variance().map(|v| v.sqrt());
@@ -389,11 +421,11 @@ impl Weight for DMatrix<f64> {
     }
 
     fn weight_equal(&self) -> Result<DVector<f64>, WeightingError> {
-        let num_criteria = self.ncols();
-
-        if num_criteria == 0 {
-            return Err(WeightingError::ZeroRange);
+        if self.is_empty() {
+            return Err(WeightingError::EmptyMatrix);
         }
+
+        let num_criteria = self.ncols();
 
         let weight = 1.0 / num_criteria as f64;
         let weights = DVector::repeat(num_criteria, weight);
@@ -402,11 +434,11 @@ impl Weight for DMatrix<f64> {
     }
 
     fn weight_entropy(&self) -> Result<DVector<f64>, WeightingError> {
-        let (num_alternatives, num_criteria) = self.shape();
-
-        if num_alternatives == 0 || num_criteria == 0 {
+        if self.is_empty() {
             return Err(WeightingError::EmptyMatrix);
         }
+
+        let (num_alternatives, num_criteria) = self.shape();
 
         let mut entropies = DVector::zeros(num_criteria);
 
@@ -425,11 +457,11 @@ impl Weight for DMatrix<f64> {
     }
 
     fn weight_gini(&self) -> Result<DVector<f64>, WeightingError> {
-        let (num_alternatives, num_criteria) = self.shape();
-
-        if num_alternatives == 0 || num_criteria == 0 {
+        if self.is_empty() {
             return Err(WeightingError::EmptyMatrix);
         }
+
+        let (num_alternatives, num_criteria) = self.shape();
 
         // Initialize weights as a zero vector
         let mut weights = DVector::zeros(num_criteria);
@@ -452,11 +484,11 @@ impl Weight for DMatrix<f64> {
     }
 
     fn weight_merec(&self) -> Result<DVector<f64>, WeightingError> {
-        let (num_alternatives, num_criteria) = self.shape();
-
-        if num_alternatives == 0 || num_criteria == 0 {
+        if self.is_empty() {
             return Err(WeightingError::EmptyMatrix);
         }
+
+        let (num_alternatives, num_criteria) = self.shape();
 
         let s = DVector::from_iterator(
             num_alternatives,
@@ -494,9 +526,7 @@ impl Weight for DMatrix<f64> {
     }
 
     fn weight_standard_deviation(&self) -> Result<DVector<f64>, WeightingError> {
-        let (num_alternatives, num_criteria) = self.shape();
-
-        if num_alternatives == 0 || num_criteria == 0 {
+        if self.is_empty() {
             return Err(WeightingError::EmptyMatrix);
         }
 
