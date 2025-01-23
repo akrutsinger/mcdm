@@ -4,7 +4,7 @@ mod criteria_type_tests {
     use mcdm::{CriteriaTypes, CriterionType};
 
     #[test]
-    fn test_from_valid_values() -> Result<(), McdmError> {
+    fn test_from_valid_slice() -> Result<(), McdmError> {
         let input = &[-1, 1, -1, 1];
         let result = CriteriaTypes::from_slice(input)?;
         assert_eq!(result[0], CriterionType::Cost);
@@ -16,7 +16,7 @@ mod criteria_type_tests {
     }
 
     #[test]
-    fn test_from_invalid_values() -> Result<(), McdmError> {
+    fn test_from_invalid_slice() -> Result<(), McdmError> {
         let input = &[-1, 2, 1];
         let result = CriteriaTypes::from_slice(input);
         assert!(result.is_err());
@@ -26,11 +26,19 @@ mod criteria_type_tests {
     }
 
     #[test]
-    fn test_profits_length() {
+    fn test_all_profits() {
         let len = 5;
         let result = CriteriaTypes::all_profits(len);
         assert_eq!(result.len(), len);
         assert!(result.iter().all(|x| *x == CriterionType::Profit));
+    }
+
+    #[test]
+    fn test_all_costs() {
+        let len = 5;
+        let result = CriteriaTypes::all_costs(len);
+        assert_eq!(result.len(), len);
+        assert!(result.iter().all(|x| *x == CriterionType::Cost));
     }
 
     #[test]
@@ -49,21 +57,5 @@ mod criteria_type_tests {
         assert_eq!(CriterionType::try_from(-1).unwrap(), CriterionType::Cost);
         assert_eq!(CriterionType::try_from(1).unwrap(), CriterionType::Profit);
         assert!(CriterionType::try_from(0).is_err());
-    }
-
-    #[test]
-    fn test_criteria_types_from_ints() -> Result<(), McdmError> {
-        let criteria = CriteriaTypes::from_slice(&[-1, 1, -1])?;
-        assert_eq!(criteria.len(), 3);
-        assert_eq!(criteria[0], CriterionType::Cost);
-        assert_eq!(criteria[1], CriterionType::Profit);
-        assert_eq!(criteria[2], CriterionType::Cost);
-
-        Ok(())
-    }
-
-    #[test]
-    fn test_invalid_criteria_types() {
-        assert!(CriteriaTypes::from_slice(&[-1, 0, 1]).is_err());
     }
 }
