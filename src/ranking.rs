@@ -1666,7 +1666,7 @@ impl Rank for DMatrix<f64> {
 
         let (num_alternatives, num_criteria) = self.shape();
 
-        if types.len() != num_criteria {
+        if types.len() != num_criteria || weights.len() != num_criteria {
             return Err(RankingError::DimensionMismatch);
         }
 

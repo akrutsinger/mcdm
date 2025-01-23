@@ -542,9 +542,7 @@ impl Weight for DMatrix<f64> {
     }
 
     fn weight_variance(&self) -> Result<DVector<f64>, WeightingError> {
-        let (num_alternatives, num_criteria) = self.shape();
-
-        if num_alternatives == 0 || num_criteria == 0 {
+        if self.is_empty() {
             return Err(WeightingError::EmptyMatrix);
         }
 
