@@ -5,7 +5,7 @@
 [![Documentation](https://img.shields.io/docsrs/mcdm?logo=docs.rs
 )](https://docs.rs/mcdm)
 
-`mcdm` is a Rust library to assist with solving Multiple-Criteria Decision Making (MCDM) problems. It provides a comprehensive set of tools for decision analysis, including normalization techniques, weighting methods, and ranking algorithms.
+`mcdm` is a Rust library to assist with solving Multiple-Criteria Decision Making (MCDM) problems providing a comprehensive set of tools for decision analysis, including normalization techniques, weighting methods, and ranking algorithms.
 
 ## ✨ Features
 
@@ -15,17 +15,21 @@ MCDM involves evaluating multiple conflicting criteria when making decisions. Th
 
 Normalization ensures that criteria with different units of measurement can be compared on a common scale. Each method has a specific use case depending on the decision problem.
 
-| 🌟 Name               | 📝 Description |
-| :----------------: | :---------: |
-| Enhanced Accuracy  | Technique proposed by Zeng and Yang in 2013 incorporating criterion's minimums and maximums into the computation. |
-| Linear 			 | Similiar to Max normalization, where profit criteria depend on the critions maximum value and cost criteria depend on criterion minimum value. |
-| Logarithmic        | Uses natural logarithm in the normalization. |
-| Min-Max | Scales the values of each criterion between 0 and 1 (or another range) by using the minimum and maximum values of that criterion. |
-| Max                | Similiar to MinMax, but here each element is divided by the maximum value in the column |
-| Nonlinear | Similiar to linear normalization, but relies on exponentiation of the criteria to help capture more complexitities in the criteria or when data distributions are skewed. |
-| Sum				 | Uses the sum of each alternatives criterion. |
-| Vector             | Considers the root of the sum of squares for each criterion. |
-| Zavadskas-Turskis  | Convert different criteria into comparable units. |
+| 🌟 Name           | 📝 Description |
+| :---------------: | :---------: |
+| Enhanced Accuracy | Technique proposed by Zeng and Yang in 2013 incorporating criterion's minimums and maximums into the computation. |
+| Linear 			| Similiar to Max normalization, where profit criteria depend on the critions maximum value and cost criteria depend on criterion minimum value. |
+| Logarithmic       | Uses natural logarithm in the normalization. |
+| MARCOS            | Method used by the MARCOS rankingmethod. |
+| Max               | Similiar to MinMax, but here each element is divided by the maximum value in the column |
+| Min-Max           | Scales the values of each criterion between 0 and 1 (or another range) by using the minimum and maximum values of that criterion. |
+| Nonlinear         | Similiar to linear normalization, but relies on exponentiation of the criteria to help capture more complexitities in the criteria or when data distributions are skewed. |
+| OCRA              | Method used by the OCRA ranking method. |
+| RIM               | Method used by the RIM ranking method. |
+| SPOTIS            | Method used by the SPOTIS ranking method. |
+| Sum				| Uses the sum of each alternatives criterion. |
+| Vector            | Considers the root of the sum of squares for each criterion. |
+| Zavadskas-Turskis | Convert different criteria into comparable units. |
 
 ### ⚖️ Weighting
 
