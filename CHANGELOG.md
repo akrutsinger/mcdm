@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- More documentation. This includes more details in many of the `ranking`/`weighting`/`normalization` traits as well as documenting functions that were originally neglected from down right laziness.
+
 ### Changed
 
 - Working towards making the code more idiomatic and reducing unnecessary calculations inside of loops.
@@ -15,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Bug fixes
+- Removed many of the pedantic clippy lint warnings.
 
 ## [0.3.1] - 2024-01-19
 
