@@ -2218,7 +2218,7 @@ impl Rank for DMatrix<f64> {
 
         let mut pis_matrix = weighted_matrix.clone();
         for (j, column) in weighted_matrix.column_iter().enumerate() {
-            let mut column_vec: Vec<f64> = column.iter().cloned().collect();
+            let mut column_vec: Vec<f64> = column.iter().copied().collect();
             match types[j] {
                 CriterionType::Profit => {
                     column_vec
@@ -2257,7 +2257,24 @@ impl Rank for DMatrix<f64> {
         let mut si_pos_ideal = DVector::zeros(m);
         let mut si_neg_ideal = DVector::zeros(m);
 
-        let ranking: DVector<f64> = if !simpler_probid {
+        let ranking: DVector<f64> = if simpler_probid {
+            if m >= 4 {
+                for k in 1..=m / 4 {
+                    let factor = 1.0 / k as f64;
+                    si_pos_ideal += si.column(k - 1) * factor;
+                }
+
+                for k in (m + 1 - m / 4)..=m {
+                    let factor = 1.0 / (m - k + 1) as f64;
+                    si_neg_ideal += si.column(k - 1) * factor;
+                }
+            } else {
+                si_pos_ideal = si.row(0).transpose();
+                si_neg_ideal = si.row(m - 1).transpose();
+            }
+
+            si_neg_ideal.component_div(&si_pos_ideal)
+        } else {
             let lim = if m % 2 == 1 { (m + 1) / 2 } else { m / 2 };
 
             for k in 1..=lim {
@@ -2277,23 +2294,6 @@ impl Rank for DMatrix<f64> {
                     .zip(si_average.iter())
                     .map(|(r, s)| 1.0 / (1.0 + r.powi(2)) + s),
             )
-        } else {
-            if m >= 4 {
-                for k in 1..=m / 4 {
-                    let factor = 1.0 / k as f64;
-                    si_pos_ideal += si.column(k - 1) * factor;
-                }
-
-                for k in (m + 1 - m / 4)..=m {
-                    let factor = 1.0 / (m - k + 1) as f64;
-                    si_neg_ideal += si.column(k - 1) * factor;
-                }
-            } else {
-                si_pos_ideal = si.row(0).transpose();
-                si_neg_ideal = si.row(m - 1).transpose();
-            }
-
-            si_neg_ideal.component_div(&si_pos_ideal)
         };
 
         Ok(ranking)

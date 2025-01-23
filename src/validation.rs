@@ -5,23 +5,96 @@ use nalgebra::{DMatrix, DVector};
 
 pub trait MatrixValidate {
     /// Validates the bounds for each criteria follows the form $[min, max]$.
+    ///
+    /// This function checks that the bounds matrix has exactly two columns and that, for each row,
+    /// the first column (minimum value) is less than the second column (maximum value).
+    ///
+    /// # Returns
+    ///
+    /// * `Result<(), ValidationError>` - Returns `Ok(())` if the bounds matrix is valid.
+    ///
+    /// # Errors
+    ///
+    /// * [`ValidationError::InvalidShape`] - If the bounds matrix does not have exactly two
+    ///   columns.
+    /// * [`ValidationError::InvalidValue`] - If any row in the bounds matrix has a minimum value
+    ///   that is not less than the maximum value.
     fn is_bounds_valid(&self) -> Result<(), ValidationError>;
 
-    /// Validates the reference ideal array aligns with the given bounds for each criterion.
+    /// Validates that the reference ideal matrix is within the specified bounds.
     ///
-    /// Validations:
-    /// 1. Ensure `ref_ideal` has a shape of `[M, 2]`, where `M` is the number of criteria.
-    /// 2. Ensure shape of `ref_ideal` and `bounds` are the same.
-    /// 3. Verifies all `ref_ideal` values lie within the `bounds` array and that the `ref_ideal` values
-    ///    are in scending order (i.e., `[min, max]`).
+    /// This function checks that each element of the reference ideal matrix is within the
+    /// corresponding bounds specified in the bounds matrix. The bounds matrix should have two
+    /// columns, where the first column represents the minimum values and the second column
+    /// represents the maximum values.
+    ///
+    /// # Arguments
+    ///
+    /// * `bounds` - A `DMatrix<f64>` representing the bounds for each criterion.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<(), ValidationError>` - Returns `Ok(())` if the reference ideal matrix is within
+    ///   the bounds.
+    ///
+    /// # Errors
+    ///
+    /// * [`ValidationError::InvalidShape`] - If the bounds matrix does not have exactly two
+    ///   columns.
+    /// * [`ValidationError::DimensionMismatch`] - If any element of the reference ideal matrix is
+    ///   outside the specified bounds.
     fn is_reference_ideal_bounds_valid(&self, bounds: &DMatrix<f64>)
         -> Result<(), ValidationError>;
 
-    /// Ensures a DMatrix is within the specified bounds.
+    /// Ensures that the decision matrix is within the specified bounds.
+    ///
+    /// This function checks that each element of the decision matrix is within the corresponding
+    /// bounds specified in the bounds matrix. The bounds matrix should have two columns, where the
+    /// first column represents the minimum values and the second column represents the maximum
+    /// values.
+    ///
+    /// # Arguments
+    ///
+    /// * `bounds` - A `DMatrix<f64>` representing the bounds for each criterion.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<(), ValidationError>` - Returns `Ok(())` if the decision matrix is within the
+    ///   bounds.
+    ///
+    /// # Errors
+    ///
+    /// * [`ValidationError::InvalidShape`] - If the bounds matrix does not have exactly two
+    ///   columns.
     fn is_within_bounds(&self, bounds: &DMatrix<f64>) -> Result<(), ValidationError>;
 }
 
 pub trait VectorValidate {
+    /// Validates that the expected solution point values lie within the specified bounds for each
+    /// criterion.
+    ///
+    /// This function checks that each element of the expected solution point vector is within the
+    /// corresponding bounds specified in the bounds matrix. The bounds matrix should have two
+    /// columns, where the first column represents the minimum values and the second column
+    /// represents the maximum values.
+    ///
+    /// # Arguments
+    ///
+    /// * `bounds` - A `DMatrix<f64>` representing the bounds for each criterion. The shape should
+    ///   be $(n, 2)$ where $n$ is the number of criteria. Each row defines the minimum and maximum
+    ///   values for a criterion and must be in the form $[min, max]$.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<(), ValidationError>` - Returns `Ok(())` if the expected solution point values are
+    ///   within the bounds.
+    ///
+    /// # Errors
+    ///
+    /// * [`ValidationError::DimensionMismatch`] - If the length of the expected solution point
+    ///   vector does not match the number of rows in the bounds matrix.
+    /// * [`ValidationError::InvalidValue`] - If any element of the expected solution point vector
+    ///   is outside the specified bounds.
     fn is_expected_solution_point_in_bounds(
         &self,
         bounds: &DMatrix<f64>,
@@ -91,14 +164,6 @@ impl MatrixValidate for DMatrix<f64> {
 }
 
 impl VectorValidate for DVector<f64> {
-    /// Validates the expected solution point value lie within the specified bounds for each
-    /// criterion.
-    ///
-    /// # Arguments
-    ///
-    /// * `bounds` - 2D matrix of the bounds for each criterion. The shape should be $(n, 2)$ where
-    ///   $n$ is the number of criteria. Each row defines the minimum and maximum values for a
-    ///   criterion and must be in the form $[min, max]$.
     fn is_expected_solution_point_in_bounds(
         &self,
         bounds: &DMatrix<f64>,

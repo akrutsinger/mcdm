@@ -397,7 +397,7 @@ impl Weight for DMatrix<f64> {
         let (num_alternatives, num_criteria) = self.shape();
 
         let column_means = self.row_mean();
-        let column_stds = self.row_variance().map(|v| v.sqrt());
+        let column_stds = self.row_variance().map(f64::sqrt);
 
         let pearson_correlation = {
             let mut normalized_matrix = self.clone();
@@ -530,7 +530,7 @@ impl Weight for DMatrix<f64> {
             return Err(WeightingError::EmptyMatrix);
         }
 
-        let std = self.row_variance().map(|v| v.sqrt()).transpose();
+        let std = self.row_variance().map(f64::sqrt).transpose();
 
         // Sum of the standard deviations
         let std_sum = std.sum();
