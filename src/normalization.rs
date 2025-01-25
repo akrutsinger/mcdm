@@ -472,7 +472,6 @@ impl Normalize for DMatrix<f64> {
         &self,
         criteria_types: &CriteriaTypes,
     ) -> Result<DMatrix<f64>, NormalizationError> {
-        // Check if the matrix is not empty
         if self.is_empty() {
             return Err(NormalizationError::EmptyMatrix);
         }
@@ -514,7 +513,6 @@ impl Normalize for DMatrix<f64> {
         &self,
         criteria_types: &CriteriaTypes,
     ) -> Result<DMatrix<f64>, NormalizationError> {
-        // Check if the matrix is not empty
         if self.is_empty() {
             return Err(NormalizationError::EmptyMatrix);
         }
@@ -556,12 +554,11 @@ impl Normalize for DMatrix<f64> {
         &self,
         criteria_types: &CriteriaTypes,
     ) -> Result<DMatrix<f64>, NormalizationError> {
-        let (num_alternatives, num_criteria) = self.shape();
-
-        // Check if the matrix is not empty
         if self.is_empty() {
             return Err(NormalizationError::EmptyMatrix);
         }
+
+        let (num_alternatives, num_criteria) = self.shape();
 
         // Ensure enough criteria types for all criteria
         if criteria_types.len() != num_criteria {
@@ -596,11 +593,11 @@ impl Normalize for DMatrix<f64> {
         &self,
         criteria_types: &CriteriaTypes,
     ) -> Result<DMatrix<f64>, NormalizationError> {
-        let (num_alternatives, num_criteria) = self.shape();
-
         if self.is_empty() {
             return Err(NormalizationError::EmptyMatrix);
         }
+
+        let (num_alternatives, num_criteria) = self.shape();
 
         if criteria_types.len() != num_criteria {
             return Err(NormalizationError::NormalizationCriteraTypeMismatch);
@@ -632,12 +629,11 @@ impl Normalize for DMatrix<f64> {
         &self,
         criteria_types: &CriteriaTypes,
     ) -> Result<DMatrix<f64>, NormalizationError> {
-        let (num_alternatives, num_criteria) = self.shape();
-
-        // Check if the matrix is not empty
         if self.is_empty() {
             return Err(NormalizationError::EmptyMatrix);
         }
+
+        let (num_alternatives, num_criteria) = self.shape();
 
         // Ensure enough criteria types for all criteria
         if criteria_types.len() != num_criteria {
@@ -671,12 +667,11 @@ impl Normalize for DMatrix<f64> {
         &self,
         criteria_types: &CriteriaTypes,
     ) -> Result<DMatrix<f64>, NormalizationError> {
-        let (num_alternatives, num_criteria) = self.shape();
-
-        // Check if the matrix is not empty
         if self.is_empty() {
             return Err(NormalizationError::EmptyMatrix);
         }
+
+        let (num_alternatives, num_criteria) = self.shape();
 
         // Ensure enough criteria types for all criteria
         if criteria_types.len() != num_criteria {
@@ -712,12 +707,11 @@ impl Normalize for DMatrix<f64> {
         &self,
         criteria_types: &CriteriaTypes,
     ) -> Result<DMatrix<f64>, NormalizationError> {
-        let (num_alternatives, num_criteria) = self.shape();
-
-        // Check if the matrix is not empty
         if self.is_empty() {
             return Err(NormalizationError::EmptyMatrix);
         }
+
+        let (num_alternatives, num_criteria) = self.shape();
 
         // Ensure enough criteria types for all criteria
         if criteria_types.len() != num_criteria {
@@ -756,12 +750,11 @@ impl Normalize for DMatrix<f64> {
         &self,
         criteria_types: &CriteriaTypes,
     ) -> Result<DMatrix<f64>, NormalizationError> {
-        let (num_alternatives, num_criteria) = self.shape();
-
-        // Check if the matrix is not empty
         if self.is_empty() {
             return Err(NormalizationError::EmptyMatrix);
         }
+
+        let (num_alternatives, num_criteria) = self.shape();
 
         // Ensure enough criteria types for all criteria
         if criteria_types.len() != num_criteria {
@@ -838,12 +831,11 @@ impl Normalize for DMatrix<f64> {
         criteria_types: &CriteriaTypes,
         bounds: &DMatrix<f64>,
     ) -> Result<DMatrix<f64>, NormalizationError> {
-        let (num_alternatives, num_criteria) = self.shape();
-
-        // Check if the matrix is not empty
         if self.is_empty() {
             return Err(NormalizationError::EmptyMatrix);
         }
+
+        let (num_alternatives, num_criteria) = self.shape();
 
         // Ensure enough criteria types for all criteria
         if criteria_types.len() != num_criteria {
@@ -877,12 +869,11 @@ impl Normalize for DMatrix<f64> {
         &self,
         criteria_types: &CriteriaTypes,
     ) -> Result<DMatrix<f64>, NormalizationError> {
-        let (num_alternatives, num_criteria) = self.shape();
-
-        // Check if the matrix is not empty
         if self.is_empty() {
             return Err(NormalizationError::EmptyMatrix);
         }
+
+        let (num_alternatives, num_criteria) = self.shape();
 
         // Ensure enough criteria types for all criteria
         if criteria_types.len() != num_criteria {
@@ -918,12 +909,11 @@ impl Normalize for DMatrix<f64> {
         &self,
         criteria_types: &CriteriaTypes,
     ) -> Result<DMatrix<f64>, NormalizationError> {
-        let (num_alternatives, num_criteria) = self.shape();
-
-        // Check if the matrix is not empty
         if self.is_empty() {
             return Err(NormalizationError::EmptyMatrix);
         }
+
+        let (num_alternatives, num_criteria) = self.shape();
 
         // Ensure enough criteria types for all criteria
         if criteria_types.len() != num_criteria {
@@ -956,12 +946,11 @@ impl Normalize for DMatrix<f64> {
         &self,
         criteria_types: &CriteriaTypes,
     ) -> Result<DMatrix<f64>, NormalizationError> {
-        let (num_alternatives, num_criteria) = self.shape();
-
-        // Check if the matrix is not empty
         if self.is_empty() {
             return Err(NormalizationError::EmptyMatrix);
         }
+
+        let (num_alternatives, num_criteria) = self.shape();
 
         // Ensure enough criteria types for all criteria
         if criteria_types.len() != num_criteria {
