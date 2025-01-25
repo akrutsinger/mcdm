@@ -112,7 +112,8 @@ mod merec_tests {
             0.3, 2.48, 1.75, 1.69
         ];
         let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1])?;
-        let normalized_matrix = matrix.normalize_linear(&CriteriaTypes::switch(&criteria_types))?;
+        let normalized_matrix =
+            matrix.normalize_linear(&CriteriaTypes::invert_types(&criteria_types))?;
         let weights = normalized_matrix.weight_merec()?;
         let expected_weights = dvector![0.40559526, 0.14185966, 0.37609753, 0.07644754];
         assert_relative_eq!(weights, expected_weights, epsilon = 1e-5);

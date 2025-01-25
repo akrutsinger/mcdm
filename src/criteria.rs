@@ -80,7 +80,7 @@ impl CriteriaTypes {
         CriteriaTypes(DVector::from_element(len, CriterionType::Cost))
     }
 
-    /// Switches each `Cost` to a `Profit` and each `Profit` to a `Cost` in the given vector.
+    /// Changes each `Cost` to a `Profit` and each `Profit` to a `Cost` in the given vector.
     ///
     /// # Arguments
     ///
@@ -90,7 +90,7 @@ impl CriteriaTypes {
     ///
     /// * `CriteriaTypes` - A 1d vector with each `Cost` switched to a `Profit` and each `Profit`
     ///   switched to a `Cost`.
-    pub fn switch(criteria_types: &CriteriaTypes) -> Self {
+    pub fn invert_types(criteria_types: &CriteriaTypes) -> Self {
         CriteriaTypes(criteria_types.map(|t| match t {
             CriterionType::Cost => CriterionType::Profit,
             CriterionType::Profit => CriterionType::Cost,

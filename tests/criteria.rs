@@ -44,7 +44,7 @@ mod criteria_type_tests {
     #[test]
     fn test_type_switch() -> Result<(), McdmError> {
         let input = CriteriaTypes::from_slice(&[-1, 1, -1])?;
-        let result = CriteriaTypes::switch(&input);
+        let result = CriteriaTypes::invert_types(&input);
         assert_eq!(result[0], CriterionType::Profit);
         assert_eq!(result[1], CriterionType::Cost);
         assert_eq!(result[2], CriterionType::Profit);
