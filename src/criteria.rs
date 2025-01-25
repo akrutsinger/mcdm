@@ -84,14 +84,14 @@ impl CriteriaTypes {
     ///
     /// # Arguments
     ///
-    /// * `types` - A vector of `CriterionType`.
+    /// * `criteria_types` - A vector of `CriterionType`.
     ///
     /// # Returns
     ///
     /// * `CriteriaTypes` - A 1d vector with each `Cost` switched to a `Profit` and each `Profit`
     ///   switched to a `Cost`.
-    pub fn switch(types: &CriteriaTypes) -> Self {
-        CriteriaTypes(types.map(|t| match t {
+    pub fn switch(criteria_types: &CriteriaTypes) -> Self {
+        CriteriaTypes(criteria_types.map(|t| match t {
             CriterionType::Cost => CriterionType::Profit,
             CriterionType::Profit => CriterionType::Cost,
         }))

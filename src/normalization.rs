@@ -57,7 +57,8 @@ pub trait Normalize {
     ///
     /// # Arguments
     ///
-    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
+    /// * `criteria_types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or
+    ///   cost.
     ///
     /// # Returns
     ///
@@ -71,7 +72,7 @@ pub trait Normalize {
     /// * [`NormalizationError::ZeroRange`] - If any of the decision matrix elements are zero.
     fn normalize_enhanced_accuracy(
         &self,
-        types: &CriteriaTypes,
+        criteria_types: &CriteriaTypes,
     ) -> Result<DMatrix<f64>, NormalizationError>;
 
     /// Profit criteria depend on the critions maximum value and cost criteria depend on criterion
@@ -89,7 +90,8 @@ pub trait Normalize {
     ///
     /// # Arguments
     ///
-    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
+    /// * `criteria_types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or
+    ///   cost.
     ///
     /// # Returns
     ///
@@ -101,7 +103,10 @@ pub trait Normalize {
     ///   does not match the number of criteria.
     /// * [`NormalizationError::EmptyMatrix`] - If the decision matrix is empty.
     /// * [`NormalizationError::ZeroRange`] - If any of the decision matrix elements are zero.
-    fn normalize_linear(&self, types: &CriteriaTypes) -> Result<DMatrix<f64>, NormalizationError>;
+    fn normalize_linear(
+        &self,
+        criteria_types: &CriteriaTypes,
+    ) -> Result<DMatrix<f64>, NormalizationError>;
 
     /// Considers the natural logarithm of the product of the criterion values.
     ///
@@ -116,7 +121,8 @@ pub trait Normalize {
     ///
     /// # Arguments
     ///
-    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
+    /// * `criteria_types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or
+    ///   cost.
     ///
     /// # Returns
     ///
@@ -130,7 +136,7 @@ pub trait Normalize {
     /// * [`NormalizationError::ZeroRange`] - If any of the decision matrix elements are zero.
     fn normalize_logarithmic(
         &self,
-        types: &CriteriaTypes,
+        criteria_types: &CriteriaTypes,
     ) -> Result<DMatrix<f64>, NormalizationError>;
 
     /// Normalization function specific to the [`MARCOS`](crate::ranking::Rank::rank_marcos) ranking
@@ -138,7 +144,8 @@ pub trait Normalize {
     ///
     /// # Arguments
     ///
-    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
+    /// * `criteria_types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or
+    ///   cost.
     ///
     /// # Returns
     ///
@@ -150,7 +157,10 @@ pub trait Normalize {
     ///   does not match the number of criteria.
     /// * [`NormalizationError::EmptyMatrix`] - If the decision matrix is empty.
     /// * [`NormalizationError::ZeroRange`] - If any of the decision matrix elements are zero.
-    fn normalize_marcos(&self, types: &CriteriaTypes) -> Result<DMatrix<f64>, NormalizationError>;
+    fn normalize_marcos(
+        &self,
+        criteria_types: &CriteriaTypes,
+    ) -> Result<DMatrix<f64>, NormalizationError>;
 
     /// Consider maximum rating of criterion for a given criteria.
     ///
@@ -165,7 +175,8 @@ pub trait Normalize {
     ///
     /// # Arguments
     ///
-    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
+    /// * `criteria_types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or
+    ///   cost.
     ///
     /// # Returns
     ///
@@ -177,7 +188,10 @@ pub trait Normalize {
     ///   does not match the number of criteria.
     /// * [`NormalizationError::EmptyMatrix`] - If the decision matrix is empty.
     /// * [`NormalizationError::ZeroRange`] - If any of the decision matrix elements are zero.
-    fn normalize_max(&self, types: &CriteriaTypes) -> Result<DMatrix<f64>, NormalizationError>;
+    fn normalize_max(
+        &self,
+        criteria_types: &CriteriaTypes,
+    ) -> Result<DMatrix<f64>, NormalizationError>;
 
     /// Considers the criterion's minimum and maximum value for normalization.
     ///
@@ -193,7 +207,8 @@ pub trait Normalize {
     ///
     /// # Arguments
     ///
-    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
+    /// * `criteria_types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or
+    ///   cost.
     ///
     /// # Returns
     ///
@@ -205,7 +220,10 @@ pub trait Normalize {
     ///   does not match the number of criteria.
     /// * [`NormalizationError::EmptyMatrix`] - If the decision matrix is empty.
     /// * [`NormalizationError::ZeroRange`] - If any of the decision matrix elements are zero.
-    fn normalize_min_max(&self, types: &CriteriaTypes) -> Result<DMatrix<f64>, NormalizationError>;
+    fn normalize_min_max(
+        &self,
+        criteria_types: &CriteriaTypes,
+    ) -> Result<DMatrix<f64>, NormalizationError>;
 
     /// Considers exponentiation of criterion's minimum and maximum value for normalization.
     ///
@@ -221,7 +239,8 @@ pub trait Normalize {
     ///
     /// # Arguments
     ///
-    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
+    /// * `criteria_types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or
+    ///   cost.
     ///
     /// # Returns
     ///
@@ -235,7 +254,7 @@ pub trait Normalize {
     /// * [`NormalizationError::ZeroRange`] - If any of the decision matrix elements are zero.
     fn normalize_nonlinear(
         &self,
-        types: &CriteriaTypes,
+        criteria_types: &CriteriaTypes,
     ) -> Result<DMatrix<f64>, NormalizationError>;
 
     /// Normalization function specific to the [`OCRA`](crate::ranking::Rank::rank_ocra) ranking
@@ -253,7 +272,8 @@ pub trait Normalize {
     ///
     /// # Arguments
     ///
-    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
+    /// * `criteria_types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or
+    ///   cost.
     ///
     /// # Returns
     ///
@@ -265,7 +285,10 @@ pub trait Normalize {
     ///   does not match the number of criteria.
     /// * [`NormalizationError::EmptyMatrix`] - If the decision matrix is empty.
     /// * [`NormalizationError::ZeroRange`] - If any of the decision matrix elements are zero.
-    fn normalize_ocra(&self, types: &CriteriaTypes) -> Result<DMatrix<f64>, NormalizationError>;
+    fn normalize_ocra(
+        &self,
+        criteria_types: &CriteriaTypes,
+    ) -> Result<DMatrix<f64>, NormalizationError>;
 
     /// Normalization function specific to the [`RIM`](crate::ranking::Rank::rank_rim) ranking
     /// method.
@@ -301,7 +324,8 @@ pub trait Normalize {
     ///
     /// # Arguments
     ///
-    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
+    /// * `criteria_types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or
+    ///   cost.
     ///
     /// # Returns
     ///
@@ -327,7 +351,8 @@ pub trait Normalize {
     ///
     /// # Arguments
     ///
-    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
+    /// * `criteria_types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or
+    ///   cost.
     /// * `bounds` - A 2D array that defines the decision problembounds of the criteria. Each row
     ///   represent the bounds for a given criterion. The first value is the lower bound and the
     ///   second value is the upper bound. Row one corresponds to criterion one, and so on.
@@ -343,7 +368,7 @@ pub trait Normalize {
     /// * [`NormalizationError::EmptyMatrix`] - If the decision matrix is empty.
     fn normalize_spotis(
         &self,
-        types: &CriteriaTypes,
+        criteria_types: &CriteriaTypes,
         bounds: &DMatrix<f64>,
     ) -> Result<DMatrix<f64>, NormalizationError>;
 
@@ -360,7 +385,8 @@ pub trait Normalize {
     ///
     /// # Arguments
     ///
-    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
+    /// * `criteria_types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or
+    ///   cost.
     ///
     /// # Returns
     ///
@@ -372,7 +398,10 @@ pub trait Normalize {
     ///   does not match the number of criteria.
     /// * [`NormalizationError::EmptyMatrix`] - If the decision matrix is empty.
     /// * [`NormalizationError::ZeroRange`] - If any of the decision matrix elements are zero.
-    fn normalize_sum(&self, types: &CriteriaTypes) -> Result<DMatrix<f64>, NormalizationError>;
+    fn normalize_sum(
+        &self,
+        criteria_types: &CriteriaTypes,
+    ) -> Result<DMatrix<f64>, NormalizationError>;
 
     /// Considers the root of the sum of the squares of the criteria values for normalization.
     ///
@@ -387,7 +416,8 @@ pub trait Normalize {
     ///
     /// # Arguments
     ///
-    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
+    /// * `criteria_types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or
+    ///   cost.
     ///
     /// # Returns
     ///
@@ -399,7 +429,10 @@ pub trait Normalize {
     ///   does not match the number of criteria.
     /// * [`NormalizationError::EmptyMatrix`] - If the decision matrix is empty.
     /// * [`NormalizationError::ZeroRange`] - If any of the decision matrix elements are zero.
-    fn normalize_vector(&self, types: &CriteriaTypes) -> Result<DMatrix<f64>, NormalizationError>;
+    fn normalize_vector(
+        &self,
+        criteria_types: &CriteriaTypes,
+    ) -> Result<DMatrix<f64>, NormalizationError>;
 
     /// Normalization method proposed by Zavadskas and Turskis in 2008.
     ///
@@ -415,7 +448,8 @@ pub trait Normalize {
     ///
     /// # Arguments
     ///
-    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
+    /// * `criteria_types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or
+    ///   cost.
     ///
     /// # Returns
     ///
@@ -429,14 +463,14 @@ pub trait Normalize {
     /// * [`NormalizationError::ZeroRange`] - If any of the decision matrix elements are zero.
     fn normalize_zavadskas_turskis(
         &self,
-        types: &CriteriaTypes,
+        criteria_types: &CriteriaTypes,
     ) -> Result<DMatrix<f64>, NormalizationError>;
 }
 
 impl Normalize for DMatrix<f64> {
     fn normalize_enhanced_accuracy(
         &self,
-        types: &CriteriaTypes,
+        criteria_types: &CriteriaTypes,
     ) -> Result<DMatrix<f64>, NormalizationError> {
         // Check if the matrix is not empty
         if self.is_empty() {
@@ -444,7 +478,7 @@ impl Normalize for DMatrix<f64> {
         }
 
         // Ensure enough criteria types for all criteria
-        if types.len() != self.ncols() {
+        if criteria_types.len() != self.ncols() {
             return Err(NormalizationError::NormalizationCriteraTypeMismatch);
         }
 
@@ -456,7 +490,7 @@ impl Normalize for DMatrix<f64> {
             let min_value = col.min();
             let max_value = col.max();
 
-            let col_sum = match types[j] {
+            let col_sum = match criteria_types[j] {
                 CriterionType::Cost => col.map(|x| x - min_value).sum(),
                 CriterionType::Profit => col.map(|x| max_value - x).sum(),
             };
@@ -466,7 +500,7 @@ impl Normalize for DMatrix<f64> {
                     return Err(NormalizationError::ZeroRange);
                 }
 
-                normalized_matrix[(i, j)] = match types[j] {
+                normalized_matrix[(i, j)] = match criteria_types[j] {
                     CriterionType::Cost => 1.0 - ((value - min_value) / col_sum),
                     CriterionType::Profit => 1.0 - ((max_value - value) / col_sum),
                 };
@@ -476,14 +510,17 @@ impl Normalize for DMatrix<f64> {
         Ok(normalized_matrix)
     }
 
-    fn normalize_linear(&self, types: &CriteriaTypes) -> Result<DMatrix<f64>, NormalizationError> {
+    fn normalize_linear(
+        &self,
+        criteria_types: &CriteriaTypes,
+    ) -> Result<DMatrix<f64>, NormalizationError> {
         // Check if the matrix is not empty
         if self.is_empty() {
             return Err(NormalizationError::EmptyMatrix);
         }
 
         // Ensure enough criteria types for all criteria
-        if types.len() != self.ncols() {
+        if criteria_types.len() != self.ncols() {
             return Err(NormalizationError::NormalizationCriteraTypeMismatch);
         }
 
@@ -505,7 +542,7 @@ impl Normalize for DMatrix<f64> {
                     return Err(NormalizationError::ZeroRange);
                 }
 
-                normalized_matrix[(i, j)] = match types[j] {
+                normalized_matrix[(i, j)] = match criteria_types[j] {
                     CriterionType::Cost => min_value / value,
                     CriterionType::Profit => value / max_value,
                 };
@@ -517,7 +554,7 @@ impl Normalize for DMatrix<f64> {
 
     fn normalize_logarithmic(
         &self,
-        types: &CriteriaTypes,
+        criteria_types: &CriteriaTypes,
     ) -> Result<DMatrix<f64>, NormalizationError> {
         let (num_alternatives, num_criteria) = self.shape();
 
@@ -527,7 +564,7 @@ impl Normalize for DMatrix<f64> {
         }
 
         // Ensure enough criteria types for all criteria
-        if types.len() != num_criteria {
+        if criteria_types.len() != num_criteria {
             return Err(NormalizationError::NormalizationCriteraTypeMismatch);
         }
 
@@ -545,7 +582,7 @@ impl Normalize for DMatrix<f64> {
 
                 let ln_ratio = (value).ln() / col_prod_ln;
 
-                normalized_matrix[(i, j)] = match types[j] {
+                normalized_matrix[(i, j)] = match criteria_types[j] {
                     CriterionType::Cost => (1.0 - ln_ratio) / (num_alternatives as f64 - 1.0),
                     CriterionType::Profit => ln_ratio,
                 };
@@ -555,14 +592,17 @@ impl Normalize for DMatrix<f64> {
         Ok(normalized_matrix)
     }
 
-    fn normalize_marcos(&self, types: &CriteriaTypes) -> Result<DMatrix<f64>, NormalizationError> {
+    fn normalize_marcos(
+        &self,
+        criteria_types: &CriteriaTypes,
+    ) -> Result<DMatrix<f64>, NormalizationError> {
         let (num_alternatives, num_criteria) = self.shape();
 
         if self.is_empty() {
             return Err(NormalizationError::EmptyMatrix);
         }
 
-        if types.len() != num_criteria {
+        if criteria_types.len() != num_criteria {
             return Err(NormalizationError::NormalizationCriteraTypeMismatch);
         }
 
@@ -578,7 +618,7 @@ impl Normalize for DMatrix<f64> {
             }
 
             for (i, value) in col.iter().enumerate() {
-                normalized_matrix[(i, j)] = match types[j] {
+                normalized_matrix[(i, j)] = match criteria_types[j] {
                     CriterionType::Cost => next_to_last_row_value / value,
                     CriterionType::Profit => value / next_to_last_row_value,
                 };
@@ -588,7 +628,10 @@ impl Normalize for DMatrix<f64> {
         Ok(normalized_matrix)
     }
 
-    fn normalize_max(&self, types: &CriteriaTypes) -> Result<DMatrix<f64>, NormalizationError> {
+    fn normalize_max(
+        &self,
+        criteria_types: &CriteriaTypes,
+    ) -> Result<DMatrix<f64>, NormalizationError> {
         let (num_alternatives, num_criteria) = self.shape();
 
         // Check if the matrix is not empty
@@ -597,7 +640,7 @@ impl Normalize for DMatrix<f64> {
         }
 
         // Ensure enough criteria types for all criteria
-        if types.len() != num_criteria {
+        if criteria_types.len() != num_criteria {
             return Err(NormalizationError::NormalizationCriteraTypeMismatch);
         }
 
@@ -614,7 +657,7 @@ impl Normalize for DMatrix<f64> {
             }
 
             for (i, value) in col.iter().enumerate() {
-                normalized_matrix[(i, j)] = match types[j] {
+                normalized_matrix[(i, j)] = match criteria_types[j] {
                     CriterionType::Cost => 1.0 - (value / max_value),
                     CriterionType::Profit => value / max_value,
                 };
@@ -624,7 +667,10 @@ impl Normalize for DMatrix<f64> {
         Ok(normalized_matrix)
     }
 
-    fn normalize_min_max(&self, types: &CriteriaTypes) -> Result<DMatrix<f64>, NormalizationError> {
+    fn normalize_min_max(
+        &self,
+        criteria_types: &CriteriaTypes,
+    ) -> Result<DMatrix<f64>, NormalizationError> {
         let (num_alternatives, num_criteria) = self.shape();
 
         // Check if the matrix is not empty
@@ -633,7 +679,7 @@ impl Normalize for DMatrix<f64> {
         }
 
         // Ensure enough criteria types for all criteria
-        if types.len() != num_criteria {
+        if criteria_types.len() != num_criteria {
             return Err(NormalizationError::NormalizationCriteraTypeMismatch);
         }
 
@@ -652,7 +698,7 @@ impl Normalize for DMatrix<f64> {
             }
 
             for (i, value) in col.iter().enumerate() {
-                normalized_matrix[(i, j)] = match types[j] {
+                normalized_matrix[(i, j)] = match criteria_types[j] {
                     CriterionType::Cost => (max_value - value) / range,
                     CriterionType::Profit => (value - min_value) / range,
                 };
@@ -664,7 +710,7 @@ impl Normalize for DMatrix<f64> {
 
     fn normalize_nonlinear(
         &self,
-        types: &CriteriaTypes,
+        criteria_types: &CriteriaTypes,
     ) -> Result<DMatrix<f64>, NormalizationError> {
         let (num_alternatives, num_criteria) = self.shape();
 
@@ -674,7 +720,7 @@ impl Normalize for DMatrix<f64> {
         }
 
         // Ensure enough criteria types for all criteria
-        if types.len() != num_criteria {
+        if criteria_types.len() != num_criteria {
             return Err(NormalizationError::NormalizationCriteraTypeMismatch);
         }
 
@@ -696,7 +742,7 @@ impl Normalize for DMatrix<f64> {
                     return Err(NormalizationError::ZeroRange);
                 }
 
-                normalized_matrix[(i, j)] = match types[j] {
+                normalized_matrix[(i, j)] = match criteria_types[j] {
                     CriterionType::Cost => (min_value / value).powi(3),
                     CriterionType::Profit => (value / max_value).powi(2),
                 };
@@ -706,7 +752,10 @@ impl Normalize for DMatrix<f64> {
         Ok(normalized_matrix)
     }
 
-    fn normalize_ocra(&self, types: &CriteriaTypes) -> Result<DMatrix<f64>, NormalizationError> {
+    fn normalize_ocra(
+        &self,
+        criteria_types: &CriteriaTypes,
+    ) -> Result<DMatrix<f64>, NormalizationError> {
         let (num_alternatives, num_criteria) = self.shape();
 
         // Check if the matrix is not empty
@@ -715,7 +764,7 @@ impl Normalize for DMatrix<f64> {
         }
 
         // Ensure enough criteria types for all criteria
-        if types.len() != num_criteria {
+        if criteria_types.len() != num_criteria {
             return Err(NormalizationError::NormalizationCriteraTypeMismatch);
         }
 
@@ -733,7 +782,7 @@ impl Normalize for DMatrix<f64> {
             }
 
             for (i, value) in col.iter().enumerate() {
-                normalized_matrix[(i, j)] = match types[j] {
+                normalized_matrix[(i, j)] = match criteria_types[j] {
                     CriterionType::Cost => (max_value - value) / min_value,
                     CriterionType::Profit => (value - min_value) / min_value,
                 };
@@ -786,7 +835,7 @@ impl Normalize for DMatrix<f64> {
 
     fn normalize_spotis(
         &self,
-        types: &CriteriaTypes,
+        criteria_types: &CriteriaTypes,
         bounds: &DMatrix<f64>,
     ) -> Result<DMatrix<f64>, NormalizationError> {
         let (num_alternatives, num_criteria) = self.shape();
@@ -797,14 +846,14 @@ impl Normalize for DMatrix<f64> {
         }
 
         // Ensure enough criteria types for all criteria
-        if types.len() != num_criteria {
+        if criteria_types.len() != num_criteria {
             return Err(NormalizationError::NormalizationCriteraTypeMismatch);
         }
 
         let mut expected_solution_point = DVector::zeros(num_criteria);
 
         for (i, row) in bounds.row_iter().enumerate() {
-            expected_solution_point[i] = match types[i] {
+            expected_solution_point[i] = match criteria_types[i] {
                 CriterionType::Cost => row.min(),
                 CriterionType::Profit => row.max(),
             }
@@ -824,7 +873,10 @@ impl Normalize for DMatrix<f64> {
         Ok(normalized_matrix)
     }
 
-    fn normalize_sum(&self, types: &CriteriaTypes) -> Result<DMatrix<f64>, NormalizationError> {
+    fn normalize_sum(
+        &self,
+        criteria_types: &CriteriaTypes,
+    ) -> Result<DMatrix<f64>, NormalizationError> {
         let (num_alternatives, num_criteria) = self.shape();
 
         // Check if the matrix is not empty
@@ -833,7 +885,7 @@ impl Normalize for DMatrix<f64> {
         }
 
         // Ensure enough criteria types for all criteria
-        if types.len() != num_criteria {
+        if criteria_types.len() != num_criteria {
             return Err(NormalizationError::NormalizationCriteraTypeMismatch);
         }
 
@@ -842,7 +894,7 @@ impl Normalize for DMatrix<f64> {
 
         // Iterate over each column (criterion)
         for (j, col) in self.column_iter().enumerate() {
-            let col_sum = match types[j] {
+            let col_sum = match criteria_types[j] {
                 CriterionType::Cost => col.map(|x| 1.0 / x).sum(),
                 CriterionType::Profit => col.sum(),
             };
@@ -852,7 +904,7 @@ impl Normalize for DMatrix<f64> {
                     return Err(NormalizationError::ZeroRange);
                 }
 
-                normalized_matrix[(i, j)] = match types[j] {
+                normalized_matrix[(i, j)] = match criteria_types[j] {
                     CriterionType::Cost => (1.0 / value) / col_sum,
                     CriterionType::Profit => value / col_sum,
                 };
@@ -862,7 +914,10 @@ impl Normalize for DMatrix<f64> {
         Ok(normalized_matrix)
     }
 
-    fn normalize_vector(&self, types: &CriteriaTypes) -> Result<DMatrix<f64>, NormalizationError> {
+    fn normalize_vector(
+        &self,
+        criteria_types: &CriteriaTypes,
+    ) -> Result<DMatrix<f64>, NormalizationError> {
         let (num_alternatives, num_criteria) = self.shape();
 
         // Check if the matrix is not empty
@@ -871,7 +926,7 @@ impl Normalize for DMatrix<f64> {
         }
 
         // Ensure enough criteria types for all criteria
-        if types.len() != num_criteria {
+        if criteria_types.len() != num_criteria {
             return Err(NormalizationError::NormalizationCriteraTypeMismatch);
         }
 
@@ -887,7 +942,7 @@ impl Normalize for DMatrix<f64> {
                     return Err(NormalizationError::ZeroRange);
                 }
 
-                normalized_matrix[(i, j)] = match types[j] {
+                normalized_matrix[(i, j)] = match criteria_types[j] {
                     CriterionType::Cost => 1.0 - (value / sqrt_col_sum),
                     CriterionType::Profit => value / sqrt_col_sum,
                 };
@@ -899,7 +954,7 @@ impl Normalize for DMatrix<f64> {
 
     fn normalize_zavadskas_turskis(
         &self,
-        types: &CriteriaTypes,
+        criteria_types: &CriteriaTypes,
     ) -> Result<DMatrix<f64>, NormalizationError> {
         let (num_alternatives, num_criteria) = self.shape();
 
@@ -909,7 +964,7 @@ impl Normalize for DMatrix<f64> {
         }
 
         // Ensure enough criteria types for all criteria
-        if types.len() != num_criteria {
+        if criteria_types.len() != num_criteria {
             return Err(NormalizationError::NormalizationCriteraTypeMismatch);
         }
 
@@ -927,7 +982,7 @@ impl Normalize for DMatrix<f64> {
             }
 
             for (i, value) in col.iter().enumerate() {
-                normalized_matrix[(i, j)] = match types[j] {
+                normalized_matrix[(i, j)] = match criteria_types[j] {
                     CriterionType::Cost => 1.0 - ((min_value - value).abs() / min_value),
                     CriterionType::Profit => 1.0 - ((max_value - value).abs() / max_value),
                 };

@@ -97,7 +97,8 @@ pub trait Rank {
     ///
     /// # Arguments
     ///
-    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
+    /// * `criteria_types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or
+    ///   cost.
     /// * `weights` - A vector of weights representing the relative importance of each criterion.
     ///
     /// # Returns
@@ -130,7 +131,7 @@ pub trait Rank {
     /// ```
     fn rank_aras(
         &self,
-        types: &CriteriaTypes,
+        criteria_types: &CriteriaTypes,
         weights: &DVector<f64>,
     ) -> Result<DVector<f64>, RankingError>;
 
@@ -324,7 +325,8 @@ pub trait Rank {
     ///
     /// # Arguments
     ///
-    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
+    /// * `criteria_types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or
+    ///   cost.
     /// * `weights` - A vector of weights representing the relative importance of each criterion.
     ///
     /// # Returns
@@ -357,7 +359,7 @@ pub trait Rank {
     /// ```
     fn rank_copras(
         &self,
-        types: &CriteriaTypes,
+        criteria_types: &CriteriaTypes,
         weights: &DVector<f64>,
     ) -> Result<DVector<f64>, RankingError>;
 
@@ -410,7 +412,8 @@ pub trait Rank {
     ///
     /// # Arguments
     ///
-    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
+    /// * `criteria_types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or
+    ///   cost.
     /// * `weights` - A vector of weights representing the relative importance of each criterion.
     ///
     /// # Returns
@@ -443,7 +446,7 @@ pub trait Rank {
     /// ```
     fn rank_edas(
         &self,
-        types: &CriteriaTypes,
+        criteria_types: &CriteriaTypes,
         weights: &DVector<f64>,
     ) -> Result<DVector<f64>, RankingError>;
 
@@ -516,7 +519,8 @@ pub trait Rank {
     ///
     /// # Arguments
     ///
-    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
+    /// * `criteria_types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or
+    ///   cost.
     /// * `weights` - A vector of weights representing the relative importance of each criterion.
     /// * `reference_point` - A vector of reference points representing to the relative importance
     ///   of each criterion.
@@ -556,7 +560,7 @@ pub trait Rank {
     /// ```
     fn rank_ervd(
         &self,
-        types: &CriteriaTypes,
+        criteria_types: &CriteriaTypes,
         weights: &DVector<f64>,
         reference_point: &DVector<f64>,
         lambda: f64,
@@ -826,7 +830,8 @@ pub trait Rank {
     ///
     /// # Arguments
     ///
-    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
+    /// * `criteria_types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or
+    ///   cost.
     /// * `weights` - A vector of weights representing the relative importance of each criterion.
     ///
     /// # Returns
@@ -859,7 +864,7 @@ pub trait Rank {
     /// ```
     fn rank_marcos(
         &self,
-        types: &CriteriaTypes,
+        criteria_types: &CriteriaTypes,
         weights: &DVector<f64>,
     ) -> Result<DVector<f64>, RankingError>;
 
@@ -903,7 +908,8 @@ pub trait Rank {
     ///
     /// # Arguments
     ///
-    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
+    /// * `criteria_types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or
+    ///   cost.
     /// * `weights` - A vector of weights representing the relative importance of each criterion.
     ///
     /// # Returns
@@ -936,7 +942,7 @@ pub trait Rank {
     /// ```
     fn rank_moora(
         &self,
-        types: &CriteriaTypes,
+        criteria_types: &CriteriaTypes,
         weights: &DVector<f64>,
     ) -> Result<DVector<f64>, RankingError>;
 
@@ -973,7 +979,8 @@ pub trait Rank {
     ///
     /// # Arguments
     ///
-    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
+    /// * `criteria_types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or
+    ///   cost.
     /// * `weights` - A vector of weights representing the relative importance of each criterion.
     ///
     /// # Returns
@@ -1006,7 +1013,7 @@ pub trait Rank {
     /// ```
     fn rank_ocra(
         &self,
-        types: &CriteriaTypes,
+        criteria_types: &CriteriaTypes,
         weights: &DVector<f64>,
     ) -> Result<DVector<f64>, RankingError>;
 
@@ -1100,7 +1107,8 @@ pub trait Rank {
     ///
     /// # Arguments
     ///
-    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
+    /// * `criteria_types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or
+    ///   cost.
     /// * `weights` - A vector of weights representing the relative importance of each criterion.
     /// * `simpler_probid` - A boolean value indicating whether to use the simpler PROBID method.
     ///
@@ -1136,7 +1144,7 @@ pub trait Rank {
     /// ```
     fn rank_probid(
         &self,
-        types: &CriteriaTypes,
+        criteria_types: &CriteriaTypes,
         weights: &DVector<f64>,
         simpler_probid: bool,
     ) -> Result<DVector<f64>, RankingError>;
@@ -1171,7 +1179,8 @@ pub trait Rank {
     ///
     /// # Arguments
     ///
-    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
+    /// * `criteria_types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or
+    ///   cost.
     /// * `weights` - A vector of weights representing the relative importance of each criterion.
     ///
     /// # Returns
@@ -1204,7 +1213,7 @@ pub trait Rank {
     /// ```
     fn rank_ram(
         &self,
-        types: &CriteriaTypes,
+        criteria_types: &CriteriaTypes,
         weights: &DVector<f64>,
     ) -> Result<DVector<f64>, RankingError>;
 
@@ -1275,7 +1284,8 @@ pub trait Rank {
     ///
     /// # Arguments
     ///
-    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
+    /// * `criteria_types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or
+    ///   cost.
     /// * `weights` - A vector of weights representing the relative importance of each criterion.
     /// * `criteria_range` - A 2D array that defines the arbitrarily chosen bounds of the criteria.
     ///   Each row represent the bounds for a given criterion. The first value is the lower bound
@@ -1318,7 +1328,7 @@ pub trait Rank {
     /// ```
     fn rank_rim(
         &self,
-        types: &CriteriaTypes,
+        criteria_types: &CriteriaTypes,
         weights: &DVector<f64>,
         criteria_range: &DMatrix<f64>,
         reference_ideal: &DMatrix<f64>,
@@ -1372,7 +1382,8 @@ pub trait Rank {
     ///
     /// # Arguments
     ///
-    /// * `types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or cost.
+    /// * `criteria_types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or
+    ///   cost.
     /// * `weights` - A vector of weights representing the relative importance of each criterion.
     /// * `bounds` - A 2D array that defines the decision problembounds of the criteria. Each row
     ///   represent the bounds for a given criterion. The first value is the lower bound and the
@@ -1409,7 +1420,7 @@ pub trait Rank {
     /// ```
     fn rank_spotis(
         &self,
-        types: &CriteriaTypes,
+        criteria_types: &CriteriaTypes,
         weights: &DVector<f64>,
         bounds: &DMatrix<f64>,
     ) -> Result<DVector<f64>, RankingError>;
@@ -1657,7 +1668,7 @@ pub trait Rank {
 impl Rank for DMatrix<f64> {
     fn rank_aras(
         &self,
-        types: &CriteriaTypes,
+        criteria_types: &CriteriaTypes,
         weights: &DVector<f64>,
     ) -> Result<DVector<f64>, RankingError> {
         if self.is_empty() {
@@ -1666,21 +1677,21 @@ impl Rank for DMatrix<f64> {
 
         let (num_alternatives, num_criteria) = self.shape();
 
-        if types.len() != num_criteria || weights.len() != num_criteria {
+        if criteria_types.len() != num_criteria || weights.len() != num_criteria {
             return Err(RankingError::DimensionMismatch);
         }
 
         let mut exmatrix = DMatrix::zeros(num_alternatives + 1, num_criteria);
         exmatrix.rows_mut(1, num_alternatives).copy_from(self);
 
-        for (i, criteria_type) in types.iter().enumerate() {
+        for (i, criteria_type) in criteria_types.iter().enumerate() {
             exmatrix[(0, i)] = match criteria_type {
                 CriterionType::Profit => self.column(i).max(),
                 CriterionType::Cost => self.column(i).min(),
             };
         }
 
-        let normalized_matrix = exmatrix.normalize_sum(types)?;
+        let normalized_matrix = exmatrix.normalize_sum(criteria_types)?;
         let weighted_matrix = normalized_matrix.scale_columns(weights);
 
         let s = weighted_matrix.column_sum();
@@ -1798,7 +1809,7 @@ impl Rank for DMatrix<f64> {
 
     fn rank_copras(
         &self,
-        types: &CriteriaTypes,
+        criteria_types: &CriteriaTypes,
         weights: &DVector<f64>,
     ) -> Result<DVector<f64>, RankingError> {
         if self.is_empty() {
@@ -1807,11 +1818,12 @@ impl Rank for DMatrix<f64> {
 
         let (num_alternatives, num_criteria) = self.shape();
 
-        if types.len() != num_criteria || weights.len() != num_criteria {
+        if criteria_types.len() != num_criteria || weights.len() != num_criteria {
             return Err(RankingError::DimensionMismatch);
         }
 
-        let normalized_matrix = self.normalize_sum(&CriteriaTypes::all_profits(types.len()))?;
+        let normalized_matrix =
+            self.normalize_sum(&CriteriaTypes::all_profits(criteria_types.len()))?;
 
         let weighted_matrix = normalized_matrix.scale_columns(weights);
 
@@ -1819,7 +1831,7 @@ impl Rank for DMatrix<f64> {
             num_alternatives,
             weighted_matrix.row_iter().map(|row| {
                 row.iter()
-                    .zip(types.iter())
+                    .zip(criteria_types.iter())
                     .filter(|&(_, c_type)| *c_type == CriterionType::Profit)
                     .map(|(&val, _)| val)
                     .sum::<f64>()
@@ -1830,7 +1842,7 @@ impl Rank for DMatrix<f64> {
             num_alternatives,
             weighted_matrix.row_iter().map(|row| {
                 row.iter()
-                    .zip(types.iter())
+                    .zip(criteria_types.iter())
                     .filter(|&(_, c_type)| *c_type == CriterionType::Cost)
                     .map(|(&val, _)| val)
                     .sum::<f64>()
@@ -1854,7 +1866,7 @@ impl Rank for DMatrix<f64> {
 
     fn rank_edas(
         &self,
-        types: &CriteriaTypes,
+        criteria_types: &CriteriaTypes,
         weights: &DVector<f64>,
     ) -> Result<DVector<f64>, RankingError> {
         if self.is_empty() {
@@ -1863,7 +1875,7 @@ impl Rank for DMatrix<f64> {
 
         let (num_alternatives, num_criteria) = self.shape();
 
-        if types.len() != num_criteria || weights.len() != num_criteria {
+        if criteria_types.len() != num_criteria || weights.len() != num_criteria {
             return Err(RankingError::DimensionMismatch);
         }
 
@@ -1876,7 +1888,7 @@ impl Rank for DMatrix<f64> {
             let avg = average_criteria[j];
 
             for (i, val) in col.iter().enumerate() {
-                match types[j] {
+                match criteria_types[j] {
                     CriterionType::Profit => {
                         positive_distance_matrix[(i, j)] = (val - avg) / avg;
                         negative_distance_matrix[(i, j)] = (avg - val) / avg;
@@ -1911,7 +1923,7 @@ impl Rank for DMatrix<f64> {
 
     fn rank_ervd(
         &self,
-        types: &CriteriaTypes,
+        criteria_types: &CriteriaTypes,
         weights: &DVector<f64>,
         reference_point: &DVector<f64>,
         lambda: f64,
@@ -1921,11 +1933,11 @@ impl Rank for DMatrix<f64> {
             return Err(RankingError::EmptyMatrix);
         }
 
-        if types.len() != self.ncols() || weights.len() != self.ncols() {
+        if criteria_types.len() != self.ncols() || weights.len() != self.ncols() {
             return Err(RankingError::DimensionMismatch);
         }
 
-        let criteria_profits = CriteriaTypes::all_profits(types.len());
+        let criteria_profits = CriteriaTypes::all_profits(criteria_types.len());
         let normalized_matrix = self.normalize_sum(&criteria_profits)?;
         let reference_point = reference_point.component_div(&self.row_sum().transpose());
 
@@ -1934,7 +1946,7 @@ impl Rank for DMatrix<f64> {
 
         for (i, row) in normalized_matrix.row_iter().enumerate() {
             for (j, value) in row.iter().enumerate() {
-                value_matrix[(i, j)] = match types[j] {
+                value_matrix[(i, j)] = match criteria_types[j] {
                     CriterionType::Profit => {
                         if *value > reference_point[j] {
                             (value - reference_point[j]).powf(alpha)
@@ -2052,7 +2064,7 @@ impl Rank for DMatrix<f64> {
 
     fn rank_marcos(
         &self,
-        types: &CriteriaTypes,
+        criteria_types: &CriteriaTypes,
         weights: &DVector<f64>,
     ) -> Result<DVector<f64>, RankingError> {
         if self.is_empty() {
@@ -2061,7 +2073,7 @@ impl Rank for DMatrix<f64> {
 
         let (num_alternatives, num_criteria) = self.shape();
 
-        if types.len() != num_criteria || weights.len() != num_criteria {
+        if criteria_types.len() != num_criteria || weights.len() != num_criteria {
             return Err(RankingError::DimensionMismatch);
         }
 
@@ -2073,7 +2085,7 @@ impl Rank for DMatrix<f64> {
         let mut exmatrix = DMatrix::zeros(num_alternatives + 2, num_criteria);
         exmatrix.rows_mut(0, num_alternatives).copy_from(self);
 
-        for (j, criteria_type) in types.iter().enumerate() {
+        for (j, criteria_type) in criteria_types.iter().enumerate() {
             match criteria_type {
                 CriterionType::Profit => {
                     exmatrix[(num_alternatives, j)] = max_criteria_values[j];
@@ -2086,7 +2098,7 @@ impl Rank for DMatrix<f64> {
             }
         }
 
-        let normalized_exmatrix = exmatrix.normalize_marcos(types)?;
+        let normalized_exmatrix = exmatrix.normalize_marcos(criteria_types)?;
         let weighted_matrix = normalized_exmatrix.scale_columns(weights);
 
         // Utility degree
@@ -2112,7 +2124,7 @@ impl Rank for DMatrix<f64> {
 
     fn rank_moora(
         &self,
-        types: &CriteriaTypes,
+        criteria_types: &CriteriaTypes,
         weights: &DVector<f64>,
     ) -> Result<DVector<f64>, RankingError> {
         if self.is_empty() {
@@ -2121,18 +2133,19 @@ impl Rank for DMatrix<f64> {
 
         let (num_alternatives, num_criteria) = self.shape();
 
-        if types.len() != num_criteria || weights.len() != num_criteria {
+        if criteria_types.len() != num_criteria || weights.len() != num_criteria {
             return Err(RankingError::DimensionMismatch);
         }
 
-        let normalized_matrix = self.normalize_vector(&CriteriaTypes::all_profits(types.len()))?;
+        let normalized_matrix =
+            self.normalize_vector(&CriteriaTypes::all_profits(criteria_types.len()))?;
         let weighted_matrix = normalized_matrix.scale_columns(weights);
 
         let sum_normalized_profit = DVector::from_iterator(
             num_alternatives,
             weighted_matrix.row_iter().map(|row| {
                 row.iter()
-                    .zip(types.iter())
+                    .zip(criteria_types.iter())
                     .filter(|&(_, c_type)| *c_type == CriterionType::Profit)
                     .map(|(&val, _)| val)
                     .sum::<f64>()
@@ -2143,7 +2156,7 @@ impl Rank for DMatrix<f64> {
             num_alternatives,
             weighted_matrix.row_iter().map(|row| {
                 row.iter()
-                    .zip(types.iter())
+                    .zip(criteria_types.iter())
                     .filter(|&(_, c_type)| *c_type == CriterionType::Cost)
                     .map(|(&val, _)| val)
                     .sum::<f64>()
@@ -2157,7 +2170,7 @@ impl Rank for DMatrix<f64> {
 
     fn rank_ocra(
         &self,
-        types: &CriteriaTypes,
+        criteria_types: &CriteriaTypes,
         weights: &DVector<f64>,
     ) -> Result<DVector<f64>, RankingError> {
         if self.is_empty() {
@@ -2166,16 +2179,16 @@ impl Rank for DMatrix<f64> {
 
         let (num_alternatives, num_criteria) = self.shape();
 
-        if types.len() != num_criteria || weights.len() != num_criteria {
+        if criteria_types.len() != num_criteria || weights.len() != num_criteria {
             return Err(RankingError::DimensionMismatch);
         }
 
-        let normalized_matrix = self.normalize_ocra(types)?;
+        let normalized_matrix = self.normalize_ocra(criteria_types)?;
 
         let mut i = DVector::zeros(num_alternatives);
         let mut o = DVector::zeros(num_alternatives);
         for (j, col) in normalized_matrix.column_iter().enumerate() {
-            match types[j] {
+            match criteria_types[j] {
                 CriterionType::Profit => {
                     i += weights[j] * col;
                 }
@@ -2199,7 +2212,7 @@ impl Rank for DMatrix<f64> {
 
     fn rank_probid(
         &self,
-        types: &CriteriaTypes,
+        criteria_types: &CriteriaTypes,
         weights: &DVector<f64>,
         simpler_probid: bool,
     ) -> Result<DVector<f64>, RankingError> {
@@ -2209,7 +2222,7 @@ impl Rank for DMatrix<f64> {
 
         let (num_alternatives, num_criteria) = self.shape();
 
-        if types.len() != num_criteria || weights.len() != num_criteria {
+        if criteria_types.len() != num_criteria || weights.len() != num_criteria {
             return Err(RankingError::DimensionMismatch);
         }
 
@@ -2219,7 +2232,7 @@ impl Rank for DMatrix<f64> {
         let mut pis_matrix = weighted_matrix.clone();
         for (j, column) in weighted_matrix.column_iter().enumerate() {
             let mut column_vec: Vec<f64> = column.iter().copied().collect();
-            match types[j] {
+            match criteria_types[j] {
                 CriterionType::Profit => {
                     column_vec
                         .sort_by(|a, b| b.partial_cmp(a).unwrap_or(core::cmp::Ordering::Equal));
@@ -2301,7 +2314,7 @@ impl Rank for DMatrix<f64> {
 
     fn rank_ram(
         &self,
-        types: &CriteriaTypes,
+        criteria_types: &CriteriaTypes,
         weights: &DVector<f64>,
     ) -> Result<DVector<f64>, RankingError> {
         if self.is_empty() {
@@ -2310,7 +2323,7 @@ impl Rank for DMatrix<f64> {
 
         let (num_alternatives, num_criteria) = self.shape();
 
-        if types.len() != num_criteria || weights.len() != num_criteria {
+        if criteria_types.len() != num_criteria || weights.len() != num_criteria {
             return Err(RankingError::DimensionMismatch);
         }
 
@@ -2322,7 +2335,7 @@ impl Rank for DMatrix<f64> {
             num_alternatives,
             weighted_matrix.row_iter().map(|row| {
                 row.iter()
-                    .zip(types.iter())
+                    .zip(criteria_types.iter())
                     .filter(|&(_, c_type)| *c_type == CriterionType::Profit)
                     .map(|(&val, _)| val)
                     .sum::<f64>()
@@ -2332,7 +2345,7 @@ impl Rank for DMatrix<f64> {
             num_alternatives,
             weighted_matrix.row_iter().map(|row| {
                 row.iter()
-                    .zip(types.iter())
+                    .zip(criteria_types.iter())
                     .filter(|&(_, c_type)| *c_type == CriterionType::Cost)
                     .map(|(&val, _)| val)
                     .sum()
@@ -2350,7 +2363,7 @@ impl Rank for DMatrix<f64> {
 
     fn rank_rim(
         &self,
-        types: &CriteriaTypes,
+        criteria_types: &CriteriaTypes,
         weights: &DVector<f64>,
         criteria_range: &DMatrix<f64>,
         reference_ideal: &DMatrix<f64>,
@@ -2361,7 +2374,7 @@ impl Rank for DMatrix<f64> {
 
         let (num_alternatives, num_criteria) = self.shape();
 
-        if (types.len() != num_criteria)
+        if (criteria_types.len() != num_criteria)
             || (weights.len() != num_criteria)
             || (criteria_range.nrows() != num_criteria)
             || (reference_ideal.nrows() != num_criteria)
@@ -2395,7 +2408,7 @@ impl Rank for DMatrix<f64> {
 
     fn rank_spotis(
         &self,
-        types: &CriteriaTypes,
+        criteria_types: &CriteriaTypes,
         weights: &DVector<f64>,
         bounds: &DMatrix<f64>,
     ) -> Result<DVector<f64>, RankingError> {
@@ -2405,7 +2418,7 @@ impl Rank for DMatrix<f64> {
 
         let num_criteria = self.ncols();
 
-        if (types.len() != num_criteria)
+        if (criteria_types.len() != num_criteria)
             || (weights.len() != num_criteria)
             || (bounds.nrows() != num_criteria)
         {
@@ -2415,7 +2428,7 @@ impl Rank for DMatrix<f64> {
         bounds.is_bounds_valid()?;
         self.is_within_bounds(bounds)?;
 
-        let normalized_matrix = self.normalize_spotis(types, bounds)?;
+        let normalized_matrix = self.normalize_spotis(criteria_types, bounds)?;
 
         let ranking = normalized_matrix.scale_columns(weights).column_sum();
 
