@@ -15,11 +15,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Working towards making the code more idiomatic and reducing unnecessary calculations inside of loops.
 - Refactored `CriteriaType` code into its own module and type `CriteriaTypes`. Instead of being a `Vec`, `CriteriaTypes` is an alias to `DVector<CriterionType>`, where `CriterionType` is an enum of either `Cost` or `Profit`.
+- Renamed many of the ranking and normalization functions `type` parameter to `criteria_types` for more clarity to the user.
+- Renamed `CriteriaTypes`'s `switch` function to `invert_types`. Naming is hard, hopefully this is a little more descriptive.
+
+### Removed
+
+- Removed unused function `get_ideal_from_bounds` in `DMatrixExt`.
 
 ### Fixed
 
 - Bug fixes
 - Removed many of the pedantic clippy lint warnings.
+- Moved the rest of the checks for empty matrix to be before assigning variables on the size of the matrix. 
 
 ## [0.3.1] - 2024-01-19
 
