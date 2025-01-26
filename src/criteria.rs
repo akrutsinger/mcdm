@@ -50,8 +50,7 @@ impl CriteriaTypes {
     ///
     /// # Errors
     ///
-    /// * [`ValidationError`] - If the slice contains values other
-    ///   than `-1` or `1`.
+    /// * [`ValidationError`] - If the slice contains values other than `-1` or `1`.
     pub fn from_slice(values: &[i8]) -> Result<Self, ValidationError> {
         let mut criteria = DVector::from_element(values.len(), CriterionType::Cost);
         for (i, &v) in values.iter().enumerate() {
@@ -60,12 +59,12 @@ impl CriteriaTypes {
         Ok(CriteriaTypes(criteria))
     }
 
-    /// Get the length of the criteria vector.
+    /// The total number of criteria types.
     pub fn len(&self) -> usize {
         self.0.len()
     }
 
-    /// Check if the criteria vector is empty.
+    /// Returns true if the vector is empty.
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
@@ -84,7 +83,8 @@ impl CriteriaTypes {
     ///
     /// # Arguments
     ///
-    /// * `criteria_types` - A vector of `CriterionType`.
+    /// * `criteria_types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or
+    ///   cost.
     ///
     /// # Returns
     ///
