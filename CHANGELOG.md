@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - More documentation. This includes more details in many of the `ranking`/`weighting`/`normalization` traits as well as documenting functions that were originally neglected from down right laziness.
+- Ability for user to provide a preference value to the `COCOSO` ranking method. This value preferences which kind of scoring strategy the `COCOSO` ranking method uses.
 
 ### Changed
 

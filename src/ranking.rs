@@ -172,6 +172,11 @@ pub trait Rank {
     /// # Arguments
     ///
     /// * `weights` - A vector of weights representing the relative importance of each criterion.
+    /// * `lambda` - An `Option<f64>` between 0.0 and 1.0 used to preference between scoring
+    ///   strategies based on the grey relationship or the multiplicative `WASPAS` method. A value
+    ///   less than 0.5 preferences the multiplicative `WASPAS` method. A value greater than 0.5
+    ///   preferences the grey relationship. If `None` is provided, default value of 0.5 will be
+    ///   used which prefers both strategies equally.
     ///
     /// # Returns
     ///
@@ -200,10 +205,15 @@ pub trait Rank {
     /// let weights = dvector![0.25, 0.25, 0.25, 0.25];
     /// let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1]).unwrap();
     /// let normalized_matrix = matrix.normalize_min_max(&criteria_types).unwrap();
-    /// let ranking = normalized_matrix.rank_cocoso(&weights).unwrap();
+    /// let lambda = 0.5; // Prefer both values equally
+    /// let ranking = normalized_matrix.rank_cocoso(&weights, Some(lambda)).unwrap();
     /// assert_relative_eq!(ranking, dvector![3.24754746, 1.14396494, 5.83576765], epsilon = 1e-5);
     /// ```
-    fn rank_cocoso(&self, weights: &DVector<f64>) -> Result<DVector<f64>, RankingError>;
+    fn rank_cocoso(
+        &self,
+        weights: &DVector<f64>,
+        lambda: Option<f64>,
+    ) -> Result<DVector<f64>, RankingError>;
 
     /// Ranks the alternatives using the COmbinative Distance-based ASessment (CODAS) method.
     ///
@@ -1702,7 +1712,11 @@ impl Rank for DMatrix<f64> {
         Ok(k)
     }
 
-    fn rank_cocoso(&self, weights: &DVector<f64>) -> Result<DVector<f64>, RankingError> {
+    fn rank_cocoso(
+        &self,
+        weights: &DVector<f64>,
+        lambda: Option<f64>,
+    ) -> Result<DVector<f64>, RankingError> {
         if self.is_empty() {
             return Err(RankingError::EmptyMatrix);
         }
@@ -1713,7 +1727,16 @@ impl Rank for DMatrix<f64> {
             return Err(RankingError::DimensionMismatch);
         }
 
-        let l = 0.5;
+        let l = match lambda {
+            Some(l) => {
+                if (0.0..=1.0).contains(&l) {
+                    l
+                } else {
+                    return Err(RankingError::InvalidValue);
+                }
+            }
+            None => 0.5,
+        };
 
         // Vector of S: sum of weighted rows
         let s = self

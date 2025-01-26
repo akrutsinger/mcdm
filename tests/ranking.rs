@@ -41,7 +41,8 @@ mod cocoso_tests {
         let weights = dvector![0.25, 0.25, 0.25, 0.25];
         let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1])?;
         let normalized_matrix = matrix.normalize_min_max(&criteria_types)?;
-        let ranking = normalized_matrix.rank_cocoso(&weights)?;
+        let lambda = 0.5;
+        let ranking = normalized_matrix.rank_cocoso(&weights, Some(lambda))?;
         assert_relative_eq!(
             ranking,
             dvector![3.24754746, 1.14396494, 5.83576765],
@@ -52,10 +53,41 @@ mod cocoso_tests {
     }
 
     #[test]
+    fn test_rank_using_none_lambda() -> Result<(), McdmError> {
+        let matrix = dmatrix![
+            2.9, 2.31, 0.56, 1.89;
+            1.2, 1.34, 0.21, 2.48;
+            0.3, 2.48, 1.75, 1.69
+        ];
+        let weights = dvector![0.25, 0.25, 0.25, 0.25];
+        let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1])?;
+        let normalized_matrix = matrix.normalize_min_max(&criteria_types)?;
+        let ranking = normalized_matrix.rank_cocoso(&weights, None)?;
+        assert_relative_eq!(
+            ranking,
+            dvector![3.24754746, 1.14396494, 5.83576765],
+            epsilon = 1e-5
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_rank_with_invalid_lambda() -> Result<(), McdmError> {
+        let matrix = dmatrix![0.2, 0.8; 0.5, 0.5; 0.9, 0.1];
+        let weights = dvector![0.6];
+        let lambda = 1.69;
+        let ranking = matrix.rank_cocoso(&weights, Some(lambda));
+        assert!(ranking.is_err());
+
+        Ok(())
+    }
+
+    #[test]
     fn test_with_zero_weights() -> Result<(), McdmError> {
         let matrix = dmatrix![0.2, 0.8; 0.5, 0.5; 0.9, 0.1];
         let weights = dvector![0.0, 0.0];
-        let ranking = matrix.rank_cocoso(&weights)?;
+        let ranking = matrix.rank_cocoso(&weights, None)?;
 
         assert_eq!(ranking.iter().all(|&x| x.is_nan()), true);
 
@@ -66,7 +98,7 @@ mod cocoso_tests {
     fn test_rank_with_invalid_dimensions() -> Result<(), McdmError> {
         let matrix = dmatrix![0.2, 0.8; 0.5, 0.5; 0.9, 0.1];
         let weights = dvector![0.6];
-        let ranking = matrix.rank_cocoso(&weights);
+        let ranking = matrix.rank_cocoso(&weights, None);
         assert!(ranking.is_err());
 
         Ok(())
