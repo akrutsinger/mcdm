@@ -1709,7 +1709,7 @@ impl Rank for DMatrix<f64> {
         }
 
         let normalized_matrix = exmatrix.normalize_sum(criteria_types)?;
-        let weighted_matrix = normalized_matrix.scale_columns(weights);
+        let weighted_matrix = normalized_matrix.apply_column_weights(weights)?;
 
         let s = weighted_matrix.column_sum();
         let k = s
@@ -1792,7 +1792,7 @@ impl Rank for DMatrix<f64> {
             return Err(RankingError::DimensionMismatch);
         }
 
-        let weighted_matrix = self.scale_columns(weights);
+        let weighted_matrix = self.apply_column_weights(weights)?;
 
         // Compute the Negative Ideal Solution (NIS)
         let nis = weighted_matrix
@@ -1855,7 +1855,7 @@ impl Rank for DMatrix<f64> {
         let normalized_matrix =
             self.normalize_sum(&CriteriaTypes::all_profits(criteria_types.len()))?;
 
-        let weighted_matrix = normalized_matrix.scale_columns(weights);
+        let weighted_matrix = normalized_matrix.apply_column_weights(weights)?;
 
         let sum_normalized_profit = DVector::from_iterator(
             num_alternatives,
@@ -1939,8 +1939,12 @@ impl Rank for DMatrix<f64> {
             .iter_mut()
             .for_each(|x| *x = x.max(0.0));
 
-        let sp = positive_distance_matrix.scale_columns(weights).column_sum();
-        let sn = negative_distance_matrix.scale_columns(weights).column_sum();
+        let sp = positive_distance_matrix
+            .apply_column_weights(weights)?
+            .column_sum();
+        let sn = negative_distance_matrix
+            .apply_column_weights(weights)?
+            .column_sum();
 
         let max_sp = sp.max();
         let max_sn = sn.max();
@@ -2039,7 +2043,7 @@ impl Rank for DMatrix<f64> {
         }
 
         // Calculation of the elements from the weighted matrix
-        let weighted_matrix = self.map(|x| x + 1.0).scale_columns(weights);
+        let weighted_matrix = self.map(|x| x + 1.0).apply_column_weights(weights)?;
 
         // Border approximation area matrix
         let g = weighted_matrix
@@ -2081,7 +2085,7 @@ impl Rank for DMatrix<f64> {
         let tp = weights / num_alternatives as f64;
 
         // Real rating matrix
-        let tr = self.scale_columns(&tp);
+        let tr = self.apply_column_weights(&tp)?;
 
         // Total gap matrix
         let mut g = tr.clone();
@@ -2132,7 +2136,7 @@ impl Rank for DMatrix<f64> {
         }
 
         let normalized_exmatrix = exmatrix.normalize_marcos(criteria_types)?;
-        let weighted_matrix = normalized_exmatrix.scale_columns(weights);
+        let weighted_matrix = normalized_exmatrix.apply_column_weights(weights)?;
 
         // Utility degree
         let s = weighted_matrix.column_sum();
@@ -2172,7 +2176,7 @@ impl Rank for DMatrix<f64> {
 
         let normalized_matrix =
             self.normalize_vector(&CriteriaTypes::all_profits(criteria_types.len()))?;
-        let weighted_matrix = normalized_matrix.scale_columns(weights);
+        let weighted_matrix = normalized_matrix.apply_column_weights(weights)?;
 
         let sum_normalized_profit = DVector::from_iterator(
             num_alternatives,
@@ -2260,7 +2264,7 @@ impl Rank for DMatrix<f64> {
         }
 
         let normalized_matrix = self.normalize_vector(&CriteriaTypes::all_profits(num_criteria))?;
-        let weighted_matrix = normalized_matrix.scale_columns(weights);
+        let weighted_matrix = normalized_matrix.apply_column_weights(weights)?;
 
         let mut pis_matrix = weighted_matrix.clone();
         for (j, column) in weighted_matrix.column_iter().enumerate() {
@@ -2361,7 +2365,7 @@ impl Rank for DMatrix<f64> {
         }
 
         let normalized_matrix = &self.normalize_sum(&CriteriaTypes::all_profits(num_criteria))?;
-        let weighted_matrix = normalized_matrix.scale_columns(weights);
+        let weighted_matrix = normalized_matrix.apply_column_weights(weights)?;
 
         // Vectors of PIS and NIS
         let spi = DVector::from_iterator(
@@ -2418,7 +2422,7 @@ impl Rank for DMatrix<f64> {
         reference_ideal.is_reference_ideal_bounds_valid(criteria_range)?;
 
         let normalized_matrix = self.normalize_rim(criteria_range, reference_ideal)?;
-        let weighted_normalized_matrix = normalized_matrix.scale_columns(weights);
+        let weighted_normalized_matrix = normalized_matrix.apply_column_weights(weights)?;
 
         let mut variation_to_pis = DVector::zeros(num_alternatives);
         let mut variation_to_nis = DVector::zeros(num_alternatives);
@@ -2463,7 +2467,9 @@ impl Rank for DMatrix<f64> {
 
         let normalized_matrix = self.normalize_spotis(criteria_types, bounds)?;
 
-        let ranking = normalized_matrix.scale_columns(weights).column_sum();
+        let ranking = normalized_matrix
+            .apply_column_weights(weights)?
+            .column_sum();
 
         Ok(ranking)
     }
@@ -2588,7 +2594,7 @@ impl Rank for DMatrix<f64> {
             return Err(RankingError::DimensionMismatch);
         }
 
-        let weighted_matrix = self.scale_columns(weights);
+        let weighted_matrix = self.apply_column_weights(weights)?;
         Ok(weighted_matrix.column_sum())
     }
 }

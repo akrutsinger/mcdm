@@ -17,7 +17,7 @@ error_set! {
     RankingError = {
         /// An error computing a minimum/maximum value.
         MinMaxError,
-    } || NormalizationError ||ValidationError;
+    } || NormalizationError || ValidationError;
 
     /// Normalization related errors.
     ///
