@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - More documentation. This includes more details in many of the `ranking`/`weighting`/`normalization` traits as well as documenting functions that were originally neglected from down right laziness.
 - Ability for user to provide a preference value to the `COCOSO` ranking method. This value preferences which kind of scoring strategy the `COCOSO` ranking method uses.
+- Ability for user to provide a preference or `None` to the `ERVD` and `WASPAS` ranking methods. The the user provides `None`, the ranking methods default to the recommended default values.
 
 ### Changed
 

@@ -534,10 +534,10 @@ pub trait Rank {
     /// * `weights` - A vector of weights representing the relative importance of each criterion.
     /// * `reference_point` - A vector of reference points representing to the relative importance
     ///   of each criterion.
-    /// * `lambda` - A scalar value representing attenuation factor for the losses. Suggested to be
-    ///   between 2.0 and 2.5.Default is 2.25.
-    /// * `alpha` - A scalar value representing the diminishing sensitivity parameter. Default is
-    ///   0.88.
+    /// * `lambda` - An `Option<f64>` scalar value representing attenuation factor for the losses.
+    ///   Suggested to be between 2.0 and 2.5. If `None` is passed, the default value is 2.25.
+    /// * `alpha` - An `Option<f64>` scalar value representing the diminishing sensitivity
+    ///   parameter. If `None` is passed, the value defaults to 0.88.
     ///
     /// # Returns
     ///
@@ -565,7 +565,13 @@ pub trait Rank {
     /// let weights = dvector![0.25, 0.25, 0.25, 0.25];
     /// let reference_point = dvector![1.46666667, 2.04333333, 0.84, 2.02];
     /// let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1]).unwrap();
-    /// let ranking = matrix.rank_ervd(&criteria_types, &weights, &reference_point, 0.5, 0.5).unwrap();
+    /// let ranking = matrix.rank_ervd(
+    ///     &criteria_types,
+    ///     &weights,
+    ///     &reference_point,
+    ///     Some(0.5),
+    ///     Some(0.5)
+    /// ).unwrap();
     /// assert_relative_eq!(ranking, dvector![0.30321682, 0.216203469, 1.0], epsilon = 1e-5);
     /// ```
     fn rank_ervd(
@@ -573,8 +579,8 @@ pub trait Rank {
         criteria_types: &CriteriaTypes,
         weights: &DVector<f64>,
         reference_point: &DVector<f64>,
-        lambda: f64,
-        alpha: f64,
+        lambda: Option<f64>,
+        alpha: Option<f64>,
     ) -> Result<DVector<f64>, RankingError>;
 
     /// Ranks the alternatives using the Multi-Attributive Border Approximation Area Comparison
@@ -1531,9 +1537,10 @@ pub trait Rank {
     /// # Arguments
     ///
     /// * `weights` - A vector of weights representing the relative importance of each criterion.
-    /// * `lambda` - Preferance value between 0.0 and 1.0. The default value is 0.5. A value of 0.5
-    ///   means equal preferance between WPM and WSM ranking. A value less than 0.5 shift preference
-    ///   in favor of WPM. A value greater than 0.5 shift preference in favor of WSM ranking.
+    /// * `lambda` - An `Option<f64>` representing the preferance value between 0.0 and 1.0. If
+    ///   `None`, the value defaults to 0.5 and represents equal preferance between WPM and WSM
+    ///   ranking. A value less than 0.5 shifts preference in favor of WPM. A value greater than 0.5
+    ///   shifts preference in favor of WSM ranking.
     ///
     /// # Returns
     ///
@@ -1564,7 +1571,7 @@ pub trait Rank {
     /// let criteria_type = CriteriaTypes::from_slice(&[-1, 1, 1, -1]).unwrap();
     /// let lambda = 0.5;
     /// let normalized_matrix = matrix.normalize_linear(&criteria_type).unwrap();
-    /// let ranking = normalized_matrix.rank_waspas(&weights, lambda).unwrap();
+    /// let ranking = normalized_matrix.rank_waspas(&weights, Some(lambda)).unwrap();
     /// assert_relative_eq!(
     ///     ranking,
     ///     dvector![0.48487887, 0.36106779, 1.0],
@@ -1574,7 +1581,7 @@ pub trait Rank {
     fn rank_waspas(
         &self,
         weights: &DVector<f64>,
-        lambda: f64,
+        lambda: Option<f64>,
     ) -> Result<DVector<f64>, RankingError>;
 
     /// Computes the Weighted Product Model (WPM) preference values for alternatives.
@@ -1949,8 +1956,8 @@ impl Rank for DMatrix<f64> {
         criteria_types: &CriteriaTypes,
         weights: &DVector<f64>,
         reference_point: &DVector<f64>,
-        lambda: f64,
-        alpha: f64,
+        lambda: Option<f64>,
+        alpha: Option<f64>,
     ) -> Result<DVector<f64>, RankingError> {
         if self.is_empty() {
             return Err(RankingError::EmptyMatrix);
@@ -1959,6 +1966,9 @@ impl Rank for DMatrix<f64> {
         if criteria_types.len() != self.ncols() || weights.len() != self.ncols() {
             return Err(RankingError::DimensionMismatch);
         }
+
+        let lambda = lambda.unwrap_or(2.25);
+        let alpha = alpha.unwrap_or(0.88);
 
         let criteria_profits = CriteriaTypes::all_profits(criteria_types.len());
         let normalized_matrix = self.normalize_sum(&criteria_profits)?;
@@ -2516,7 +2526,7 @@ impl Rank for DMatrix<f64> {
     fn rank_waspas(
         &self,
         weights: &DVector<f64>,
-        lambda: f64,
+        lambda: Option<f64>,
     ) -> Result<DVector<f64>, RankingError> {
         if self.is_empty() {
             return Err(RankingError::EmptyMatrix);
@@ -2526,9 +2536,16 @@ impl Rank for DMatrix<f64> {
             return Err(RankingError::DimensionMismatch);
         }
 
-        if !(0.0..=1.0).contains(&lambda) {
-            return Err(RankingError::InvalidValue);
-        }
+        let lambda = match lambda {
+            Some(l) => {
+                if (0.0..=1.0).contains(&l) {
+                    l
+                } else {
+                    return Err(RankingError::InvalidValue);
+                }
+            }
+            None => 0.5,
+        };
 
         let q_sum = self.rank_weighted_sum(weights)?;
         let q_product = self.rank_weighted_product(weights)?;

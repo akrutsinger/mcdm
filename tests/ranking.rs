@@ -202,7 +202,13 @@ mod ervd_tests {
         let weights = dvector![0.066, 0.196, 0.066, 0.130, 0.130, 0.216, 0.196];
         let criteria_types = CriteriaTypes::all_profits(weights.len());
         let reference_point = dvector![80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0];
-        let ranking = matrix.rank_ervd(&criteria_types, &weights, &reference_point, 2.25, 0.88)?;
+        let ranking = matrix.rank_ervd(
+            &criteria_types,
+            &weights,
+            &reference_point,
+            Some(2.25),
+            Some(0.88),
+        )?;
         let expected = dvector![
             0.6601578744801836,
             0.5027110047442204,
@@ -251,7 +257,62 @@ mod ervd_tests {
         let weights = dvector![0.066, 0.196, 0.066, 0.130, 0.130, 0.216, 0.196];
         let criteria_types = CriteriaTypes::from_slice(&[-1, 1, -1, 1, -1, 1, -1])?;
         let reference_point = dvector![80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0];
-        let ranking = matrix.rank_ervd(&criteria_types, &weights, &reference_point, 2.25, 0.88)?;
+        let ranking = matrix.rank_ervd(
+            &criteria_types,
+            &weights,
+            &reference_point,
+            Some(2.25),
+            Some(0.88),
+        )?;
+        let expected = dvector![
+            0.6559997559670003,
+            0.5217977925957993,
+            0.7594602276018567,
+            0.7313453836161443,
+            0.5452375511596929,
+            0.7100620905306492,
+            0.6409153841787564,
+            0.7463398467002611,
+            0.6862817392737902,
+            0.5463937478471941,
+            0.3540287150358768,
+            0.5017106312426843,
+            0.6832426474880466,
+            0.7646456165917208,
+            0.6645042283380466,
+            0.6279805495737201,
+            0.6745200840907036
+        ];
+        assert_relative_eq!(ranking, expected, epsilon = 1e-5);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_rank_using_default_lambda_and_alpha() -> Result<(), McdmError> {
+        let matrix = dmatrix![
+            80.0, 70.0, 87.0, 77.0, 76.0, 80.0, 75.0;
+            85.0, 65.0, 76.0, 80.0, 75.0, 65.0, 75.0;
+            78.0, 90.0, 72.0, 80.0, 85.0, 90.0, 85.0;
+            75.0, 84.0, 69.0, 85.0, 65.0, 65.0, 70.0;
+            84.0, 67.0, 60.0, 75.0, 85.0, 75.0, 80.0;
+            85.0, 78.0, 82.0, 81.0, 79.0, 80.0, 80.0;
+            77.0, 83.0, 74.0, 70.0, 71.0, 65.0, 70.0;
+            78.0, 82.0, 72.0, 80.0, 78.0, 70.0, 60.0;
+            85.0, 90.0, 80.0, 88.0, 90.0, 80.0, 85.0;
+            89.0, 75.0, 79.0, 67.0, 77.0, 70.0, 75.0;
+            65.0, 55.0, 68.0, 62.0, 70.0, 50.0, 60.0;
+            70.0, 64.0, 65.0, 65.0, 60.0, 60.0, 65.0;
+            95.0, 80.0, 70.0, 75.0, 70.0, 75.0, 75.0;
+            70.0, 80.0, 79.0, 80.0, 85.0, 80.0, 70.0;
+            60.0, 78.0, 87.0, 70.0, 66.0, 70.0, 65.0;
+            92.0, 85.0, 88.0, 90.0, 85.0, 90.0, 95.0;
+            86.0, 87.0, 80.0, 70.0, 72.0, 80.0, 85.0;
+        ];
+        let weights = dvector![0.066, 0.196, 0.066, 0.130, 0.130, 0.216, 0.196];
+        let criteria_types = CriteriaTypes::from_slice(&[-1, 1, -1, 1, -1, 1, -1])?;
+        let reference_point = dvector![80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0];
+        let ranking = matrix.rank_ervd(&criteria_types, &weights, &reference_point, None, None)?;
         let expected = dvector![
             0.6559997559670003,
             0.5217977925957993,
@@ -627,7 +688,27 @@ mod waspas_tests {
         let criteria_type = CriteriaTypes::from_slice(&[-1, 1, 1, -1])?;
         let lambda = 0.5;
         let normalized_matrix = matrix.normalize_linear(&criteria_type)?;
-        let ranking = normalized_matrix.rank_waspas(&weights, lambda)?;
+        let ranking = normalized_matrix.rank_waspas(&weights, Some(lambda))?;
+        assert_relative_eq!(
+            ranking,
+            dvector![0.48487887, 0.36106779, 1.0],
+            epsilon = 1e-5
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_rank_with_default_lambda() -> Result<(), McdmError> {
+        let matrix = dmatrix![
+            2.9, 2.31, 0.56, 1.89;
+            1.2, 1.34, 0.21, 2.48;
+            0.3, 2.48, 1.75, 1.69
+        ];
+        let weights = dvector![0.25, 0.25, 0.25, 0.25];
+        let criteria_type = CriteriaTypes::from_slice(&[-1, 1, 1, -1])?;
+        let normalized_matrix = matrix.normalize_linear(&criteria_type)?;
+        let ranking = normalized_matrix.rank_waspas(&weights, None)?;
         assert_relative_eq!(
             ranking,
             dvector![0.48487887, 0.36106779, 1.0],
@@ -641,7 +722,7 @@ mod waspas_tests {
     fn test_rank_with_invalid_dimensions() -> Result<(), McdmError> {
         let matrix = dmatrix![0.2, 0.8; 0.5, 0.5; 0.9, 0.1];
         let weights = dvector![0.6];
-        let ranking = matrix.rank_waspas(&weights, 0.5);
+        let ranking = matrix.rank_waspas(&weights, Some(0.5));
         assert!(ranking.is_err());
 
         Ok(())
@@ -655,10 +736,10 @@ mod waspas_tests {
             0.3, 2.48, 1.75, 1.69
         ];
         let weights = dvector![0.25, 0.25, 0.25, 0.25];
-        let ranking = matrix.rank_waspas(&weights, -0.1);
+        let ranking = matrix.rank_waspas(&weights, Some(-0.1));
         assert!(ranking.is_err());
 
-        let ranking = matrix.rank_waspas(&weights, 1.1);
+        let ranking = matrix.rank_waspas(&weights, Some(1.1));
         assert!(ranking.is_err());
 
         Ok(())
