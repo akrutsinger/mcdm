@@ -38,6 +38,7 @@ Weights reflect the relative importance of each criterion. Different weighting t
 | 📊 Name               | 📝 Description |
 | :----------------: | :---------: |
 | Angular | Measures angle between each criterion and an ideal point in a multidimensional space. Criteria that are closer to that ideal point (i.e., have smaller angles) are considered more important and assigned higher weights. |
+| Criterion Impact LOSs (CILOS) | Assigns weights to criteria based on their impact loss, where the importance of criterion is determined by how much the overall decision performance would decrease if that criterion were removed. This method quantifies the significance of each decision criterion by analyzing its contribution to decision-making, ensuring that more influencial criteria receive higher weights. |
 | CRiteria Importance Through Intercriteria Correlation (CRITIC) |Determines weights by combining the variability (standard deviation) of each criterion and the correlation between criteria. A criterion with high variablity and low correlation with others is considered more important. |
 | Entropy			 | Measures the uncertainty or disorder within the criterion's values across alternatives. Criteria with higher variability (i.e., more dispersed values) have higher entropy and are assigned lower weights. Criteria with more structured values receive higher weights. |
 | Equal              | Assumes all criteria are equally important and each criterion is assigned the same weight. |

@@ -45,6 +45,27 @@ mod critic_tests {
     }
 }
 
+mod cilos_tests {
+    use super::*;
+
+    #[test]
+    fn test_weight() -> Result<(), McdmError> {
+        let matrix = dmatrix![
+            3.0, 100.0, 10.0, 7.0;
+            2.5, 80.0, 8.0, 5.0;
+            1.8, 50.0, 20.0, 11.0;
+            2.2, 70.0, 12.0, 9.0;
+        ];
+        let criteria_types = CriteriaTypes::from_slice(&[-1, 1, -1, 1])?;
+        let normalized_matrix = matrix.normalize_sum(&criteria_types)?;
+        let weights = normalized_matrix.weight_cilos()?;
+        let expected_weights = dvector![0.33434452, 0.21985191, 0.19571387, 0.2500897];
+        assert_relative_eq!(weights, expected_weights, epsilon = 1e-5);
+
+        Ok(())
+    }
+}
+
 mod entropy_tests {
     use super::*;
 

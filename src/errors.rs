@@ -66,6 +66,8 @@ error_set! {
         NoMinimum,
         /// No maximum value for a criterion was found, which is necessary for certain calculations.
         NoMaximum,
+        /// The matrix is singular, meaning it cannot be inverted or used in certain calculations.
+        SingularMatrix,
         // A zero range was encountered where a non-zero range was expected, leading to an
         /// undefined or invalid calculation.
         ZeroRange,

@@ -70,6 +70,94 @@ pub trait Weight {
     /// * [`WeightingError::EmptyMatrix`] - If the decision matrix is empty.
     fn weight_angular(&self) -> Result<DVector<f64>, WeightingError>;
 
+    /// Calculates the weights for the given decision matrix using the Criterion Impact LOSs (CILOS)
+    /// method.
+    ///
+    /// The CILOS method expectst the decision matrix to be normalized using the
+    /// [`Sum`](crate::normalization::Normalize::normalize_sum) normalization method. The CILOS
+    /// method assigns weights to criteria based on their impact loss, where the importance of
+    /// criterion is determined by how much the overall decision performance would decrease if that
+    /// criterion were removed. This method quantifies the significance of each decision criterion
+    /// by analyzing its contribution to decision-making, ensuring that more influencial criteria
+    /// receive higher weights.
+    ///
+    /// # Weight Calculation
+    ///
+    /// Start by defining a decision matrix
+    ///
+    /// $$ A =
+    /// \begin{bmatrix}
+    ///     r_{11} & r_{12} & \ldots & r_{1n} \\\\
+    ///     r_{21} & r_{22} & \ldots & r_{2n} \\\\
+    ///     \vdots & \vdots & \ddots & \vdots \\\\
+    ///     r_{m1} & r_{m2} & \ldots & r_{mn}
+    /// \end{bmatrix}
+    /// $$
+    ///
+    /// Next, transform the [`Cost`](crate::criteria::CriterionType::Cost) criteria as:
+    ///
+    /// $$ \bar{r}\_{ij} = \frac{\min_i r_{ij}}{r_{ij}} $$
+    ///
+    /// _Note that the transformation is only applied to cost criteria; the values of the profit
+    /// criteria require no transformation._
+    ///
+    /// Define the resulting matrix after the transformation as $X$:
+    ///
+    /// $$ X =
+    /// \begin{bmatrix}
+    ///     x_{11} & x_{12} & \ldots & x_{1n} \\\\
+    ///     x_{21} & x_{22} & \ldots & x_{2n} \\\\
+    ///     \vdots & \vdots & \ddots & \vdots \\\\
+    ///     x_{m1} & x_{m2} & \ldots & x_{mn}
+    /// \end{bmatrix}
+    /// $$
+    ///
+    /// Next, calculate the highest values of each criterion in $X$:
+    ///
+    /// $$ x_{ij} = \max_i x_{ij} = x_{{k_j}j} $$
+    ///
+    /// Next, determine the square matrix $A$:
+    ///
+    /// $$ A = \\|a_{ij}\\| = (a_{ii} = x_i; a_{ij} = x{{k_j}j}) $$
+    ///
+    /// Next, determine the relative loss matrix $P$:
+    ///
+    /// $$ P = p_{ij} = \frac{x_j - a_{ij}}{x_j} = \frac{a_{ii} - a_{ij}}{a_{ii}}, \quad p_{ii} = 0 $$
+    ///
+    /// The diagonal elements of the matrix $P$ are 0 and each element $p_{ij}$ show the relative
+    /// loss of the $j$th criterion if the $i$th criterion is a profit.
+    ///
+    /// Next, calculate the matrix $F$ based on the relative loss matrix $P$ as:
+    ///
+    /// $$ F =
+    /// \begin{bmatrix}
+    ///     -\sum_{i=1}^m P_{i1} & p_{12} & \ldots & p_{1m} \\\\
+    ///     p_{21} & -\sum_{i=1}^m p_{i2} & \ldots & p_{2m} \\\\
+    ///     \vdots & \vdots & \ddots & \vdots \\\\
+    ///     p_{m1} & p_{m2} & \ldots & -\sum_{i=1}^m p_{im}
+    /// \end{bmatrix}
+    /// $$
+    ///
+    /// Next, solve the linear system of equations:
+    ///
+    /// $$ Fq^t = 0 $$
+    ///
+    /// Lastly, calculate the criteria weights as:
+    ///
+    /// $$ q_i = \frac{x_i}{\sum_{i=1}^n x_i} $$
+    ///
+    /// # Returns
+    ///
+    /// * `Result<DVector<f64>, WeightingError>` - A vector of weights for each criterion if
+    ///   successful.
+    ///
+    /// # Errors
+    ///
+    /// * [`WeightingError::EmptyMatrix`] - If the decision matrix is empty.
+    /// * [`WeightingError::SingularMatrix`] - If the decision matrix is not square and cannot be
+    ///   inverted.
+    fn weight_cilos(&self) -> Result<DVector<f64>, WeightingError>;
+
     /// Calculates the weights for the given decision matrix using CRiteria Importance Through
     /// Intercriteria Correlation (CRITIC) method.
     ///
@@ -385,6 +473,49 @@ impl Weight for DMatrix<f64> {
 
         let weights_sum = weights.sum();
         let weights = weights / weights_sum;
+
+        Ok(weights)
+    }
+
+    fn weight_cilos(&self) -> Result<DVector<f64>, WeightingError> {
+        if self.is_empty() {
+            return Err(WeightingError::EmptyMatrix);
+        }
+
+        let num_criteria = self.ncols();
+
+        // Calculate the square matrix A
+        let max_indices = DVector::<usize>::from_iterator(
+            num_criteria,
+            (0..num_criteria).map(|j| self.column(j).imax()),
+        );
+        let mut a = DMatrix::<f64>::zeros(num_criteria, num_criteria);
+
+        for (j, max_index) in max_indices.iter().enumerate().take(num_criteria) {
+            a.set_row(j, &self.row(*max_index));
+        }
+
+        // Compute relative impact loss matrix
+        let mut pij = DMatrix::<f64>::zeros(num_criteria, num_criteria);
+        for j in 0..num_criteria {
+            for i in 0..num_criteria {
+                pij[(i, j)] = (a[(j, j)] - a[(i, j)]) / a[(j, j)];
+            }
+        }
+
+        // Determine the weight system matrix F
+        let mut f = pij.clone();
+        for j in 0..num_criteria {
+            f[(j, j)] = -pij.column(j).sum() + pij[(j, j)];
+        }
+
+        // Solve the linear system F * q = AA
+        let mut aa = DVector::<f64>::zeros(num_criteria);
+        aa[0] = f64::EPSILON;
+        let q = f.try_inverse().ok_or(WeightingError::SingularMatrix)? * aa;
+
+        // Normalize q to get final weights
+        let weights = q.clone() / q.sum();
 
         Ok(weights)
     }
