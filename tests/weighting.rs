@@ -122,6 +122,26 @@ mod gini_tests {
     }
 }
 
+mod idocriw_tests {
+    use super::*;
+
+    #[test]
+    fn test_weight() -> Result<(), McdmError> {
+        let matrix = dmatrix![
+            3.0, 100.0, 10.0, 7.0;
+            2.5, 80.0, 8.0, 5.0;
+            1.8, 50.0, 20.0, 11.0;
+            2.2, 70.0, 12.0, 9.0;
+        ];
+        let criteria_types = CriteriaTypes::from_slice(&[-1, 1, -1, 1])?;
+        let weights = matrix.weight_idocriw(&criteria_types)?;
+        let expected_weights = dvector![0.16583445, 0.18852292, 0.35454046, 0.29110216];
+        assert_relative_eq!(weights, expected_weights, epsilon = 1e-5);
+
+        Ok(())
+    }
+}
+
 mod merec_tests {
     use super::*;
 

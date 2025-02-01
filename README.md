@@ -43,6 +43,7 @@ Weights reflect the relative importance of each criterion. Different weighting t
 | Entropy			 | Measures the uncertainty or disorder within the criterion's values across alternatives. Criteria with higher variability (i.e., more dispersed values) have higher entropy and are assigned lower weights. Criteria with more structured values receive higher weights. |
 | Equal              | Assumes all criteria are equally important and each criterion is assigned the same weight. |
 | Gini | Based on the Gini coefficient, which measures inequality or dispersion. Criteria with greaterinequality or larger variation across alternatives receive higher weights. |
+Integrated Determination of Objective CRIteria Weights (IDOCRIW) | Assigns weights based on the aggregate weights of the `CILOS` and `Entropy` weighting methods. |
 | Method Based on the Removal Effects of Criiteria (MEREC) | Evaluates how the absence of a criterion affects the overall decision. Criteria that, when removed, significantly change the ranking of alternatives are considered more important and are given higher weights. |
 | Standard Deviation | Criteria weights are derived from standard deviation of criteria across alternatives. Criteria with hiigher standard deviation (i.e., more variation) are given higher weights because they better differentiate the alternatives.
 | Variance | Similiar to standard deviation, variance weighting assigns weights to criteria based on the dispersion (variance) of their values across alternatives. Criter with higher variance are consideredmore important. |

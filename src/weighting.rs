@@ -1,6 +1,7 @@
 //! Methods for weighting a decision matrix.
 
-use crate::errors::WeightingError;
+use crate::CriteriaTypes;
+use crate::{errors::WeightingError, normalization::Normalize};
 use nalgebra::{DMatrix, DVector};
 
 /// A trait for calculating weights in Multiple-Criteria Decision Making (MCDM) problems.
@@ -319,6 +320,40 @@ pub trait Weight {
     /// * [`WeightingError::EmptyMatrix`] - If the decision matrix is empty.
     fn weight_gini(&self) -> Result<DVector<f64>, WeightingError>;
 
+    /// Calculate weighting using the Integrated Determination of Objective CRIteria Weights
+    /// (IDOCRIW) method.
+    ///
+    /// The IDOCRIW method weights an unnormalized decision matrix using the
+    /// [`CILOS`](Weight::weight_cilos) and [`Entropy`](Weight::weight_entropy) methods. The IDOCRIW
+    /// weights are calculated as:
+    ///
+    /// $$ w_j = \frac{q_j e_j}{\sum_{j=1}^n q_j e_j} $$
+    ///
+    /// where $w_j$ is the weight assigned to criterion $j$, $q_j$ are
+    /// [`CILOS`](Weight::weight_cilos) weights, $e_j$ are [`Entropy`](Weight::weight_entropy)
+    /// weights, and $n$ is the number of criteria.
+    ///
+    /// # Arguments
+    ///
+    /// * `criteria_types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or
+    ///   cost.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<DVector<f64>, WeightingError>` - A vector of weights for each criterion if
+    ///   successful.
+    ///
+    /// # Errors
+    ///
+    /// * [`WeightingError::DimensionMismatch`] - If the number of criteria types does not match the
+    ///   number of criteria.
+    /// * [`WeightingError::EmptyMatrix`] - If the decision matrix is empty.
+    /// * [`WeightingError::NormalizationFailed`] - If the normalization method has failed.
+    fn weight_idocriw(
+        &self,
+        criteria_types: &CriteriaTypes,
+    ) -> Result<DVector<f64>, WeightingError>;
+
     /// Calculate weights using the Method Based on the Removal Effects of Criiteria (MEREC) method.
     ///
     /// # Weight Calculation
@@ -612,6 +647,37 @@ impl Weight for DMatrix<f64> {
         // Normalize weights: weights / sum(weights)
         let weights_sum = weights.sum();
         Ok(weights / weights_sum)
+    }
+
+    fn weight_idocriw(
+        &self,
+        criteria_types: &CriteriaTypes,
+    ) -> Result<DVector<f64>, WeightingError> {
+        if self.is_empty() {
+            return Err(WeightingError::EmptyMatrix);
+        }
+
+        let num_criteria = self.ncols();
+
+        if criteria_types.len() != num_criteria {
+            return Err(WeightingError::DimensionMismatch);
+        }
+
+        // Entropy weighting relies on [`Sum`] normalization using only profit criteria
+        let normalized_matrix = self
+            .normalize_sum(&CriteriaTypes::all_profits(num_criteria))
+            .map_err(|_| WeightingError::NormalizationFailed)?;
+        let q = normalized_matrix.weight_entropy()?;
+        // CILOS relies on [`Sum`] normalization using criteria types as provided by the user
+        let normalized_matrix = self
+            .normalize_sum(criteria_types)
+            .map_err(|_| WeightingError::NormalizationFailed)?;
+        let w = normalized_matrix.weight_cilos()?;
+
+        let product = q.component_mul(&w);
+        let weights = product.clone() / product.sum();
+
+        Ok(weights)
     }
 
     fn weight_merec(&self) -> Result<DVector<f64>, WeightingError> {

@@ -40,6 +40,9 @@ error_set! {
         EmptyInput,
         /// No null spaces identified in the matrix.
         NoNullSpace,
+        /// Indicated that the normalization that happened in side of a weighting function has
+        /// failed.
+        NormalizationFailed,
     } || ValidationError;
 
     /// Data validation errors.
