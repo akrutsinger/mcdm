@@ -56,11 +56,6 @@ pub trait Weight {
     /// where $x_{ij}$ is the $i$th element of the alternative (row) and $j$th elements of the
     /// criterion (column) with $m$ alternatives.
     ///
-    /// # Arguments
-    ///
-    /// * `matrix` - A 2d decision matrix where rows represent alternatives and columns represent
-    ///   criteria.
-    ///
     /// # Returns
     ///
     /// * `Result<DVector<f64>, WeightingError>` - A vector of weights for each criterion if
@@ -198,11 +193,6 @@ pub trait Weight {
     ///
     /// $$ w_j = \frac{C_j}{\sum_{k=1}^n C_k} $$
     ///
-    /// # Arguments
-    ///
-    /// * `matrix` - A 2d decision matrix where rows represent alternatives and columns represent
-    ///   criteria.
-    ///
     /// # Returns
     ///
     /// * `Result<DVector<f64>, WeightingError>` - A vector of weights for each criterion if
@@ -228,11 +218,6 @@ pub trait Weight {
     ///
     /// where $w_i$ is the weight assigned to criterion $i$, and $n$ is the number of criteria in
     /// the decision matrix.
-    ///
-    /// # Arguments
-    ///
-    /// * `matrix` - A 2d decision matrix where rows represent alternatives and columns represent
-    ///   criteria.
     ///
     /// # Returns
     ///
@@ -265,11 +250,6 @@ pub trait Weight {
     /// criterion:
     ///
     /// $$ w_j = \frac{1 - E_j}{\sum_{j=1}^n (1 - E_j)} \quad \text{for} \quad j=1, \ldots, n $$
-    ///
-    /// # Arguments
-    ///
-    /// * `matrix` - A 2d decision matrix where rows represent alternatives and columns represent
-    ///   criteria.
     ///
     /// # Returns
     ///
@@ -304,11 +284,6 @@ pub trait Weight {
     /// $$ w_j = \frac{G_j}{\sum_{j=1}^n G_j} \quad \text{for} \quad j=1, \ldots, n $$
     ///
     /// where $n$ is the number of criteria.
-    ///
-    /// # Arguments
-    ///
-    /// * `matrix` - A 2d decision matrix where rows represent alternatives and columns represent
-    ///   criteria.
     ///
     /// # Returns
     ///
@@ -382,11 +357,6 @@ pub trait Weight {
     ///
     /// $$ w_j = \frac{E_j}{\sum_{j=1}^n E_j} $$
     ///
-    /// # Arguments
-    ///
-    /// * `matrix` - A 2d decision matrix where rows represent alternatives and columns represent
-    ///   criteria.
-    ///
     /// # Returns
     ///
     /// * `Result<DVector<f64>, WeightingError>` - A vector of weights for each criterion if
@@ -426,11 +396,6 @@ pub trait Weight {
     ///
     /// $$ w_j = \frac{\sigma_j}{\sum_{j=1}^n \sigma_j} \quad \text{for} \quad j=1, \ldots, n $$
     ///
-    /// # Arguments
-    ///
-    /// * `matrix` - A 2d decision matrix where rows represent alternatives and columns represent
-    ///   criteria.
-    ///
     /// # Returns
     ///
     /// * `Result<DVector<f64>, WeightingError>` - A vector of weights for each criterion if
@@ -468,11 +433,6 @@ pub trait Weight {
     /// $$ w_j = \frac{\sigma_j^2}{\sum_{j=1}^n \sigma_j^2} \quad \text{for} \quad j=1, \ldots, n $$
     ///
     /// where $n$ is the number of criteria.
-    ///
-    /// # Arguments
-    ///
-    /// * `matrix` - A 2d decision matrix where rows represent alternatives and columns represent
-    ///   criteria.
     ///
     /// # Returns
     ///
