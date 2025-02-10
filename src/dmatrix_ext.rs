@@ -1,3 +1,5 @@
+//! Extensions for the `DMatrix` type from the `nalgebra` crate.
+
 use crate::errors::ValidationError;
 use nalgebra::{DMatrix, DVector};
 

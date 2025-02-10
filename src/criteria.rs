@@ -1,4 +1,4 @@
-//! Module for representing the type of each criterion: either Cost or Profit.
+//! Representations for the types of each criterion: either Cost or Profit.
 
 use crate::errors::ValidationError;
 use nalgebra::DVector;
