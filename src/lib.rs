@@ -36,6 +36,7 @@
 //!     Ok(())
 //! }
 //! ```
+pub mod correlation;
 pub mod criteria;
 pub mod dmatrix_ext;
 pub mod errors;
@@ -44,6 +45,7 @@ pub mod ranking;
 pub mod validation;
 pub mod weighting;
 
+pub use correlation::*;
 pub use criteria::{CriteriaTypes, CriterionType};
 pub use dmatrix_ext::DMatrixExt;
 pub use errors::ValidationError;

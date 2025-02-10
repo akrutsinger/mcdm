@@ -45,6 +45,28 @@ mod critic_tests {
     }
 }
 
+mod dcritic_tests {
+    use super::*;
+
+    #[test]
+    fn test_weight() -> Result<(), McdmError> {
+        let matrix = dmatrix![
+            649.0, 4.7, 326.0, 7.1, 143.0;
+            749.0, 5.5, 401.0, 7.3, 192.0;
+            740.0, 5.7, 520.0, 7.6, 171.0;
+            400.0, 5.7, 520.0, 11.1, 179.0;
+            600.0, 5.5, 538.0, 8.9, 152.0
+        ];
+        let criteria_types = CriteriaTypes::all_profits(matrix.ncols());
+        let normalized_matrix = matrix.normalize_min_max(&criteria_types)?;
+        let weights = normalized_matrix.weight_dcritic()?;
+        let expected_weights = dvector![0.20206307, 0.19560816, 0.20316007, 0.18740563, 0.21176304];
+        assert_relative_eq!(weights, expected_weights, epsilon = 1e-5);
+
+        Ok(())
+    }
+}
+
 mod cilos_tests {
     use super::*;
 

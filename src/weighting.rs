@@ -1,7 +1,7 @@
 //! Methods for weighting a decision matrix.
 
-use crate::CriteriaTypes;
 use crate::{errors::WeightingError, normalization::Normalize};
+use crate::{Correlate, CriteriaTypes};
 use nalgebra::{DMatrix, DVector};
 
 /// A trait for calculating weights in Multiple-Criteria Decision Making (MCDM) problems.
@@ -157,12 +157,13 @@ pub trait Weight {
     /// Calculates the weights for the given decision matrix using CRiteria Importance Through
     /// Intercriteria Correlation (CRITIC) method.
     ///
-    /// The CRITIC method is based on two key concepts. Contrast intensity and conflict or
+    /// The CRITIC method is based on two key concepts: Contrast intensity and conflict or
     /// correlation. Contrast intensity measures the amount of variation (or dispersion) in each
     /// criterion. A higher contrast meas the criterion discriminates better between the
     /// alternatives. Conflict or correlation measures the interrelationship between criteria.
     /// Criteria that are highly correlated (i.e., redundant) should have less weight compared to
-    /// those that are independent or less correlated.
+    /// those that are independent or less correlated. The CRITIC weighting method uses the Pearson
+    /// correlation coefficient to measure the relationshiop between criteria.
     ///
     /// # Weight Calculation
     ///
@@ -202,6 +203,58 @@ pub trait Weight {
     ///
     /// * [`WeightingError::EmptyMatrix`] - If the decision matrix is empty.
     fn weight_critic(&self) -> Result<DVector<f64>, WeightingError>;
+
+    /// Calculates the weights for the given decision matrix using Distance Correlation-based
+    /// CRiteria Importance Through Intercriteria Correlation (D-CRITIC) method.
+    ///
+    /// The D-CRITIC method is based on two key concepts: Contrast intensity and conflict or
+    /// correlation. Contrast intensity measures the amount of variation (or dispersion) in each
+    /// criterion. A higher contrast meas the criterion discriminates better between the
+    /// alternatives. Conflict or correlation measures the interrelationship between criteria.
+    /// Criteria that are highly correlated (i.e., redundant) should have less weight compared to
+    /// those that are independent or less correlated. The D-CRITIC weighting method uses distance
+    /// correlation to measure the relationship between criteria.
+    ///
+    /// # Weight Calculation
+    ///
+    /// Normalize the decision matrix using the [`MinMax`](crate::normalization::Normalize::normalize_min_max)
+    /// normalization method.
+    ///
+    /// Then calculate the standard devision. This reflects the degree of contrast (variation) in
+    /// that criterion. Criteria with a higher standard deviation are considered more important.
+    ///
+    /// $$ \sigma_j = \sqrt{\frac{\sum_{i=1}^m (x_{ij} - x_j)^2}{m}} \quad \text{for} \quad j=1, \ldots, n $$
+    ///
+    /// where $x_{ij}$ is the $i$th element of the alternative (row) and $j$th elements of the
+    /// criterion (column) with $m$ alternatives and $n$ criteria.
+    ///
+    /// Next, compute the distance correlation between the criteria:
+    ///
+    /// $$ dCor(c_j, c_{j^\prime}) = \frac{dCov(c_j, c_{j^\prime})}{\sqrt{dVar(c_j)dVar(c_{j^\prime})}} $$
+    ///
+    /// where $dCov(c_j, c_{j^\prime})$ is the distance covariance between criteria $c_j$ and
+    /// $c_{j^\prime}$, $dVar(c_j) = dCov(c_j, c_j)$ is the distance variance of criterion $c_j$,
+    /// and $dVar(c_{j^\prime}) = dCov(c_{j^\prime}, c_{j^\prime})$ is the distance variance of
+    /// $c_{j^\prime}$.
+    ///
+    /// Next, compute the information content using both contrast intesity (standard devision) and
+    /// its relationship with the other criteria (correlation):
+    ///
+    /// $$ I_j = \sigma_j \sum_{j^\prime=1}^n \left(1 - dCor(c_j, c_{j^\prime})\right) $$
+    ///
+    /// Finally, determine the objective weights $w_j$ for criteria $c_j$ as:
+    ///
+    /// $$ w_j = \frac{I_j}{\sum_{j^\prime=1}^n I_{j^\prime}} $$
+    ///
+    /// # Returns
+    ///
+    /// * `Result<DVector<f64>, WeightingError>` - A vector of weights for each criterion if
+    ///   successful.
+    ///
+    /// # Errors
+    ///
+    /// * [`WeightingError::EmptyMatrix`] - If the decision matrix is empty.
+    fn weight_dcritic(&self) -> Result<DVector<f64>, WeightingError>;
 
     /// A weighting method that assigns equal weights to all criteria in the decision matrix.
     ///
@@ -539,6 +592,26 @@ impl Weight for DMatrix<f64> {
         let correlation_information =
             &column_stds.component_mul(&pearson_correlation.map(|x| 1.0 - x).row_sum());
         let correlation_information_sum = correlation_information.sum();
+        let weights = DVector::from_column_slice(
+            (correlation_information / correlation_information_sum).as_slice(),
+        );
+
+        Ok(weights)
+    }
+
+    fn weight_dcritic(&self) -> Result<DVector<f64>, WeightingError> {
+        if self.is_empty() {
+            return Err(WeightingError::EmptyMatrix);
+        }
+
+        let column_stds = self.row_variance().map(f64::sqrt);
+
+        let distance_correlation = self.distance_correlation();
+
+        let correlation_information =
+            &column_stds.component_mul(&distance_correlation.map(|x| 1.0 - x).row_sum());
+        let correlation_information_sum = correlation_information.sum();
+
         let weights = DVector::from_column_slice(
             (correlation_information / correlation_information_sum).as_slice(),
         );
