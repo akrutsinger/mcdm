@@ -18,6 +18,20 @@ pub trait Correlate {
     ///
     /// A 2-dimensional distance correlation matrix of type `DMatrix<f64>`.
     fn distance_correlation(&self) -> DMatrix<f64>;
+
+    /// Calculate the Pearson correlation matrix
+    ///
+    /// The Pearson correlation matrix is calculated as:
+    ///
+    /// $$ r_{jk} = \frac{\sum_{i=1}^m (x_{ij} - x_j)(x_{ik} - x_k)}{\sqrt{\sum_{i=1}^m (x_{ij} - x_j)^2}\sqrt{\sum_{i=1}^m (x_{jk} - x_k)^2}} $$
+    ///
+    /// where $x_{ij}$ is the $i$th element of the row and $j$th elements of the column with $m$
+    /// rows and $n$ columns.
+    ///
+    /// # Returns
+    ///
+    /// A 2-dimensional Pearson correlation matrix of type `DMatrix<f64>`.
+    fn pearson_correlation(&self) -> DMatrix<f64>;
 }
 
 impl Correlate for DMatrix<f64> {
@@ -42,6 +56,21 @@ impl Correlate for DMatrix<f64> {
         }
 
         corr_matrix
+    }
+
+    fn pearson_correlation(&self) -> DMatrix<f64> {
+        let column_means = self.row_mean();
+        let column_stds = self.row_variance().map(f64::sqrt);
+
+        let mut normalized_matrix = self.clone();
+        for j in 0..self.ncols() {
+            let mut col = normalized_matrix.column_mut(j);
+            for x in col.iter_mut() {
+                *x = (*x - column_means[j]) / column_stds[j];
+            }
+        }
+
+        normalized_matrix.transpose() * &normalized_matrix / self.nrows() as f64
     }
 }
 

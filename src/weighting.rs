@@ -176,7 +176,8 @@ pub trait Weight {
     /// where $x_{ij}$ is the $i$th element of the alternative (row) and $j$th elements of the
     /// criterion (column) with $m$ alternatives and $n$ criteria.
     ///
-    /// Next, compute the pearson correlation between the criteria:
+    /// Next, calculate the [Pearson correlation](Correlate::pearson_correlation) between the
+    /// criteria:
     ///
     /// $$ r_{jk} = \frac{\sum_{i=1}^m (x_{ij} - x_j)(x_{ik} - x_k)}{\sqrt{\sum_{i=1}^m (x_{ij} - x_j)^2}\sqrt{\sum_{i=1}^m (x_{jk} - x_k)^2}} $$
     ///
@@ -226,7 +227,8 @@ pub trait Weight {
     /// where $x_{ij}$ is the $i$th element of the alternative (row) and $j$th elements of the
     /// criterion (column) with $m$ alternatives and $n$ criteria.
     ///
-    /// Next, compute the distance correlation between the criteria:
+    /// Next, compute the [distance correlation](Correlate::distance_correlation) between the
+    /// criteria:
     ///
     /// $$ dCor(c_j, c_{j^\prime}) = \frac{dCov(c_j, c_{j^\prime})}{\sqrt{dVar(c_j)dVar(c_{j^\prime})}} $$
     ///
@@ -569,21 +571,9 @@ impl Weight for DMatrix<f64> {
             return Err(WeightingError::EmptyMatrix);
         }
 
-        let (num_alternatives, num_criteria) = self.shape();
-
-        let column_means = self.row_mean();
         let column_stds = self.row_variance().map(f64::sqrt);
 
-        let pearson_correlation = {
-            let mut normalized_matrix = self.clone();
-            for j in 0..num_criteria {
-                let mut col = normalized_matrix.column_mut(j);
-                for x in col.iter_mut() {
-                    *x = (*x - column_means[j]) / column_stds[j];
-                }
-            }
-            normalized_matrix.transpose() * &normalized_matrix / num_alternatives as f64
-        };
+        let pearson_correlation = self.pearson_correlation();
 
         let correlation_information =
             &column_stds.component_mul(&pearson_correlation.map(|x| 1.0 - x).row_sum());
