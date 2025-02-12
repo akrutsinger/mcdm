@@ -1,6 +1,6 @@
 //! Representations for the types of each criterion: either Cost or Profit.
 
-use crate::errors::ValidationError;
+use crate::ValidationError;
 use nalgebra::DVector;
 use std::convert::TryFrom;
 use std::ops::{Deref, DerefMut, Index, IndexMut};

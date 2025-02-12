@@ -90,9 +90,7 @@ mcdm = "*"
 Here’s an example demonstrating how to use the mcdm library for decision-making with the TOPSIS method:
 
 ```rust
-use mcdm::{
-    errors::McdmError, normalization::Normalize, ranking::Rank, weighting::Weight, CriteriaTypes,
-};
+use mcdm::{McdmError, Normalize, Rank, Weight, CriteriaTypes};
 use nalgebra::dmatrix;
 
 fn main() -> Result<(), McdmError> {

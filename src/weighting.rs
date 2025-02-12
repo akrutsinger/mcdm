@@ -1,7 +1,6 @@
 //! Methods for weighting a decision matrix.
 
-use crate::{errors::WeightingError, normalization::Normalize};
-use crate::{Correlate, CriteriaTypes};
+use crate::{Correlate, CriteriaTypes, Normalize, WeightingError};
 use nalgebra::{DMatrix, DVector};
 
 /// A trait for calculating weights in Multiple-Criteria Decision Making (MCDM) problems.
@@ -25,7 +24,7 @@ use nalgebra::{DMatrix, DVector};
 /// weighting scheme:
 ///
 /// ```rust
-/// use mcdm::weighting::Weight;
+/// use mcdm::Weight;
 /// use nalgebra::dmatrix;
 ///
 /// let decision_matrix = dmatrix![3.0, 4.0, 2.0; 1.0, 5.0, 3.0];
@@ -41,8 +40,8 @@ pub trait Weight {
     ///
     /// # Weight Calculation
     ///
-    /// Normalize the decision matrix using the [`Sum`](crate::normalization::Normalize::normalize_sum)
-    /// normalization method.
+    /// Normalize the decision matrix using the [`Sum`](Normalize::normalize_sum) normalization
+    /// method.
     ///
     /// Next, calculate the angle between the criterion's values and the mean of the criterion's
     /// values.
@@ -70,12 +69,11 @@ pub trait Weight {
     /// method.
     ///
     /// The CILOS method expectst the decision matrix to be normalized using the
-    /// [`Sum`](crate::normalization::Normalize::normalize_sum) normalization method. The CILOS
-    /// method assigns weights to criteria based on their impact loss, where the importance of
-    /// criterion is determined by how much the overall decision performance would decrease if that
-    /// criterion were removed. This method quantifies the significance of each decision criterion
-    /// by analyzing its contribution to decision-making, ensuring that more influencial criteria
-    /// receive higher weights.
+    /// [`Sum`](Normalize::normalize_sum) normalization method. The CILOS method assigns weights to
+    /// criteria based on their impact loss, where the importance of criterion is determined by how
+    /// much the overall decision performance would decrease if that criterion were removed. This
+    /// method quantifies the significance of each decision criterion by analyzing its contribution
+    /// to decision-making, ensuring that more influencial criteria receive higher weights.
     ///
     /// # Weight Calculation
     ///
@@ -167,7 +165,7 @@ pub trait Weight {
     ///
     /// # Weight Calculation
     ///
-    /// Normalize the decision matrix using the [`MinMax`](crate::normalization::Normalize::normalize_min_max)
+    /// Normalize the decision matrix using the [`MinMax`](Normalize::normalize_min_max)
     /// normalization method.
     ///
     /// Then calculate the standard devision. This reflects the degree of contrast (variation) in
@@ -217,7 +215,7 @@ pub trait Weight {
     ///
     /// # Weight Calculation
     ///
-    /// Normalize the decision matrix using the [`MinMax`](crate::normalization::Normalize::normalize_min_max)
+    /// Normalize the decision matrix using the [`MinMax`](Normalize::normalize_min_max)
     /// normalization method.
     ///
     /// Then calculate the standard devision. This reflects the degree of contrast (variation) in
@@ -286,8 +284,8 @@ pub trait Weight {
     ///
     /// # Weight Calculation
     ///
-    /// Normalize the decision matrix using the [`Sum`](crate::normalization::Normalize::normalize_sum)
-    /// normalization method.
+    /// Normalize the decision matrix using the [`Sum`](Normalize::normalize_sum) normalization
+    /// method.
     ///
     /// Each criterion (column) in the normalized matrix is evaluated for its entropy. If any value
     /// in a column is zero, the entropy for that column is set to zero. Otherwise, the entropy is
@@ -386,9 +384,9 @@ pub trait Weight {
     ///
     /// # Weight Calculation
     ///
-    /// Normalize the decision matrix using the [`Linear`](crate::normalization::Normalize::normalize_linear)
-    /// method. When passing the `CriteriaTypes` to the `Linear` normalization method, you must
-    /// switch the criteria types so each cost becomes a profit and each profit becomes a cost.
+    /// Normalize the decision matrix using the [`Linear`](Normalize::normalize_linear) method. When
+    /// passing the `CriteriaTypes` to the `Linear` normalization method, you must switch the
+    /// criteria types so each cost becomes a profit and each profit becomes a cost.
     ///
     /// The MEREC weighting method is based on the following formula:
     ///
@@ -422,9 +420,7 @@ pub trait Weight {
     /// # Example
     ///
     /// ```rust
-    /// use mcdm::normalization::Normalize;
-    /// use mcdm::weighting::Weight;
-    /// use mcdm::CriteriaTypes;
+    /// use mcdm::{CriteriaTypes, Normalize, Weight};
     /// use nalgebra::dmatrix;
     ///
     /// let matrix = dmatrix![0.2, 0.8; 0.5, 0.5; 0.9, 0.1];
@@ -469,7 +465,7 @@ pub trait Weight {
     ///
     /// # Weight Calculation
     ///
-    /// Normalize the decision matrix using the [`MinMax`](crate::normalization::Normalize::normalize_min_max)
+    /// Normalize the decision matrix using the [`MinMax`](Normalize::normalize_min_max)
     /// normalization method.
     ///
     /// Then calculate the variance measure for all of the criteria using:

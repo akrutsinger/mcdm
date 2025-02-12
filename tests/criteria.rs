@@ -1,7 +1,5 @@
 mod criteria_type_tests {
-    use mcdm::errors::McdmError;
-    use mcdm::errors::ValidationError;
-    use mcdm::{CriteriaTypes, CriterionType};
+    use mcdm::{CriteriaTypes, CriterionType, McdmError, ValidationError};
 
     #[test]
     fn test_from_valid_slice() -> Result<(), McdmError> {

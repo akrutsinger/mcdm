@@ -1,6 +1,5 @@
 mod bounds_validation_tests {
-    use mcdm::errors::ValidationError;
-    use mcdm::validation::*;
+    use mcdm::{MatrixValidate, ValidationError, VectorValidate};
     use nalgebra::{DMatrix, DVector};
 
     #[test]

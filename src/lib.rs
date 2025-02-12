@@ -5,9 +5,7 @@
 //! # Example
 //!
 //! ```rust
-//! use mcdm::{
-//!     errors::McdmError, ranking::Rank, normalization::Normalize, weighting::Weight, CriteriaTypes,
-//! };
+//! use mcdm::{McdmError, Rank, Normalize, Weight, CriteriaTypes};
 //! use nalgebra::dmatrix;
 //!
 //! fn main() -> Result<(), McdmError> {
@@ -45,8 +43,11 @@ pub mod ranking;
 pub mod validation;
 pub mod weighting;
 
-pub use correlation::*;
-pub use criteria::{CriteriaTypes, CriterionType};
-pub use dmatrix_ext::DMatrixExt;
-pub use errors::ValidationError;
-pub use validation::{MatrixValidate, VectorValidate};
+pub use crate::correlation::*;
+pub use crate::criteria::*;
+pub use crate::dmatrix_ext::*;
+pub use crate::errors::*;
+pub use crate::normalization::*;
+pub use crate::ranking::*;
+pub use crate::validation::*;
+pub use crate::weighting::*;

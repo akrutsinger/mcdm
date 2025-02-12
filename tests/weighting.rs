@@ -1,8 +1,5 @@
 use approx::assert_relative_eq;
-use mcdm::errors::McdmError;
-use mcdm::normalization::Normalize;
-use mcdm::weighting::Weight;
-use mcdm::CriteriaTypes;
+use mcdm::{CriteriaTypes, McdmError, Normalize, Weight};
 use nalgebra::{dmatrix, dvector};
 
 mod angular_tests {

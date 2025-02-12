@@ -1,8 +1,6 @@
 //! Normalization methods for normalizing a decision matrix.
 
-use crate::errors::NormalizationError;
-use crate::MatrixValidate;
-use crate::{CriteriaTypes, CriterionType};
+use crate::{CriteriaTypes, CriterionType, MatrixValidate, NormalizationError};
 use nalgebra::{DMatrix, DVector};
 
 /// A trait for normalizing decision matrices in Multiple-Criteria Decision Making (MCDM) problems.
@@ -24,8 +22,7 @@ use nalgebra::{DMatrix, DVector};
 ///
 /// ```rust
 /// use approx::assert_relative_eq;
-/// use mcdm::normalization::Normalize;
-/// use mcdm::CriteriaTypes;
+/// use mcdm::{CriteriaTypes, Normalize};
 /// use nalgebra::dmatrix;
 ///
 /// let decision_matrix = dmatrix![

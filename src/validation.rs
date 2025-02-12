@@ -1,5 +1,5 @@
 //! Validation methods for bounded arrays and vectors.
-use crate::errors::ValidationError;
+use crate::ValidationError;
 
 use nalgebra::{DMatrix, DVector};
 

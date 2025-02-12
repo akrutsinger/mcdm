@@ -1,8 +1,5 @@
 use approx::assert_relative_eq;
-use mcdm::errors::McdmError;
-use mcdm::normalization::Normalize;
-use mcdm::ranking::Rank;
-use mcdm::CriteriaTypes;
+use mcdm::{CriteriaTypes, McdmError, Normalize, Rank};
 use nalgebra::{dmatrix, dvector};
 
 mod aras_tests {

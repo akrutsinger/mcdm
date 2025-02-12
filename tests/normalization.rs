@@ -1,5 +1,5 @@
 use approx::assert_relative_eq;
-use mcdm::{errors::McdmError, normalization::Normalize, CriteriaTypes};
+use mcdm::{CriteriaTypes, McdmError, Normalize};
 use nalgebra::{dmatrix, DMatrix};
 
 mod enhanced_accuracy_tests {

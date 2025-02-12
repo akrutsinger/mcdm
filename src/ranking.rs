@@ -1,10 +1,6 @@
 //! Techniques for ranking alternatives.
 
-use crate::errors::RankingError;
-use crate::normalization::Normalize;
-use crate::DMatrixExt;
-use crate::MatrixValidate;
-use crate::{CriteriaTypes, CriterionType};
+use crate::{CriteriaTypes, CriterionType, DMatrixExt, MatrixValidate, Normalize, RankingError};
 use nalgebra::{DMatrix, DVector};
 
 /// A trait for ranking alternatives in Multiple-Criteria Decision Making (MCDM).
@@ -15,16 +11,14 @@ use nalgebra::{DMatrix, DVector};
 /// importance of each criterion as given by the `weights` array.
 ///
 /// Higher preference values indicate better alternatives. The specific ranking method used (such as
-/// [`TOPSIS`](crate::ranking::Rank::rank_topsis) or others) will depend on the implementation of
-/// this trait.
+/// [`TOPSIS`](Rank::rank_topsis) or others) will depend on the implementation of this trait.
 ///
 /// # Example
 ///
 /// Here’s an example of ranking alternatives using the [`Rank`] trait:
 ///
 /// ```rust
-/// use mcdm::ranking::Rank;
-/// use mcdm::CriteriaTypes;;
+/// use mcdm::{CriteriaTypes, Rank};
 /// use nalgebra::{dmatrix, dvector};
 ///
 /// let normalized_matrix = dmatrix![0.8, 0.6; 0.5, 0.9; 0.3, 0.7];
@@ -115,8 +109,7 @@ pub trait Rank {
     ///
     /// ```rust
     /// use approx::assert_relative_eq;
-    /// use mcdm::ranking::Rank;
-    /// use mcdm::CriteriaTypes;
+    /// use mcdm::{CriteriaTypes, Rank};
     /// use nalgebra::{dmatrix, dvector};
     ///
     /// let matrix = dmatrix![
@@ -192,9 +185,7 @@ pub trait Rank {
     ///
     /// ```rust
     /// use approx::assert_relative_eq;
-    /// use mcdm::ranking::Rank;
-    /// use mcdm::CriteriaTypes;
-    /// use mcdm::normalization::Normalize;
+    /// use mcdm::{CriteriaTypes, Normalize, Rank};
     /// use nalgebra::{dmatrix, dvector};
     ///
     /// let matrix = dmatrix![
@@ -272,9 +263,7 @@ pub trait Rank {
     ///
     /// ```rust
     /// use approx::assert_relative_eq;
-    /// use mcdm::ranking::Rank;
-    /// use mcdm::CriteriaTypes;;
-    /// use mcdm::normalization::Normalize;
+    /// use mcdm::{CriteriaTypes, Normalize, Rank};
     /// use nalgebra::{dmatrix, dvector};
     ///
     /// let matrix = dmatrix![
@@ -353,8 +342,7 @@ pub trait Rank {
     ///
     /// ```rust
     /// use approx::assert_relative_eq;
-    /// use mcdm::ranking::Rank;
-    /// use mcdm::CriteriaTypes;;
+    /// use mcdm::{CriteriaTypes, Rank};
     /// use nalgebra::{dmatrix, dvector};
     ///
     /// let matrix = dmatrix![
@@ -440,8 +428,7 @@ pub trait Rank {
     ///
     /// ```rust
     /// use approx::assert_relative_eq;
-    /// use mcdm::ranking::Rank;
-    /// use mcdm::CriteriaTypes;;
+    /// use mcdm::{CriteriaTypes, Rank};
     /// use nalgebra::{dmatrix, dvector};
     ///
     /// let matrix = dmatrix![
@@ -553,8 +540,7 @@ pub trait Rank {
     ///
     /// ```rust
     /// use approx::assert_relative_eq;
-    /// use mcdm::ranking::Rank;
-    /// use mcdm::CriteriaTypes;;
+    /// use mcdm::{CriteriaTypes, Rank};
     /// use nalgebra::{dmatrix, dvector};
     ///
     /// let matrix = dmatrix![
@@ -638,9 +624,7 @@ pub trait Rank {
     ///
     /// ```rust
     /// use approx::assert_relative_eq;
-    /// use mcdm::ranking::Rank;
-    /// use mcdm::CriteriaTypes;;
-    /// use mcdm::normalization::Normalize;
+    /// use mcdm::{CriteriaTypes, Normalize, Rank};
     /// use nalgebra::{dmatrix, dvector};
     ///
     /// let matrix = dmatrix![
@@ -751,9 +735,7 @@ pub trait Rank {
     ///
     /// ```rust
     /// use approx::assert_relative_eq;
-    /// use mcdm::ranking::Rank;
-    /// use mcdm::CriteriaTypes;;
-    /// use mcdm::normalization::Normalize;
+    /// use mcdm::{CriteriaTypes, Normalize, Rank};
     /// use nalgebra::{dmatrix, dvector};
     ///
     /// let matrix = dmatrix![
@@ -864,8 +846,7 @@ pub trait Rank {
     ///
     /// ```rust
     /// use approx::assert_relative_eq;
-    /// use mcdm::ranking::Rank;
-    /// use mcdm::CriteriaTypes;;
+    /// use mcdm::{CriteriaTypes, Rank};
     /// use nalgebra::{dmatrix, dvector};
     ///
     /// let matrix = dmatrix![
@@ -942,8 +923,7 @@ pub trait Rank {
     ///
     /// ```rust
     /// use approx::assert_relative_eq;
-    /// use mcdm::ranking::Rank;
-    /// use mcdm::CriteriaTypes;;
+    /// use mcdm::{CriteriaTypes, Rank};
     /// use nalgebra::{dmatrix, dvector};
     ///
     /// let matrix = dmatrix![
@@ -1013,8 +993,7 @@ pub trait Rank {
     ///
     /// ```rust
     /// use approx::assert_relative_eq;
-    /// use mcdm::ranking::Rank;
-    /// use mcdm::CriteriaTypes;;
+    /// use mcdm::{CriteriaTypes, Rank};
     /// use nalgebra::{dmatrix, dvector};
     ///
     /// let matrix = dmatrix![
@@ -1142,8 +1121,7 @@ pub trait Rank {
     ///
     /// ```rust
     /// use approx::assert_relative_eq;
-    /// use mcdm::ranking::Rank;
-    /// use mcdm::CriteriaTypes;;
+    /// use mcdm::{CriteriaTypes, Rank};
     /// use nalgebra::{dmatrix, dvector};
     ///
     /// let matrix = dmatrix![
@@ -1213,8 +1191,7 @@ pub trait Rank {
     ///
     /// ```rust
     /// use approx::assert_relative_eq;
-    /// use mcdm::ranking::Rank;
-    /// use mcdm::CriteriaTypes;;
+    /// use mcdm::{CriteriaTypes, Rank};
     /// use nalgebra::{dmatrix, dvector};
     ///
     /// let matrix = dmatrix![
@@ -1325,8 +1302,7 @@ pub trait Rank {
     ///
     /// ```rust
     /// use approx::assert_relative_eq;
-    /// use mcdm::ranking::Rank;
-    /// use mcdm::CriteriaTypes;;
+    /// use mcdm::{CriteriaTypes, Rank};
     /// use nalgebra::{dmatrix, dvector};
     ///
     /// let matrix = dmatrix![
@@ -1419,8 +1395,7 @@ pub trait Rank {
     ///
     /// ```rust
     /// use approx::assert_relative_eq;
-    /// use mcdm::ranking::Rank;
-    /// use mcdm::CriteriaTypes;;
+    /// use mcdm::{CriteriaTypes, Rank};
     /// use nalgebra::{dmatrix, dvector};
     ///
     /// let matrix = dmatrix![
@@ -1491,9 +1466,7 @@ pub trait Rank {
     ///
     /// ```rust
     /// use approx::assert_relative_eq;
-    /// use mcdm::ranking::Rank;
-    /// use mcdm::CriteriaTypes;;
-    /// use mcdm::normalization::Normalize;
+    /// use mcdm::{CriteriaTypes, Normalize, Rank};
     /// use nalgebra::{dmatrix, dvector};
     ///
     /// let matrix = dmatrix![
@@ -1557,9 +1530,7 @@ pub trait Rank {
     ///
     /// ```rust
     /// use approx::assert_relative_eq;
-    /// use mcdm::normalization::Normalize;
-    /// use mcdm::ranking::Rank;
-    /// use mcdm::CriteriaTypes;
+    /// use mcdm::{CriteriaTypes, Normalize, Rank};
     /// use nalgebra::{dmatrix, dvector};
     ///
     /// let matrix = dmatrix![
@@ -1616,9 +1587,7 @@ pub trait Rank {
     ///
     /// ```rust
     /// use approx::assert_relative_eq;
-    /// use mcdm::normalization::Normalize;
-    /// use mcdm::ranking::Rank;
-    /// use mcdm::CriteriaTypes;
+    /// use mcdm::{CriteriaTypes, Normalize, Rank};
     /// use nalgebra::{dmatrix, dvector};
     ///
     /// let matrix = dmatrix![
@@ -1670,8 +1639,7 @@ pub trait Rank {
     ///
     /// ```rust
     /// use approx::assert_relative_eq;
-    /// use mcdm::ranking::Rank;
-    /// use mcdm::CriteriaTypes;;
+    /// use mcdm::{CriteriaTypes, Rank};
     /// use nalgebra::{dmatrix, dvector};
     ///
     /// let matrix = dmatrix![0.2, 0.8; 0.5, 0.5; 0.9, 0.1];

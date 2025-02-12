@@ -1,6 +1,4 @@
-use mcdm::{
-    errors::McdmError, normalization::Normalize, ranking::Rank, weighting::Weight, CriteriaTypes,
-};
+use mcdm::{CriteriaTypes, McdmError, Normalize, Rank, Weight};
 use nalgebra::dmatrix;
 
 fn main() -> Result<(), McdmError> {

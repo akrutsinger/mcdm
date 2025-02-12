@@ -1,6 +1,6 @@
 //! Extensions for the `DMatrix` type from the `nalgebra` crate.
 
-use crate::errors::ValidationError;
+use crate::ValidationError;
 use nalgebra::{DMatrix, DVector};
 
 pub trait DMatrixExt {
