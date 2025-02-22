@@ -1696,7 +1696,7 @@ impl Rank for DMatrix<f64> {
             return Err(RankingError::EmptyMatrix);
         }
 
-        let num_criteria = self.ncols();
+        let (num_alternatives, num_criteria) = self.shape();
 
         if weights.len() != num_criteria {
             return Err(RankingError::DimensionMismatch);
@@ -1714,23 +1714,21 @@ impl Rank for DMatrix<f64> {
         };
 
         // Vector of S: sum of weighted rows
-        let s = self
-            .row_iter()
-            .map(|row| row.dot(&weights.transpose()))
-            .collect::<Vec<f64>>();
-        let s = DVector::from_vec(s);
+        let s = DVector::from_iterator(
+            num_alternatives,
+            self.row_iter().map(|row| row.dot(&weights.transpose())),
+        );
 
         // Vector of P: product of rows raised to the power of weights
-        let p = self
-            .row_iter()
-            .map(|row| {
+        let p = DVector::from_iterator(
+            num_alternatives,
+            self.row_iter().map(|row| {
                 row.iter()
                     .zip(weights.iter())
                     .map(|(&x, &w)| x.powf(w))
                     .sum::<f64>()
-            })
-            .collect::<Vec<f64>>();
-        let p = DVector::from_vec(p);
+            }),
+        );
 
         // Calculate score strategies
         let s_min = s.min();
@@ -1763,34 +1761,32 @@ impl Rank for DMatrix<f64> {
         let weighted_matrix = self.apply_column_weights(weights)?;
 
         // Compute the Negative Ideal Solution (NIS)
-        let nis = weighted_matrix
-            .column_iter()
-            .map(|col| col.min())
-            .collect::<Vec<f64>>();
-        let nis = DVector::from_vec(nis).transpose();
+        let nis = DVector::from_iterator(
+            num_criteria,
+            weighted_matrix.column_iter().map(|col| col.min()),
+        )
+        .transpose();
 
-        let euclidean_distances = weighted_matrix
-            .row_iter()
-            .map(|row| {
+        let euclidean_distances = DVector::from_iterator(
+            num_alternatives,
+            weighted_matrix.row_iter().map(|row| {
                 row.iter()
                     .zip(nis.iter())
                     .map(|(&x, &ni)| (x - ni).powi(2))
                     .sum::<f64>()
                     .sqrt()
-            })
-            .collect::<Vec<f64>>();
-        let taxicab_distances = weighted_matrix
-            .row_iter()
-            .map(|row| {
+            }),
+        );
+
+        let taxicab_distances = DVector::from_iterator(
+            num_alternatives,
+            weighted_matrix.row_iter().map(|row| {
                 row.iter()
                     .zip(nis.iter())
                     .map(|(&x, &ni)| (x - ni).abs())
                     .sum::<f64>()
-            })
-            .collect::<Vec<f64>>();
-
-        let euclidean_distances = DVector::from_vec(euclidean_distances);
-        let taxicab_distances = DVector::from_vec(taxicab_distances);
+            }),
+        );
 
         let mut assessment_matrix = DMatrix::zeros(num_alternatives, num_alternatives);
 
@@ -1935,7 +1931,9 @@ impl Rank for DMatrix<f64> {
             return Err(RankingError::EmptyMatrix);
         }
 
-        if criteria_types.len() != self.ncols() || weights.len() != self.ncols() {
+        let num_criteria = self.ncols();
+
+        if criteria_types.len() != num_criteria || weights.len() != num_criteria {
             return Err(RankingError::DimensionMismatch);
         }
 
@@ -1971,17 +1969,17 @@ impl Rank for DMatrix<f64> {
         }
 
         // Compute the Positive Ideal Solution (PIS) and Negative Ideal Solution (NIS)
-        let pis = value_matrix
-            .column_iter()
-            .map(|col| col.max())
-            .collect::<Vec<f64>>();
-        let nis = value_matrix
-            .column_iter()
-            .map(|col| col.min())
-            .collect::<Vec<f64>>();
+        let pis = DVector::from_iterator(
+            value_matrix.ncols(),
+            value_matrix.column_iter().map(|col| col.max()),
+        )
+        .transpose();
 
-        let pis = DVector::from_vec(pis).transpose();
-        let nis = DVector::from_vec(nis).transpose();
+        let nis = DVector::from_iterator(
+            value_matrix.ncols(),
+            value_matrix.column_iter().map(|col| col.min()),
+        )
+        .transpose();
 
         // Calculate separation measures
         let mut s_plus: DVector<f64> = DVector::zeros(value_matrix.nrows());
@@ -2014,16 +2012,15 @@ impl Rank for DMatrix<f64> {
         let weighted_matrix = self.map(|x| x + 1.0).apply_column_weights(weights)?;
 
         // Border approximation area matrix
-        let g = weighted_matrix
-            .column_iter()
-            .map(|col| {
+        let g = DVector::from_iterator(
+            num_criteria,
+            weighted_matrix.column_iter().map(|col| {
                 col.iter()
                     .product::<f64>()
                     .powf(1.0 / num_alternatives as f64)
-            })
-            .collect::<Vec<f64>>();
-
-        let g = DVector::from_column_slice(&g).transpose();
+            }),
+        )
+        .transpose();
 
         // Distance border approximation area
         let mut q = DMatrix::zeros(num_alternatives, num_criteria);
@@ -2033,7 +2030,7 @@ impl Rank for DMatrix<f64> {
             }
         }
 
-        let ranking = q.row_iter().map(|row| row.sum()).collect::<Vec<f64>>();
+        let ranking = DVector::from_iterator(q.nrows(), q.row_iter().map(|row| row.sum()));
 
         Ok(DVector::from(ranking))
     }
@@ -2082,10 +2079,11 @@ impl Rank for DMatrix<f64> {
             return Err(RankingError::DimensionMismatch);
         }
 
-        let max_criteria_values = self.column_iter().map(|x| x.max()).collect::<Vec<f64>>();
-        let min_criteria_values = self.column_iter().map(|x| x.min()).collect::<Vec<f64>>();
-        let max_criteria_values = DVector::from_vec(max_criteria_values);
-        let min_criteria_values = DVector::from_vec(min_criteria_values);
+        let max_criteria_values =
+            DVector::from_iterator(num_criteria, self.column_iter().map(|x| x.max()));
+
+        let min_criteria_values =
+            DVector::from_iterator(num_criteria, self.column_iter().map(|x| x.min()));
 
         let mut exmatrix = DMatrix::zeros(num_alternatives + 2, num_criteria);
         exmatrix.rows_mut(0, num_alternatives).copy_from(self);
@@ -2236,23 +2234,38 @@ impl Rank for DMatrix<f64> {
 
         let mut pis_matrix = weighted_matrix.clone();
         for (j, column) in weighted_matrix.column_iter().enumerate() {
-            let mut column_vec: Vec<f64> = column.iter().copied().collect();
+            let mut sorted_column = DVector::from_iterator(column.len(), column.iter().copied());
             match criteria_types[j] {
                 CriterionType::Profit => {
-                    column_vec
-                        .sort_by(|a, b| b.partial_cmp(a).unwrap_or(core::cmp::Ordering::Equal));
-                    // Descending order
+                    // Sort descending for profit criteria using selection sort
+                    for i in 0..sorted_column.len() {
+                        let mut max_idx = i;
+                        for k in (i + 1)..sorted_column.len() {
+                            if sorted_column[k] > sorted_column[max_idx] {
+                                max_idx = k;
+                            }
+                        }
+                        if max_idx != i {
+                            sorted_column.swap_rows(i, max_idx);
+                        }
+                    }
                 }
                 CriterionType::Cost => {
-                    column_vec
-                        .sort_by(|a, b| a.partial_cmp(b).unwrap_or(core::cmp::Ordering::Equal));
-                    // Ascending order
+                    // Sort ascending for cost criteria using selection sort
+                    for i in 0..sorted_column.len() {
+                        let mut min_idx = i;
+                        for k in (i + 1)..sorted_column.len() {
+                            if sorted_column[k] < sorted_column[min_idx] {
+                                min_idx = k;
+                            }
+                        }
+                        if min_idx != i {
+                            sorted_column.swap_rows(i, min_idx);
+                        }
+                    }
                 }
             }
-
-            pis_matrix
-                .column_mut(j)
-                .copy_from(&DVector::from_vec(column_vec));
+            pis_matrix.set_column(j, &sorted_column);
         }
 
         let average_pis = pis_matrix.row_mean();
@@ -2400,12 +2413,12 @@ impl Rank for DMatrix<f64> {
             variation_to_nis[i] = row.map(|x| x.powi(2)).sum().sqrt();
         }
 
-        let variation_to_ideal = DVector::from_vec(
+        let variation_to_ideal = DVector::from_iterator(
+            num_alternatives,
             variation_to_nis
                 .iter()
                 .zip(&variation_to_pis)
-                .map(|(&dm_val, &dp_val)| dm_val / (dm_val + dp_val))
-                .collect::<Vec<f64>>(),
+                .map(|(&dm_val, &dp_val)| dm_val / (dm_val + dp_val)),
         );
 
         Ok(variation_to_ideal)
@@ -2462,17 +2475,16 @@ impl Rank for DMatrix<f64> {
         let weighted_matrix = self.component_mul(&broadcasted_weights);
 
         // Compute the Positive Ideal Solution (PIS) and Negative Ideal Solution (NIS)
-        let pis = weighted_matrix
-            .column_iter()
-            .map(|col| col.max())
-            .collect::<Vec<f64>>();
-        let nis = weighted_matrix
-            .column_iter()
-            .map(|col| col.min())
-            .collect::<Vec<f64>>();
-
-        let pis = DVector::from_vec(pis).transpose();
-        let nis = DVector::from_vec(nis).transpose();
+        let pis = DVector::from_iterator(
+            num_criteria,
+            weighted_matrix.column_iter().map(|col| col.max()),
+        )
+        .transpose();
+        let nis = DVector::from_iterator(
+            num_criteria,
+            weighted_matrix.column_iter().map(|col| col.min()),
+        )
+        .transpose();
 
         // Calculate the distance to PIS (Dp) and NIS (Dm)
         let mut distance_to_pis = DVector::zeros(num_alternatives);
@@ -2486,12 +2498,12 @@ impl Rank for DMatrix<f64> {
             distance_to_nis[i] = dn;
         }
 
-        let closeness_to_ideal = DVector::from_vec(
+        let closeness_to_ideal = DVector::from_iterator(
+            num_alternatives,
             distance_to_pis
                 .iter()
                 .zip(&distance_to_nis)
-                .map(|(&dm_val, &dp_val)| dm_val / (dm_val + dp_val))
-                .collect::<Vec<f64>>(),
+                .map(|(&dm_val, &dp_val)| dm_val / (dm_val + dp_val)),
         );
 
         Ok(closeness_to_ideal)
@@ -2568,9 +2580,5 @@ impl Rank for DMatrix<f64> {
 }
 
 fn psi(x: f64, tau: f64) -> f64 {
-    if x.abs() >= tau {
-        1.0
-    } else {
-        0.0
-    }
+    if x.abs() >= tau { 1.0 } else { 0.0 }
 }
