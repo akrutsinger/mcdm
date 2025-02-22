@@ -1,9 +1,9 @@
 //! Representations for the types of each criterion: either Cost or Profit.
 
 use crate::ValidationError;
+use core::convert::TryFrom;
+use core::ops::{Deref, DerefMut, Index, IndexMut};
 use nalgebra::DVector;
-use std::convert::TryFrom;
-use std::ops::{Deref, DerefMut, Index, IndexMut};
 
 /// Enum to represent the type of each criterion: either Cost or Profit.
 #[derive(Clone, Debug, PartialEq, Eq)]

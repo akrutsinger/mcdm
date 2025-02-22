@@ -1,7 +1,7 @@
 //! Methods for weighting a decision matrix.
 
 use crate::{Correlate, CriteriaTypes, Normalize, WeightingError};
-use nalgebra::{DMatrix, DVector};
+use nalgebra::{ComplexField, DMatrix, DVector};
 
 /// A trait for calculating weights in Multiple-Criteria Decision Making (MCDM) problems.
 ///
@@ -571,7 +571,7 @@ impl Weight for DMatrix<f64> {
             return Err(WeightingError::EmptyMatrix);
         }
 
-        let column_stds = self.row_variance().map(f64::sqrt);
+        let column_stds = self.row_variance().map(ComplexField::sqrt);
 
         let pearson_correlation = self.pearson_correlation();
 
@@ -590,7 +590,7 @@ impl Weight for DMatrix<f64> {
             return Err(WeightingError::EmptyMatrix);
         }
 
-        let column_stds = self.row_variance().map(f64::sqrt);
+        let column_stds = self.row_variance().map(ComplexField::sqrt);
 
         let distance_correlation = self.distance_correlation();
 
@@ -629,12 +629,16 @@ impl Weight for DMatrix<f64> {
 
         // Iterate over all criteria in the normalized matrix
         for (j, col) in self.column_iter().enumerate() {
-            let col_entropy: f64 = col.iter().filter(|&x| *x != 0.0).map(|&x| x * x.ln()).sum();
+            let col_entropy: f64 = col
+                .iter()
+                .filter(|&x| *x != 0.0)
+                .map(|&x| x * ComplexField::ln(x))
+                .sum();
 
             entropies[j] = col_entropy;
         }
 
-        let scale_factor = 1.0 / -(num_alternatives as f64).ln();
+        let scale_factor = 1.0 / -ComplexField::ln(num_alternatives as f64);
         entropies *= scale_factor;
         entropies.iter_mut().for_each(|x| *x = 1.0 - *x);
 
@@ -656,10 +660,15 @@ impl Weight for DMatrix<f64> {
 
             let numerator: f64 = column
                 .iter()
-                .map(|&x| column.iter().map(|&y| (x - y).abs()).sum::<f64>())
+                .map(|&x| {
+                    column
+                        .iter()
+                        .map(|&y| ComplexField::abs(x - y))
+                        .sum::<f64>()
+                })
                 .sum();
 
-            let denominator = 2.0 * (num_alternatives as f64).powi(2) * column_mean;
+            let denominator = 2.0 * ComplexField::powi(num_alternatives as f64, 2) * column_mean;
             weights[j] = numerator / denominator;
         }
 
@@ -709,8 +718,11 @@ impl Weight for DMatrix<f64> {
         let s = DVector::from_iterator(
             num_alternatives,
             self.row_iter().map(|row| {
-                let log_values = row.iter().map(|&x| x.ln().abs()).sum::<f64>();
-                (1.0 + log_values / num_criteria as f64).ln()
+                let log_values = row
+                    .iter()
+                    .map(|&x| ComplexField::abs(ComplexField::ln(x)))
+                    .sum::<f64>();
+                ComplexField::ln(1.0 + log_values / num_criteria as f64)
             }),
         );
 
@@ -720,8 +732,11 @@ impl Weight for DMatrix<f64> {
             let ex_nmatrix = self.clone().remove_column(j); // Remove column `j`
 
             for (i, row) in ex_nmatrix.row_iter().enumerate() {
-                let log_values = row.iter().map(|&x| x.ln().abs()).sum::<f64>();
-                s_prim[(i, j)] = (1.0 + log_values / num_criteria as f64).ln();
+                let log_values = row
+                    .iter()
+                    .map(|&x| ComplexField::abs(ComplexField::ln(x)))
+                    .sum::<f64>();
+                s_prim[(i, j)] = ComplexField::ln(1.0 + log_values / num_criteria as f64);
             }
         }
 
@@ -732,7 +747,7 @@ impl Weight for DMatrix<f64> {
                     .column(j)
                     .iter()
                     .zip(s.iter())
-                    .map(|(&s_prim_val, &s_val)| (s_prim_val - s_val).abs())
+                    .map(|(&s_prim_val, &s_val)| ComplexField::abs(s_prim_val - s_val))
                     .sum::<f64>()
             }),
         );
@@ -746,7 +761,7 @@ impl Weight for DMatrix<f64> {
             return Err(WeightingError::EmptyMatrix);
         }
 
-        let std = self.row_variance().map(f64::sqrt).transpose();
+        let std = self.row_variance().map(ComplexField::sqrt).transpose();
 
         // Sum of the standard deviations
         let std_sum = std.sum();

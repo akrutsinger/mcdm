@@ -1,7 +1,7 @@
 //! Techniques for ranking alternatives.
 
 use crate::{CriteriaTypes, CriterionType, DMatrixExt, MatrixValidate, Normalize, RankingError};
-use nalgebra::{DMatrix, DVector};
+use nalgebra::{ComplexField, DMatrix, DVector};
 
 /// A trait for ranking alternatives in Multiple-Criteria Decision Making (MCDM).
 ///
@@ -1725,7 +1725,7 @@ impl Rank for DMatrix<f64> {
             self.row_iter().map(|row| {
                 row.iter()
                     .zip(weights.iter())
-                    .map(|(&x, &w)| x.powf(w))
+                    .map(|(&x, &w)| ComplexField::powf(x, w))
                     .sum::<f64>()
             }),
         );
@@ -1741,7 +1741,8 @@ impl Rank for DMatrix<f64> {
         let ksi_c = (l * &s + (1.0 - l) * &p) / (l * s_max + (1.0 - l) * p_max);
 
         // Compute the performance score
-        let ksi = (ksi_a.component_mul(&ksi_b).component_mul(&ksi_c)).map(|x| x.powf(1.0 / 3.0))
+        let ksi = (ksi_a.component_mul(&ksi_b).component_mul(&ksi_c))
+            .map(|x| ComplexField::powf(x, 1.0 / 3.0))
             + 1.0 / 3.0 * (&ksi_a + &ksi_b + &ksi_c);
 
         Ok(ksi)
@@ -1770,11 +1771,12 @@ impl Rank for DMatrix<f64> {
         let euclidean_distances = DVector::from_iterator(
             num_alternatives,
             weighted_matrix.row_iter().map(|row| {
-                row.iter()
-                    .zip(nis.iter())
-                    .map(|(&x, &ni)| (x - ni).powi(2))
-                    .sum::<f64>()
-                    .sqrt()
+                ComplexField::sqrt(
+                    row.iter()
+                        .zip(nis.iter())
+                        .map(|(&x, &ni)| ComplexField::powi(x - ni, 2))
+                        .sum::<f64>(),
+                )
             }),
         );
 
@@ -1783,7 +1785,7 @@ impl Rank for DMatrix<f64> {
             weighted_matrix.row_iter().map(|row| {
                 row.iter()
                     .zip(nis.iter())
-                    .map(|(&x, &ni)| (x - ni).abs())
+                    .map(|(&x, &ni)| ComplexField::abs(x - ni))
                     .sum::<f64>()
             }),
         );
@@ -1952,16 +1954,16 @@ impl Rank for DMatrix<f64> {
                 value_matrix[(i, j)] = match criteria_types[j] {
                     CriterionType::Profit => {
                         if *value > reference_point[j] {
-                            (value - reference_point[j]).powf(alpha)
+                            ComplexField::powf(value - reference_point[j], alpha)
                         } else {
-                            (-1.0 * lambda) * (reference_point[j] - value).powf(alpha)
+                            (-1.0 * lambda) * ComplexField::powf(reference_point[j] - value, alpha)
                         }
                     }
                     CriterionType::Cost => {
                         if *value < reference_point[j] {
-                            (reference_point[j] - value).powf(alpha)
+                            ComplexField::powf(reference_point[j] - value, alpha)
                         } else {
-                            (-1.0 * lambda) * (value - reference_point[j]).powf(alpha)
+                            (-1.0 * lambda) * ComplexField::powf(value - reference_point[j], alpha)
                         }
                     }
                 }
@@ -1987,8 +1989,8 @@ impl Rank for DMatrix<f64> {
 
         for (i, row) in value_matrix.row_iter().enumerate() {
             for (j, &value) in row.iter().enumerate() {
-                s_plus[i] += weights[j] * (value - pis[j]).abs();
-                s_minus[i] += weights[j] * (value - nis[j]).abs();
+                s_plus[i] += weights[j] * ComplexField::abs(value - pis[j]);
+                s_minus[i] += weights[j] * ComplexField::abs(value - nis[j]);
             }
         }
 
@@ -2015,9 +2017,7 @@ impl Rank for DMatrix<f64> {
         let g = DVector::from_iterator(
             num_criteria,
             weighted_matrix.column_iter().map(|col| {
-                col.iter()
-                    .product::<f64>()
-                    .powf(1.0 / num_alternatives as f64)
+                ComplexField::powf(col.iter().product::<f64>(), 1.0 / num_alternatives as f64)
             }),
         )
         .transpose();
@@ -2271,17 +2271,22 @@ impl Rank for DMatrix<f64> {
         let average_pis = pis_matrix.row_mean();
 
         let si = DMatrix::from_fn(num_alternatives, num_alternatives, |i, j| {
-            (weighted_matrix.row(i) - pis_matrix.row(j))
-                .map(|x| x.powi(2))
-                .sum()
-                .sqrt()
+            ComplexField::sqrt(
+                (weighted_matrix.row(i) - pis_matrix.row(j))
+                    .map(|x| ComplexField::powi(x, 2))
+                    .sum(),
+            )
         });
 
         let si_average = DVector::from_iterator(
             num_alternatives,
-            weighted_matrix
-                .row_iter()
-                .map(|row| (row - average_pis.clone()).map(|x| x.powi(2)).sum().sqrt()),
+            weighted_matrix.row_iter().map(|row| {
+                ComplexField::sqrt(
+                    (row - average_pis.clone())
+                        .map(|x| ComplexField::powi(x, 2))
+                        .sum(),
+                )
+            }),
         );
 
         let m = num_alternatives;
@@ -2323,7 +2328,7 @@ impl Rank for DMatrix<f64> {
                 m,
                 ri.iter()
                     .zip(si_average.iter())
-                    .map(|(r, s)| 1.0 / (1.0 + r.powi(2)) + s),
+                    .map(|(r, s)| 1.0 / (1.0 + ComplexField::powi(*r, 2)) + s),
             )
         };
 
@@ -2373,7 +2378,7 @@ impl Rank for DMatrix<f64> {
         let spi_plus_2 = spi.add_scalar(2.0);
         let smi_plus_2 = smi.add_scalar(2.0);
         let ranking = spi_plus_2.zip_map(&smi_plus_2, |spi_elem, smi_elem| {
-            spi_elem.powf(1.0 / smi_elem)
+            ComplexField::powf(spi_elem, 1.0 / smi_elem)
         });
 
         Ok(ranking)
@@ -2409,8 +2414,12 @@ impl Rank for DMatrix<f64> {
         let mut variation_to_nis = DVector::zeros(num_alternatives);
 
         for (i, row) in weighted_normalized_matrix.row_iter().enumerate() {
-            variation_to_pis[i] = (row - weights.transpose()).map(|x| x.powi(2)).sum().sqrt();
-            variation_to_nis[i] = row.map(|x| x.powi(2)).sum().sqrt();
+            variation_to_pis[i] = ComplexField::sqrt(
+                (row - weights.transpose())
+                    .map(|x| ComplexField::powi(x, 2))
+                    .sum(),
+            );
+            variation_to_nis[i] = ComplexField::sqrt(row.map(|x| ComplexField::powi(x, 2)).sum());
         }
 
         let variation_to_ideal = DVector::from_iterator(
@@ -2491,10 +2500,10 @@ impl Rank for DMatrix<f64> {
         let mut distance_to_nis = DVector::zeros(num_alternatives);
 
         for (i, row) in weighted_matrix.row_iter().enumerate() {
-            let dp = (row - &pis).map(|x| x.powi(2)).sum().sqrt();
+            let dp = ComplexField::sqrt((row - &pis).map(|x| ComplexField::powi(x, 2)).sum());
             distance_to_pis[i] = dp;
 
-            let dn = (row - &nis).map(|x| x.powi(2)).sum().sqrt();
+            let dn = ComplexField::sqrt((row - &nis).map(|x| ComplexField::powi(x, 2)).sum());
             distance_to_nis[i] = dn;
         }
 
@@ -2557,7 +2566,7 @@ impl Rank for DMatrix<f64> {
         // NOTE: I'm sure there is an idiomatic way to do this, but I can't seem to figure it out.
         for (i, row) in self.row_iter().enumerate() {
             for (j, &value) in row.iter().enumerate() {
-                weighted_matrix[(i, j)] = value.powf(weights[j]);
+                weighted_matrix[(i, j)] = ComplexField::powf(value, weights[j]);
             }
         }
 
@@ -2580,5 +2589,9 @@ impl Rank for DMatrix<f64> {
 }
 
 fn psi(x: f64, tau: f64) -> f64 {
-    if x.abs() >= tau { 1.0 } else { 0.0 }
+    if ComplexField::abs(x) >= tau {
+        1.0
+    } else {
+        0.0
+    }
 }

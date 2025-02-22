@@ -1,6 +1,6 @@
 //! Correlation methods for the `DMatrix` type from the `nalgebra` crate.
 
-use nalgebra::DMatrix;
+use nalgebra::{ComplexField, DMatrix};
 
 pub trait Correlate {
     /// Calculate the distance correlation matrix
@@ -48,7 +48,8 @@ impl Correlate for DMatrix<f64> {
                 let dvar_y = distance_covariance(&xj, &xj);
 
                 if dvar_x > 0.0 && dvar_y > 0.0 {
-                    corr_matrix[(i, j)] = distance_covariance(&xi, &xj) / (dvar_x * dvar_y).sqrt();
+                    corr_matrix[(i, j)] =
+                        distance_covariance(&xi, &xj) / ComplexField::sqrt(dvar_x * dvar_y);
                 } else {
                     corr_matrix[(i, j)] = 0.0; // Handle cases where variance is zero
                 }
@@ -60,7 +61,7 @@ impl Correlate for DMatrix<f64> {
 
     fn pearson_correlation(&self) -> DMatrix<f64> {
         let column_means = self.row_mean();
-        let column_stds = self.row_variance().map(f64::sqrt);
+        let column_stds = self.row_variance().map(ComplexField::sqrt);
 
         let mut normalized_matrix = self.clone();
         for j in 0..self.ncols() {
@@ -110,5 +111,5 @@ fn distance_covariance(x: &DMatrix<f64>, y: &DMatrix<f64>) -> f64 {
 
     let m = x.nrows() as f64;
     let dcov2 = (ax.component_mul(&by)).sum() / (m * m);
-    dcov2.sqrt()
+    ComplexField::sqrt(dcov2)
 }

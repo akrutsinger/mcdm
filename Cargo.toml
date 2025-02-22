@@ -15,8 +15,8 @@ path = "src/lib.rs"
 
 [features]
 default = ["std"]
-std = []
-alloc = []
+std = ["nalgebra/std"]
+no_std =["nalgebra/libm", "nalgebra/alloc"]
 
 [dependencies]
 error_set = "0.8"
