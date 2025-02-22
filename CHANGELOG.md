@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - IDOCRIW weighting method.
 - D-CRITIC weighting method.
 - New `correlation` module for computing correlation coefficients of matrices.
+- Support for `#![no_std]`.
 
 ### Changed
 
@@ -25,6 +26,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Renamed `CriteriaTypes`'s `switch` function to `invert_types`. Naming is hard, hopefully this is a little more descriptive.
 - Renamed `DMatrixExt`'s `scale_columns` function to `apply_column_weights`.
 - Re-exported all traits from modules to improve ergonomic feel of using the library.
+- All dynamic allocations that used `Vec` now go straight into a DVector from an iterator. This allowed for the transition to `no_std`.
+- Instead of using the standard library's f64 ln(), sqrt(), powf(), etc., functions, switched to `nalgebra`'s `ComplexField`'s implementation of ln(), sqrt(), etc., to allow for `no_std` in the library.
+- Updated rust edition to 2024.
 
 ### Removed
 
