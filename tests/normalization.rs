@@ -1,6 +1,6 @@
 use approx::assert_relative_eq;
 use mcdm::{CriteriaTypes, McdmError, Normalize};
-use nalgebra::{dmatrix, DMatrix};
+use nalgebra::{DMatrix, dmatrix};
 
 mod enhanced_accuracy_tests {
     use super::*;

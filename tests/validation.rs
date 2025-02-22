@@ -30,9 +30,11 @@ mod bounds_validation_tests {
     fn test_is_reference_ideal_bounds_valid() {
         let reference_ideal = DMatrix::from_row_slice(3, 2, &[5.0, 7.0, 6.0, 8.0, 7.0, 9.0]);
         let bounds = DMatrix::from_row_slice(3, 2, &[0.0, 10.0, 5.0, 9.0, 6.9, 11.0]);
-        assert!(reference_ideal
-            .is_reference_ideal_bounds_valid(&bounds)
-            .is_ok());
+        assert!(
+            reference_ideal
+                .is_reference_ideal_bounds_valid(&bounds)
+                .is_ok()
+        );
     }
 
     #[test]
@@ -90,9 +92,11 @@ mod bounds_validation_tests {
     fn test_is_expected_solution_point_in_bounds() {
         let solution_point = DVector::from_vec(vec![5.0, 7.0, 6.0]);
         let bounds = DMatrix::from_row_slice(3, 2, &[0.0, 10.0, 1.0, 9.0, 2.0, 8.0]);
-        assert!(solution_point
-            .is_expected_solution_point_in_bounds(&bounds)
-            .is_ok());
+        assert!(
+            solution_point
+                .is_expected_solution_point_in_bounds(&bounds)
+                .is_ok()
+        );
     }
 
     #[test]

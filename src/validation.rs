@@ -44,7 +44,7 @@ pub trait MatrixValidate {
     /// * [`ValidationError::DimensionMismatch`] - If any element of the reference ideal matrix is
     ///   outside the specified bounds.
     fn is_reference_ideal_bounds_valid(&self, bounds: &DMatrix<f64>)
-        -> Result<(), ValidationError>;
+    -> Result<(), ValidationError>;
 
     /// Ensures that the decision matrix is within the specified bounds.
     ///
