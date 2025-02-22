@@ -34,6 +34,11 @@
 //!     Ok(())
 //! }
 //! ```
+#![no_std]
+
+#[cfg(any(test, feature = "std"))]
+extern crate std;
+
 pub mod correlation;
 pub mod criteria;
 pub mod dmatrix_ext;

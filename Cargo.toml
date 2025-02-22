@@ -20,7 +20,7 @@ no_std =["nalgebra/libm", "nalgebra/alloc"]
 
 [dependencies]
 error_set = "0.8"
-nalgebra = { version = "0.33", default-features = false, features = ["alloc", "libm", "macros"]  }
+nalgebra = { version = "0.33", default-features = false, features = ["macros"]  }
 
 [dev-dependencies]
 approx = "0.5"
