@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2025-02-22
+
 ### Added
 
 - More documentation. This includes more details in many of the `ranking`/`weighting`/`normalization` traits as well as documenting functions that were originally neglected from down right laziness.
