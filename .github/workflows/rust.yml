@@ -10,22 +10,14 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-    setup:
-        name: Setup Rust
-        runs-on: ubuntu-latest
-        steps:
-          - uses: actions/checkout@v4
-          - uses: dtolnay/rust-toolchain@stable
-            with:
-              components: rustfmt, clippy
-          - uses: Swatinem/rust-cache@v2
-
     check:
         name: Checks
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
-            - uses: Swatinem/rust-cache@v2
+            - uses: dtolnay/rust-toolchain@stable
+              with:
+                components: rustfmt, clippy
             - name: Check formatting
               run: cargo fmt --check
             - name: Run clippy
@@ -38,7 +30,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
-            - uses: Swatinem/rust-cache@v2
+            - uses: dtolnay/rust-toolchain@stable
             - name: Build (debug)
               run: cargo build --verbose
             - name: Build (release)
@@ -49,7 +41,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
-            - uses: Swatinem/rust-cache@v2
+            - uses: dtolnay/rust-toolchain@stable
             - name: Run tests (std)
               run: cargo test --verbose
             - name: Run tests (no_std)
