@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `MOOSRA` ranking method.
 
+### Changed
+
+- Tried to make the README more clear and provice more useful information.
+
 ## [0.4.0] - 2025-02-22
 
 ### Added
