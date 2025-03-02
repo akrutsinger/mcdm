@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `MOOSRA` ranking method.
+
 ## [0.4.0] - 2025-02-22
 
 ### Added
@@ -14,9 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - More documentation. This includes more details in many of the `ranking`/`weighting`/`normalization` traits as well as documenting functions that were originally neglected from down right laziness.
 - Ability for user to provide a preference value to the `COCOSO` ranking method. This value preferences which kind of scoring strategy the `COCOSO` ranking method uses.
 - Ability for user to provide a preference or `None` to the `ERVD` and `WASPAS` ranking methods. The the user provides `None`, the ranking methods default to the recommended default values.
-- CILOS weighting method. Adding this also required adding an additional error variant, `ValidationError::SingularMatrix`, in the event a certain matrix isn't a square matrix when it actually should be.
-- IDOCRIW weighting method.
-- D-CRITIC weighting method.
+- `CILOS` weighting method. Adding this also required adding an additional error variant, `ValidationError::SingularMatrix`, in the event a certain matrix isn't a square matrix when it actually should be.
+- `IDOCRIW` weighting method.
+- `D-CRITIC` weighting method.
 - New `correlation` module for computing correlation coefficients of matrices.
 - Support for `#![no_std]`.
 

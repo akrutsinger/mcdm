@@ -942,6 +942,83 @@ pub trait Rank {
         weights: &DVector<f64>,
     ) -> Result<DVector<f64>, RankingError>;
 
+    /// Ranks alternatives using the Multi-Objective Optimization on the basis of Simple Ratio
+    /// Analysis (MOOSRA) method.
+    ///
+    /// The MOOSRA ranking method expects an $m \times n$ unnormalized decision matrix. This method
+    /// ranks alternatives by optimizing multiple objectives, such as maximizing benefits and
+    /// minimizing costs.
+    ///
+    /// $$ X = [x_{ij}] =
+    /// \begin{bmatrix}
+    ///     x_{11} & x_{12} & \ldots & x_{1n} \\\\
+    ///     x_{21} & x_{22} & \ldots & x_{2n} \\\\
+    ///     \vdots & \vdots & \ddots & \vdots \\\\
+    ///     x_{m1} & x_{m2} & \ldots & x_{mn}
+    /// \end{bmatrix}
+    /// $$
+    ///
+    /// Next, treat all criteria types as profit and normalize the decision matrix using the
+    /// [`Vector`](Normalize::normalize_vector) method:
+    ///
+    /// $$ r_{ij} = \frac{x_{ij}}{\sqrt{\sum_{i=1}^m x^2_{ij}}} $$
+    ///
+    /// where $x_{ij}$ is the $i$th alternative (row) and $j$th criterion (column).
+    ///
+    /// Next, calculate the weighted matrix as:
+    ///
+    /// $$ v_{ij} = w_j \cdot r_{ij} $$
+    ///
+    /// Next, calculate the sums of the profit, $S_p$, and cost criteira, $S_c$:
+    ///
+    /// $$ S_p = \sum_{j=1}^n v_{ij} \quad \text{if } j \text{ is a profit criterion} $$
+    /// $$ S_c = \sum_{j=1}^n v_{ij} \quad \text{if } j \text{ is a cost criterion} $$
+    ///
+    /// Finally, calculate the composite score $y_i$ as:
+    ///
+    /// $$ y_i = S_p - S_c $$
+    ///
+    /// Alternatives with a higher $y_i$ value are more preferred.
+    ///
+    /// # Arguments
+    ///
+    /// * `criteria_types` - A [`CriteriaTypes`] indicating whether each criterion is a profit or
+    ///   cost.
+    /// * `weights` - A vector of weights representing the relative importance of each criterion.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<DVector<f64>, RankingError>` - A vector of preference values if successful.
+    ///
+    /// # Errors
+    ///
+    /// * [`RankingError::DimensionMismatch`] - If the number of criteria types or number of weights
+    ///   do not match the number of criteria.
+    /// * [`RankingError::EmptyMatrix`] - If the decision matrix is empty.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use approx::assert_relative_eq;
+    /// use mcdm::{CriteriaTypes, Rank};
+    /// use nalgebra::{dmatrix, dvector};
+    ///
+    /// let matrix = dmatrix![
+    ///     2.9, 2.31, 0.56, 1.89;
+    ///     1.2, 1.34, 0.21, 2.48;
+    ///     0.3, 2.48, 1.75, 1.69
+    /// ];
+    /// let weights = dvector![0.25, 0.25, 0.25, 0.25];
+    /// let criteria_types = CriteriaTypes::from_slice(&[-1, 1, 1, -1]).unwrap();
+    /// let ranking = matrix.rank_moosra(&criteria_types, &weights).unwrap();
+    /// assert_relative_eq!(ranking, dvector![0.64474939, 0.44563889, 2.84564449], epsilon = 1e-5);
+    /// ```
+    fn rank_moosra(
+        &self,
+        criteria_types: &CriteriaTypes,
+        weights: &DVector<f64>,
+    ) -> Result<DVector<f64>, RankingError>;
+
     /// Ranks alternatives using the Operational Competitiveness Rating Analysis (OCRA) method.
     ///
     /// The OCRA ranking method expects an $m \times n$ unnormalized decision matrix. This method
@@ -2167,6 +2244,52 @@ impl Rank for DMatrix<f64> {
         );
 
         let ranking = &sum_normalized_profit - &sum_normalized_cost;
+
+        Ok(ranking)
+    }
+
+    fn rank_moosra(
+        &self,
+        criteria_types: &CriteriaTypes,
+        weights: &DVector<f64>,
+    ) -> Result<DVector<f64>, RankingError> {
+        if self.is_empty() {
+            return Err(RankingError::EmptyMatrix);
+        }
+
+        let (num_alternatives, num_criteria) = self.shape();
+
+        if criteria_types.len() != num_criteria || weights.len() != num_criteria {
+            return Err(RankingError::DimensionMismatch);
+        }
+
+        let normalized_matrix =
+            self.normalize_vector(&CriteriaTypes::all_profits(criteria_types.len()))?;
+        let weighted_matrix = normalized_matrix.apply_column_weights(weights)?;
+
+        let sum_normalized_profit = DVector::from_iterator(
+            num_alternatives,
+            weighted_matrix.row_iter().map(|row| {
+                row.iter()
+                    .zip(criteria_types.iter())
+                    .filter(|&(_, c_type)| *c_type == CriterionType::Profit)
+                    .map(|(&val, _)| val)
+                    .sum::<f64>()
+            }),
+        );
+
+        let sum_normalized_cost = DVector::from_iterator(
+            num_alternatives,
+            weighted_matrix.row_iter().map(|row| {
+                row.iter()
+                    .zip(criteria_types.iter())
+                    .filter(|&(_, c_type)| *c_type == CriterionType::Cost)
+                    .map(|(&val, _)| val)
+                    .sum::<f64>()
+            }),
+        );
+
+        let ranking = sum_normalized_profit.component_div(&sum_normalized_cost);
 
         Ok(ranking)
     }
