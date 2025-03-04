@@ -31,11 +31,8 @@ impl DMatrixExt for DMatrix<f64> {
             return Err(ValidationError::DimensionMismatch);
         }
 
-        let mut result = self.clone();
-        for (m, _) in self.column_iter().enumerate() {
-            result.column_mut(m).scale_mut(weights[m]);
-        }
-
-        Ok(result)
+        Ok(DMatrix::from_fn(self.nrows(), self.ncols(), |i, j| {
+            self[(i, j)] * weights[j]
+        }))
     }
 }

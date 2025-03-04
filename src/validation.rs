@@ -131,13 +131,12 @@ impl MatrixValidate for DMatrix<f64> {
             return Err(ValidationError::DimensionMismatch);
         }
 
-        for (i, row) in self.row_iter().enumerate() {
+        if self.row_iter().enumerate().any(|(i, row)| {
             let min = bounds[(i, 0)];
             let max = bounds[(i, 1)];
-
-            if (row[0] < min || row[1] > max) || row[0] > row[1] {
-                return Err(ValidationError::InvalidValue);
-            }
+            row[0] < min || row[1] > max || row[0] > row[1]
+        }) {
+            return Err(ValidationError::InvalidValue);
         }
 
         Ok(())
@@ -150,13 +149,12 @@ impl MatrixValidate for DMatrix<f64> {
 
         bounds.is_bounds_valid()?;
 
-        for (i, col) in self.column_iter().enumerate() {
-            let min = bounds[(i, 0)];
-            let max = bounds[(i, 1)];
-
-            if col.min() < min || col.max() > max {
-                return Err(ValidationError::InvalidValue);
-            }
+        if self.column_iter().enumerate().any(|(j, col)| {
+            let min = bounds[(j, 0)];
+            let max = bounds[(j, 1)];
+            col.min() < min || col.max() > max
+        }) {
+            return Err(ValidationError::InvalidValue);
         }
 
         Ok(())
@@ -174,13 +172,12 @@ impl VectorValidate for DVector<f64> {
             return Err(ValidationError::DimensionMismatch);
         }
 
-        for (i, row) in bounds.row_iter().enumerate() {
+        if bounds.row_iter().enumerate().any(|(i, row)| {
             let min = row[0];
             let max = row[1];
-
-            if self[i] < min || self[i] > max {
-                return Err(ValidationError::InvalidValue);
-            }
+            self[i] < min || self[i] > max
+        }) {
+            return Err(ValidationError::InvalidValue);
         }
 
         Ok(())

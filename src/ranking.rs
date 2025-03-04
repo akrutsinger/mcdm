@@ -2024,28 +2024,29 @@ impl Rank for DMatrix<f64> {
         let reference_point = reference_point.component_div(&self.row_sum().transpose());
 
         // Calculate the value matrix based on criteria
-        let mut value_matrix = normalized_matrix.clone();
-
-        for (i, row) in normalized_matrix.row_iter().enumerate() {
-            for (j, value) in row.iter().enumerate() {
-                value_matrix[(i, j)] = match criteria_types[j] {
+        let value_matrix = DMatrix::from_fn(
+            normalized_matrix.nrows(),
+            normalized_matrix.ncols(),
+            |i, j| {
+                let value = normalized_matrix[(i, j)];
+                match criteria_types[j] {
                     CriterionType::Profit => {
-                        if *value > reference_point[j] {
+                        if value > reference_point[j] {
                             ComplexField::powf(value - reference_point[j], alpha)
                         } else {
                             (-1.0 * lambda) * ComplexField::powf(reference_point[j] - value, alpha)
                         }
                     }
                     CriterionType::Cost => {
-                        if *value < reference_point[j] {
+                        if value < reference_point[j] {
                             ComplexField::powf(reference_point[j] - value, alpha)
                         } else {
                             (-1.0 * lambda) * ComplexField::powf(value - reference_point[j], alpha)
                         }
                     }
                 }
-            }
-        }
+            },
+        );
 
         // Compute the Positive Ideal Solution (PIS) and Negative Ideal Solution (NIS)
         let pis = DVector::from_iterator(
@@ -2100,12 +2101,9 @@ impl Rank for DMatrix<f64> {
         .transpose();
 
         // Distance border approximation area
-        let mut q = DMatrix::zeros(num_alternatives, num_criteria);
-        for (i, row) in weighted_matrix.row_iter().enumerate() {
-            for (j, val) in row.iter().enumerate() {
-                q[(i, j)] = val - g[j];
-            }
-        }
+        let q = DMatrix::from_fn(weighted_matrix.nrows(), weighted_matrix.ncols(), |i, j| {
+            weighted_matrix[(i, j)] - g[j]
+        });
 
         let ranking = DVector::from_iterator(q.nrows(), q.row_iter().map(|row| row.sum()));
 
@@ -2130,13 +2128,7 @@ impl Rank for DMatrix<f64> {
         let tr = self.apply_column_weights(&tp)?;
 
         // Total gap matrix
-        let mut g = tr.clone();
-
-        for (i, row) in tr.row_iter().enumerate() {
-            for (j, value) in row.iter().enumerate() {
-                g[(i, j)] = tp[j] - value;
-            }
-        }
+        let g = DMatrix::from_fn(tr.nrows(), tr.ncols(), |i, j| tp[j] - tr[(i, j)]);
 
         Ok(g.column_sum())
     }
@@ -2684,14 +2676,10 @@ impl Rank for DMatrix<f64> {
 
         // Compute the weighted matrix by raising each element of the decision matrix to the power
         // of the corresponding weight.
-        let mut weighted_matrix = DMatrix::zeros(self.nrows(), self.ncols());
-
-        // NOTE: I'm sure there is an idiomatic way to do this, but I can't seem to figure it out.
-        for (i, row) in self.row_iter().enumerate() {
-            for (j, &value) in row.iter().enumerate() {
-                weighted_matrix[(i, j)] = ComplexField::powf(value, weights[j]);
-            }
-        }
+        // Found it :)
+        let weighted_matrix = DMatrix::from_fn(self.nrows(), self.ncols(), |i, j| {
+            ComplexField::powf(self[(i, j)], weights[j])
+        });
 
         // Compute the product of each row
         Ok(weighted_matrix.column_product())
