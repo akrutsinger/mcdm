@@ -491,11 +491,11 @@ impl Normalize for DMatrix<f64> {
                 CriterionType::Profit => col.map(|x| max_value - x).sum(),
             };
 
-            for (i, value) in col.iter().enumerate() {
-                if ComplexField::abs(*value) < f64::EPSILON {
-                    return Err(NormalizationError::ZeroRange);
-                }
+            if ComplexField::abs(col_sum) < f64::EPSILON {
+                return Err(NormalizationError::ZeroRange);
+            }
 
+            for (i, value) in col.iter().enumerate() {
                 normalized_matrix[(i, j)] = match criteria_types[j] {
                     CriterionType::Cost => 1.0 - ((value - min_value) / col_sum),
                     CriterionType::Profit => 1.0 - ((max_value - value) / col_sum),
@@ -527,19 +527,20 @@ impl Normalize for DMatrix<f64> {
             let min_value = col.min();
             let max_value = col.max();
 
-            // Avoid division by zero
-            if ComplexField::abs(max_value) < f64::EPSILON {
-                return Err(NormalizationError::ZeroRange);
-            }
-
-            for (i, value) in col.iter().enumerate() {
-                if ComplexField::abs(*value) < f64::EPSILON {
-                    return Err(NormalizationError::ZeroRange);
-                }
-
+            for (i, &value) in col.iter().enumerate() {
                 normalized_matrix[(i, j)] = match criteria_types[j] {
-                    CriterionType::Cost => min_value / value,
-                    CriterionType::Profit => value / max_value,
+                    CriterionType::Cost => {
+                        if ComplexField::abs(value) < f64::EPSILON {
+                            return Err(NormalizationError::ZeroRange);
+                        }
+                        min_value / value
+                    }
+                    CriterionType::Profit => {
+                        if ComplexField::abs(max_value) < f64::EPSILON {
+                            return Err(NormalizationError::ZeroRange);
+                        }
+                        value / max_value
+                    }
                 };
             }
         }
@@ -569,16 +570,26 @@ impl Normalize for DMatrix<f64> {
         for (j, col) in self.column_iter().enumerate() {
             let col_prod_ln = ComplexField::ln(col.product());
 
-            for (i, value) in col.iter().enumerate() {
-                if ComplexField::abs(*value) < f64::EPSILON {
-                    return Err(NormalizationError::ZeroRange);
-                }
+            if ComplexField::abs(col_prod_ln) < f64::EPSILON {
+                return Err(NormalizationError::ZeroRange);
+            }
 
-                let ln_ratio = ComplexField::ln(*value) / col_prod_ln;
+            for (i, &value) in col.iter().enumerate() {
+                let ln_ratio = ComplexField::ln(value) / col_prod_ln;
 
                 normalized_matrix[(i, j)] = match criteria_types[j] {
-                    CriterionType::Cost => (1.0 - ln_ratio) / (num_alternatives as f64 - 1.0),
-                    CriterionType::Profit => ln_ratio,
+                    CriterionType::Cost => {
+                        if ComplexField::abs(num_alternatives as f64 - 1.0) < f64::EPSILON {
+                            return Err(NormalizationError::ZeroRange);
+                        }
+                        (1.0 - ln_ratio) / (num_alternatives as f64 - 1.0)
+                    }
+                    CriterionType::Profit => {
+                        if ComplexField::abs(ln_ratio) < f64::EPSILON {
+                            return Err(NormalizationError::ZeroRange);
+                        }
+                        ln_ratio
+                    }
                 };
             }
         }
@@ -606,15 +617,20 @@ impl Normalize for DMatrix<f64> {
         for (j, col) in self.column_iter().enumerate() {
             let next_to_last_row_value = self[(num_alternatives - 3, j)];
 
-            // Avoid division by zero
-            if ComplexField::abs(next_to_last_row_value) < f64::EPSILON {
-                return Err(NormalizationError::ZeroRange);
-            }
-
-            for (i, value) in col.iter().enumerate() {
+            for (i, &value) in col.iter().enumerate() {
                 normalized_matrix[(i, j)] = match criteria_types[j] {
-                    CriterionType::Cost => next_to_last_row_value / value,
-                    CriterionType::Profit => value / next_to_last_row_value,
+                    CriterionType::Cost => {
+                        if ComplexField::abs(value) < f64::EPSILON {
+                            return Err(NormalizationError::ZeroRange);
+                        }
+                        next_to_last_row_value / value
+                    }
+                    CriterionType::Profit => {
+                        if ComplexField::abs(next_to_last_row_value) < f64::EPSILON {
+                            return Err(NormalizationError::ZeroRange);
+                        }
+                        value / next_to_last_row_value
+                    }
                 };
             }
         }
@@ -644,7 +660,6 @@ impl Normalize for DMatrix<f64> {
         for (j, col) in self.column_iter().enumerate() {
             let max_value = col.max();
 
-            // Avoid division by zero
             if ComplexField::abs(max_value) < f64::EPSILON {
                 return Err(NormalizationError::ZeroRange);
             }
@@ -723,19 +738,20 @@ impl Normalize for DMatrix<f64> {
             let min_value = col.min();
             let max_value = col.max();
 
-            // Avoid division by zero
-            if ComplexField::abs(max_value - min_value) < f64::EPSILON {
-                return Err(NormalizationError::ZeroRange);
-            }
-
-            for (i, value) in col.iter().enumerate() {
-                if ComplexField::abs(*value) < f64::EPSILON {
-                    return Err(NormalizationError::ZeroRange);
-                }
-
+            for (i, &value) in col.iter().enumerate() {
                 normalized_matrix[(i, j)] = match criteria_types[j] {
-                    CriterionType::Cost => ComplexField::powi(min_value / value, 3),
-                    CriterionType::Profit => ComplexField::powi(value / max_value, 2),
+                    CriterionType::Cost => {
+                        if ComplexField::abs(value) < f64::EPSILON {
+                            return Err(NormalizationError::ZeroRange);
+                        }
+                        ComplexField::powi(min_value / value, 3)
+                    }
+                    CriterionType::Profit => {
+                        if ComplexField::abs(max_value) < f64::EPSILON {
+                            return Err(NormalizationError::ZeroRange);
+                        }
+                        ComplexField::powi(value / max_value, 2)
+                    }
                 };
             }
         }
@@ -767,7 +783,7 @@ impl Normalize for DMatrix<f64> {
             let max_value = col.max();
 
             // Avoid division by zero
-            if ComplexField::abs(max_value - min_value) < f64::EPSILON {
+            if ComplexField::abs(min_value) < f64::EPSILON {
                 return Err(NormalizationError::ZeroRange);
             }
 
@@ -811,8 +827,14 @@ impl Normalize for DMatrix<f64> {
                 normalized_matrix[(i, j)] = if c <= x && x <= d {
                     1.0
                 } else if (a <= x && x < c) && (a != c) {
+                    if (f64::abs(a - c)) < f64::EPSILON {
+                        return Err(NormalizationError::ZeroRange);
+                    }
                     1.0 - (dmin(x, c, d) / f64::abs(a - c))
                 } else if (d < x && x <= b) && (d != b) {
+                    if (f64::abs(d - b)) < f64::EPSILON {
+                        return Err(NormalizationError::ZeroRange);
+                    }
                     1.0 - (dmin(x, c, d) / f64::abs(d - b))
                 } else {
                     0.0
@@ -839,25 +861,22 @@ impl Normalize for DMatrix<f64> {
             return Err(NormalizationError::NormalizationCriteraTypeMismatch);
         }
 
-        let mut expected_solution_point = DVector::zeros(num_criteria);
-
-        for (i, row) in bounds.row_iter().enumerate() {
-            expected_solution_point[i] = match criteria_types[i] {
-                CriterionType::Cost => row.min(),
-                CriterionType::Profit => row.max(),
-            }
-        }
+        let expected_solution_point =
+            DVector::from_fn(num_criteria, |i, _| match criteria_types[i] {
+                CriterionType::Cost => bounds.row(i).min(),
+                CriterionType::Profit => bounds.row(i).max(),
+            });
 
         let range = bounds.column(1) - bounds.column(0);
 
-        let mut normalized_matrix = DMatrix::zeros(num_alternatives, num_criteria);
-
-        for (i, row) in self.row_iter().enumerate() {
-            let normalized_row = (row - &expected_solution_point.transpose())
-                .component_div(&range.transpose())
-                .map(|val: f64| ComplexField::abs(val));
-            normalized_matrix.set_row(i, &normalized_row);
+        if range.iter().any(|&v| ComplexField::abs(v) < f64::EPSILON) {
+            return Err(NormalizationError::ZeroRange);
         }
+
+        let normalized_matrix = DMatrix::from_fn(num_alternatives, num_criteria, |i, j| {
+            let val = (self[(i, j)] - expected_solution_point[j]) / range[j];
+            ComplexField::abs(val)
+        });
 
         Ok(normalized_matrix)
     }
@@ -883,17 +902,27 @@ impl Normalize for DMatrix<f64> {
         // Iterate over each column (criterion)
         for (j, col) in self.column_iter().enumerate() {
             let col_sum = match criteria_types[j] {
-                CriterionType::Cost => col.map(|x| 1.0 / x).sum(),
+                CriterionType::Cost => {
+                    if col.iter().any(|&x| ComplexField::abs(x) < f64::EPSILON) {
+                        return Err(NormalizationError::ZeroRange);
+                    }
+                    col.map(|x| 1.0 / x).sum()
+                }
                 CriterionType::Profit => col.sum(),
             };
 
-            for (i, value) in col.iter().enumerate() {
-                if ComplexField::abs(*value) < f64::EPSILON {
-                    return Err(NormalizationError::ZeroRange);
-                }
+            if ComplexField::abs(col_sum) < f64::EPSILON {
+                return Err(NormalizationError::ZeroRange);
+            }
 
+            for (i, &value) in col.iter().enumerate() {
                 normalized_matrix[(i, j)] = match criteria_types[j] {
-                    CriterionType::Cost => (1.0 / value) / col_sum,
+                    CriterionType::Cost => {
+                        if ComplexField::abs(value) < f64::EPSILON {
+                            return Err(NormalizationError::ZeroRange);
+                        }
+                        (1.0 / value) / col_sum
+                    }
                     CriterionType::Profit => value / col_sum,
                 };
             }
@@ -924,11 +953,11 @@ impl Normalize for DMatrix<f64> {
         for (j, col) in self.column_iter().enumerate() {
             let sqrt_col_sum = ComplexField::sqrt(col.map(|x| x * x).sum());
 
-            for (i, value) in col.iter().enumerate() {
-                if ComplexField::abs(*value) < f64::EPSILON {
-                    return Err(NormalizationError::ZeroRange);
-                }
+            if ComplexField::abs(sqrt_col_sum) < f64::EPSILON {
+                return Err(NormalizationError::ZeroRange);
+            }
 
+            for (i, value) in col.iter().enumerate() {
                 normalized_matrix[(i, j)] = match criteria_types[j] {
                     CriterionType::Cost => 1.0 - (value / sqrt_col_sum),
                     CriterionType::Profit => value / sqrt_col_sum,
@@ -962,17 +991,18 @@ impl Normalize for DMatrix<f64> {
             let min_value = col.min();
             let max_value = col.max();
 
-            // Avoid division by zero
-            if ComplexField::abs(max_value) < f64::EPSILON
-                || ComplexField::abs(min_value) < f64::EPSILON
-            {
-                return Err(NormalizationError::ZeroRange);
-            }
-
             for (i, value) in col.iter().enumerate() {
                 normalized_matrix[(i, j)] = match criteria_types[j] {
-                    CriterionType::Cost => 1.0 - (ComplexField::abs(min_value - value) / min_value),
+                    CriterionType::Cost => {
+                        if ComplexField::abs(min_value) < f64::EPSILON {
+                            return Err(NormalizationError::ZeroRange);
+                        }
+                        1.0 - (ComplexField::abs(min_value - value) / min_value)
+                    }
                     CriterionType::Profit => {
+                        if ComplexField::abs(max_value) < f64::EPSILON {
+                            return Err(NormalizationError::ZeroRange);
+                        }
                         1.0 - (ComplexField::abs(max_value - value) / max_value)
                     }
                 };
