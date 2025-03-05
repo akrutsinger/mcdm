@@ -36,8 +36,11 @@
 //! ```
 #![no_std]
 
-#[cfg(any(test, feature = "std"))]
+#[cfg(feature = "std")]
 extern crate std;
+
+mod float;
+use float::Float;
 
 pub mod correlation;
 pub mod criteria;

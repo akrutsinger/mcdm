@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `MOOSRA` ranking method.
+- New crate-only scoped `crate::float::Float` trait for `f64` type. This allows removing reliance on the misused `nalgebra::ComplexField` type while providing access to `libm`'s functions for `f64` arithmetic. Now `mcdm` should actually be `#![no_std]`!
 
 ### Changed
 
